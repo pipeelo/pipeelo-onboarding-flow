@@ -16,7 +16,8 @@ export type QuestionType =
   | 'cpf'
   | 'email'
   | 'phone'
-  | 'repeater';
+  | 'repeater'
+  | 'file_upload';
 
 /** Definição de um campo dentro de um item do repeater. */
 export interface RepeaterFieldDef {
@@ -57,6 +58,17 @@ export interface Question {
   /** Para tipo='repeater': mínimo/máximo de itens. */
   minimo?: number;
   maximo?: number;
+  /** Para tipo='file_upload': extensões aceitas sem ponto (default xlsx/xls/csv). */
+  extensoes?: string[];
+  /** Para tipo='file_upload': tamanho máximo em MB (default 5). */
+  max_mb?: number;
+}
+
+/** Valor salvo como resposta de uma pergunta tipo='file_upload'. */
+export interface FileUploadValue {
+  path: string;
+  nome_original: string;
+  tamanho: number;
 }
 
 export interface Section {

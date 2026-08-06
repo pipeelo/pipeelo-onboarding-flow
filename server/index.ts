@@ -21,6 +21,7 @@ const routes: Array<[string, Loader]> = [
   ['/api/sessions/save-resposta',       () => import('../api/sessions/_save-resposta.ts')],
   ['/api/sessions/complete-department', () => import('../api/sessions/_complete-department.ts')],
   ['/api/sessions/send-magic-link',     () => import('../api/sessions/_send-magic-link.ts')],
+  ['/api/sessions/upload-arquivo',      () => import('../api/sessions/_upload-arquivo.ts')],
   ['/api/sessions/validate-cnpj',       () => import('../api/sessions/_validate-cnpj.ts')],
   ['/api/email/send-credentials',       () => import('../api/email/_send-credentials.ts')],
   ['/api/email/send-failure-alert',     () => import('../api/email/_send-failure-alert.ts')],
@@ -37,6 +38,9 @@ const routes: Array<[string, Loader]> = [
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', true);
+// Upload de planilha vem em base64 (5MB de arquivo ≈ 6.7MB de JSON) — parser
+// maior SÓ nessa rota; o parser global de 1mb abaixo pula body já parseado.
+app.use('/api/sessions/upload-arquivo', express.json({ limit: '8mb' }));
 app.use(express.json({ limit: '1mb' }));
 
 for (const [route, loader] of routes) {

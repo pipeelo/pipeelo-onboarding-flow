@@ -116,6 +116,20 @@ export const sessionApi = {
       body: JSON.stringify(input),
     }),
 
+  uploadArquivo: (input: {
+    slug: string;
+    token: string;
+    departamento: DepartamentoId;
+    pergunta_id: string;
+    nome: string;
+    content_type?: string;
+    base64: string;
+  }) =>
+    api<{ path: string; nome_original: string; tamanho: number }>(
+      '/api/sessions/upload-arquivo',
+      { method: 'POST', body: JSON.stringify(input) }
+    ),
+
   sendMagicLink: (slug: string) =>
     api<{ ok: true; link_preview?: string }>('/api/sessions/send-magic-link', {
       method: 'POST',

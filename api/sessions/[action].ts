@@ -4,6 +4,7 @@ import create from './_create';
 import get from './_get';
 import saveResposta from './_save-resposta';
 import sendMagicLink from './_send-magic-link';
+import uploadArquivo from './_upload-arquivo';
 import validateCnpj from './_validate-cnpj';
 
 /**
@@ -17,6 +18,7 @@ const HANDLERS: Record<string, (req: VercelRequest, res: VercelResponse) => unkn
   get,
   'save-resposta': saveResposta,
   'send-magic-link': sendMagicLink,
+  'upload-arquivo': uploadArquivo,
   'validate-cnpj': validateCnpj,
 };
 

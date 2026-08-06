@@ -4,8 +4,8 @@
     "ordem_sugerida": ["identificacao", "sac_geral", "financeiro", "suporte", "vendas"],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v3.0 - 5 departamentos, primeiro (identificacao) é bloqueante e cria o tenant no admin-pipeelo",
-    "versao": "3.3.0",
-    "total_perguntas": 131
+    "versao": "3.4.0",
+    "total_perguntas": 139
   },
 
   "departamentos": {
@@ -578,6 +578,98 @@
               "condicional": "departamentos_lista includes 'outro'",
               "placeholder": "Descreva em detalhes o que este departamento faz...",
               "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
+            }
+          ]
+        },
+
+        "equipe_acessos": {
+          "titulo": "Equipe e Acessos",
+          "icone": "👥",
+          "descricao": "Quem opera cada departamento — usamos isso pra criar os acessos da sua equipe na plataforma.",
+          "perguntas": [
+            {
+              "id": "_equipe_intro",
+              "pergunta": "Como organizar sua equipe",
+              "tipo": "info",
+              "obrigatoria": false,
+              "texto": "Pra criar os acessos da sua equipe na Pipeelo, precisamos da estrutura completa: cada departamento, se ele é separado por cidade, e as pessoas que atuam nele — com e-mail. Exemplo: Financeiro trata 2ª via de boleto, desbloqueio em confiança e negociação, com a Ana (ana@provedor.com.br) como gestora; Suporte é separado por cidade, com equipe própria em cada uma. Quanto mais organizado vier, mais rápido sua equipe recebe os acessos."
+            },
+            {
+              "id": "equipe_planilha_modelo",
+              "pergunta": "Prefere montar numa planilha?",
+              "tipo": "info_link",
+              "obrigatoria": false,
+              "hint": "Se for mais fácil organizar fora do formulário, baixe a planilha modelo — ela já vem preenchida com um exemplo nas abas Departamentos e Equipe. Preencha com a sua estrutura e envie de volta no passo seguinte.",
+              "link": "/modelo-departamentos-equipe.xlsx",
+              "texto": "Baixar planilha modelo"
+            },
+            {
+              "id": "departamentos_por_cidade",
+              "pergunta": "O atendimento é separado por cidade ou unidade?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "opcoes": [
+                {"value": "sim", "label": "Sim — temos equipes/departamentos por cidade"},
+                {"value": "nao", "label": "Não — a mesma equipe atende todas as cidades"}
+              ],
+              "hint": "Ex.: Suporte próprio em cada cidade, ou Financeiro centralizado na matriz."
+            },
+            {
+              "id": "departamentos_cidades_detalhe",
+              "pergunta": "Quais cidades/unidades vocês têm e como os departamentos se dividem entre elas?",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_por_cidade == 'sim'",
+              "placeholder": "Ex: Londrina (matriz) — Financeiro, Suporte N1/N2, Comercial. Cambé — Suporte N1 e Comercial. Ibiporã — só Comercial, suporte atendido por Londrina...",
+              "hint": "Liste cada cidade e quais departamentos existem nela."
+            },
+            {
+              "id": "equipe_forma_entrega",
+              "pergunta": "Como você prefere informar as pessoas da equipe?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "opcoes": [
+                {"value": "formulario", "label": "Vou preencher aqui no formulário"},
+                {"value": "planilha", "label": "Vou enviar a planilha modelo preenchida"}
+              ]
+            },
+            {
+              "id": "equipe_pessoas",
+              "pergunta": "Quem são as pessoas da sua equipe que vão usar a plataforma?",
+              "tipo": "repeater",
+              "obrigatoria": true,
+              "condicional": "equipe_forma_entrega == 'formulario'",
+              "rotulo_item": "Pessoa",
+              "rotulo_adicionar": "Adicionar pessoa",
+              "minimo": 1,
+              "hint": "Cada pessoa listada aqui recebe um acesso à plataforma no e-mail informado.",
+              "campos": [
+                {"id": "nome", "label": "Nome completo", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Ana Souza", "largura": 6},
+                {"id": "email", "label": "E-mail (será o login)", "tipo": "text", "obrigatoria": true, "placeholder": "ana@provedor.com.br", "largura": 6},
+                {"id": "departamentos", "label": "Departamento(s) em que atua", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Financeiro, Cobrança", "largura": 6},
+                {"id": "cidade", "label": "Cidade/unidade", "tipo": "text", "obrigatoria": false, "placeholder": "Deixe vazio se atende todas", "largura": 3},
+                {"id": "papel", "label": "Papel", "tipo": "select", "obrigatoria": true, "largura": 3, "opcoes": [
+                  {"value": "gestor", "label": "Gestor (vê tudo e relatórios)"},
+                  {"value": "atendente", "label": "Atendente (só atende)"}
+                ]}
+              ]
+            },
+            {
+              "id": "equipe_planilha_upload",
+              "pergunta": "Envie a planilha preenchida",
+              "tipo": "file_upload",
+              "obrigatoria": true,
+              "condicional": "equipe_forma_entrega == 'planilha'",
+              "extensoes": ["xlsx", "xls", "csv"],
+              "max_mb": 5,
+              "hint": "Aceita .xlsx, .xls ou .csv até 5MB. Use a planilha modelo do passo anterior como base."
+            },
+            {
+              "id": "equipe_observacoes",
+              "pergunta": "Alguma observação sobre a estrutura da equipe? (opcional)",
+              "tipo": "textarea",
+              "obrigatoria": false,
+              "placeholder": "Ex: o sócio João aparece em todos os departamentos; a equipe de Cambé será contratada mês que vem..."
             }
           ]
         },

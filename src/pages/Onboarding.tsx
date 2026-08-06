@@ -477,6 +477,25 @@ export default function Onboarding() {
                 }}
                 onSubmit={handleNext}
                 error={error}
+                onUploadFile={async (file) => {
+                  if (!slug || !token || !state.departamento) throw new Error('sem sessão');
+                  const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () =>
+                      resolve(String(reader.result).split(',')[1] ?? '');
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsDataURL(file);
+                  });
+                  return sessionApi.uploadArquivo({
+                    slug,
+                    token,
+                    departamento: state.departamento,
+                    pergunta_id: currentQuestion.id,
+                    nome: file.name,
+                    content_type: file.type || undefined,
+                    base64,
+                  });
+                }}
               />
 
               <div className="flex gap-4">

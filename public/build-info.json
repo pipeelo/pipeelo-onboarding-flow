@@ -1,1 +1,1 @@
-{"commit":"dados-comerciais-link","feature":"Dados comerciais (valor sessão, qtd, mensal, dia venc., obs) na criação do link + session.comercial no payload final"}
+{"commit":"equipe-acessos","feature":"Seção Equipe e Acessos no sac_geral: estrutura de departamentos por cidade + pessoas com e-mail/papel + planilha modelo com upload (tipo file_upload novo, bucket onboarding-uploads)"}

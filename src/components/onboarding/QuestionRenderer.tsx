@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ClockTimePicker } from '@/components/ui/clock-time-picker';
-import { ExternalLink, Info, X } from 'lucide-react';
+import { ExternalLink, FileSpreadsheet, Info, Loader2, Upload, X } from 'lucide-react';
 
 interface QuestionRendererProps {
   question: Question;
@@ -14,6 +14,8 @@ interface QuestionRendererProps {
   onChange: (value: any) => void;
   onSubmit: () => void;
   error?: string;
+  /** Para tipo='file_upload': faz o upload e retorna o metadata salvo como resposta. */
+  onUploadFile?: (file: File) => Promise<unknown>;
 }
 
 interface HorarioSemanal {
@@ -33,15 +35,18 @@ const defaultHorario: HorarioSemanal = {
   domingo_feriado: { inicio: '08:00', fim: '12:00', nao_atende: false }
 };
 
-export function QuestionRenderer({ 
-  question, 
-  value, 
-  onChange, 
+export function QuestionRenderer({
+  question,
+  value,
+  onChange,
   onSubmit,
-  error 
+  error,
+  onUploadFile
 }: QuestionRendererProps) {
   const [localValue, setLocalValue] = useState(value ?? '');
   const [naoTemPortal, setNaoTemPortal] = useState(value === 'NAO_POSSUI');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   useEffect(() => {
     if (question.tipo === 'checkbox_multiple') {
@@ -692,10 +697,94 @@ export function QuestionRenderer({
               onClick={() => window.open(question.link, '_blank')}
             >
               <ExternalLink className="h-4 w-4" />
-              Abrir ferramenta
+              {question.texto ?? 'Abrir ferramenta'}
             </Button>
           </div>
         );
+
+      case 'file_upload': {
+        const meta =
+          localValue && typeof localValue === 'object' && 'nome_original' in localValue
+            ? (localValue as { path: string; nome_original: string; tamanho: number })
+            : null;
+        const extensoes = question.extensoes ?? ['xlsx', 'xls', 'csv'];
+        const maxMb = question.max_mb ?? 5;
+
+        const handleFile = async (file: File | undefined) => {
+          if (!file || !onUploadFile) return;
+          const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+          if (!extensoes.includes(ext)) {
+            setUploadError(`Formato não aceito — use ${extensoes.map((e) => `.${e}`).join(', ')}`);
+            return;
+          }
+          if (file.size > maxMb * 1024 * 1024) {
+            setUploadError(`Arquivo muito grande — máximo ${maxMb}MB`);
+            return;
+          }
+          setUploadError('');
+          setUploading(true);
+          try {
+            const uploaded = await onUploadFile(file);
+            handleChange(uploaded);
+          } catch {
+            setUploadError('Falha no envio — tente de novo ou fale com o time Pipeelo.');
+          } finally {
+            setUploading(false);
+          }
+        };
+
+        return (
+          <div className="space-y-3">
+            {meta ? (
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-4">
+                <FileSpreadsheet className="h-6 w-6 text-pipeelo-green shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{meta.nome_original}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(meta.tamanho / 1024).toFixed(0)} KB — recebido ✓
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remover arquivo"
+                  onClick={() => handleChange('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <label
+                className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-accent hover:bg-muted/50 ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+              >
+                {uploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                )}
+                <span className="font-medium">
+                  {uploading ? 'Enviando…' : 'Clique para escolher o arquivo'}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {extensoes.map((e) => `.${e}`).join(', ')} — até {maxMb}MB
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept={extensoes.map((e) => `.${e}`).join(',')}
+                  disabled={uploading}
+                  onChange={(e) => {
+                    void handleFile(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            )}
+            {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+          </div>
+        );
+      }
 
       default:
         return (
