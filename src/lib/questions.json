@@ -4,8 +4,8 @@
     "ordem_sugerida": ["identificacao", "sac_geral", "financeiro", "suporte", "vendas"],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v3.0 - 5 departamentos, primeiro (identificacao) é bloqueante e cria o tenant no admin-pipeelo",
-    "versao": "3.4.0",
-    "total_perguntas": 139
+    "versao": "3.5.0",
+    "total_perguntas": 140
   },
 
   "departamentos": {
@@ -734,6 +734,17 @@
           "titulo": "Processos Especiais",
           "icone": "⚙️",
           "perguntas": [
+            {
+              "id": "salvar_cpf_atendimento",
+              "pergunta": "A IA deve lembrar o CPF do cliente entre atendimentos?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "opcoes": [
+                {"value": "salvar", "label": "Sim — reutilizar o último CPF automaticamente"},
+                {"value": "sempre_perguntar", "label": "Não — perguntar o CPF em todo atendimento"}
+              ],
+              "hint": "Reutilizando o último CPF, a IA executa 2ª via, desbloqueio e consultas direto, sem repetir a pergunta — e quem precisar de outro CPF só informa no início da conversa. Perguntar sempre é mais indicado quando o mesmo WhatsApp costuma cuidar de vários contratos/CPFs diferentes."
+            },
             {
               "id": "cancelamento_coletar_motivo",
               "pergunta": "Quando cliente pede cancelamento, a IA deve coletar o motivo?",

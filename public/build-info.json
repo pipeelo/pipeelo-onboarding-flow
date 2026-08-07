@@ -1,1 +1,1 @@
-{"commit":"equipe-acessos","feature":"Seção Equipe e Acessos no sac_geral: estrutura de departamentos por cidade + pessoas com e-mail/papel + planilha modelo com upload (tipo file_upload novo, bucket onboarding-uploads)"}
+{"commit":"salvar-cpf-atendimento","feature":"Config salvar_cpf_atendimento em Processos Especiais (sac_geral): IA reutiliza último CPF vs perguntar em todo atendimento — questions.json 3.5.0/140"}
