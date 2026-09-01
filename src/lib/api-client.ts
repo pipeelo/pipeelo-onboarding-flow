@@ -137,6 +137,12 @@ export const sessionApi = {
       { method: 'POST', body: JSON.stringify(input) }
     ),
 
+  cnpjLookup: (input: { slug: string; token: string; cnpj: string }) =>
+    api<{ razao_social: string; nome_fantasia: string }>('/api/sessions/cnpj-lookup', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
   sendMagicLink: (slug: string) =>
     api<{ ok: true; link_preview?: string }>('/api/sessions/send-magic-link', {
       method: 'POST',

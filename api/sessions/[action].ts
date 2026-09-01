@@ -6,6 +6,7 @@ import saveResposta from './_save-resposta';
 import sendMagicLink from './_send-magic-link';
 import uploadArquivo from './_upload-arquivo';
 import validateCnpj from './_validate-cnpj';
+import cnpjLookup from './_cnpj-lookup';
 
 /**
  * Router /api/sessions/[action] — consolida os endpoints de sessão em 1
@@ -14,6 +15,7 @@ import validateCnpj from './_validate-cnpj';
  */
 const HANDLERS: Record<string, (req: VercelRequest, res: VercelResponse) => unknown> = {
   'complete-department': completeDepartment,
+  'cnpj-lookup': cnpjLookup,
   create,
   get,
   'save-resposta': saveResposta,
