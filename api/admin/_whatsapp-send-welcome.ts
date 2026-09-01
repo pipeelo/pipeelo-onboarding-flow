@@ -7,29 +7,8 @@ import {
   EvolutionConfigError,
   EvolutionApiError,
 } from '../_lib/evolution';
-
-const ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-const CODE_LEN = 6;
-
-function generateCode(len = CODE_LEN): string {
-  let out = '';
-  for (let i = 0; i < len; i++) {
-    out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-  }
-  return out;
-}
-
-const WELCOME_TEMPLATE = (link: string) => `🎉 *Parabéns pela decisão!*
-
-Seja muito bem-vindo(a) à Pipeelo! A partir de agora você dá um grande passo na *automatização do seu provedor* — e a gente vai trilhar esse caminho junto com você.
-
-O *primeiro passo* dessa jornada é o preenchimento do formulário de onboarding. É com base nessas informações que a sua inteligência artificial vai ser treinada e personalizada pro seu provedor.
-
-🔗 *Link do formulário:* ${link}
-
-Você pode preencher tudo de uma vez ou no seu ritmo — as informações ficam salvas automaticamente.
-
-Logo após a finalização, você receberá as informações sobre os próximos passos. 🚀`;
+import { ensureShortLink, onboardingTargetUrl } from '../_lib/short-links';
+import { WELCOME_TEMPLATE } from '../_lib/welcome-template';
 
 /**
  * POST /api/admin/whatsapp-send-welcome
@@ -44,7 +23,8 @@ Logo após a finalização, você receberá as informações sobre os próximos 
  * Fluxo:
  *  1. Hidrata sessão pra pegar empresa_nome + access_token + slug.
  *  2. Resolve/cria shortlink (tabela short_links) pro modo escolhido.
- *  3. Busca grupo no Evolution (`group.subject` == empresa_nome).
+ *  3. Busca grupo no Evolution (`group.subject` == empresa_nome), ou usa o
+ *     `grupo_jid` salvo na sessão quando disponível.
  *  4. Manda mensagem de boas-vindas com link curto.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -64,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Hidratar sessão
     const { data: session, error: sessErr } = await supabase
       .from('onboarding_sessions')
-      .select('id, slug, empresa_nome, access_token')
+      .select('id, slug, empresa_nome, access_token, grupo_jid')
       .eq('id', session_id)
       .maybeSingle();
     if (sessErr || !session) {
@@ -78,56 +58,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .update({ modo })
       .eq('id', session_id);
 
-    const accessToken = (session as { access_token?: string }).access_token;
-    const path = modo === 'comercial' ? `comercial/${session.slug}` : session.slug;
-    const targetUrl = accessToken
-      ? `https://onboarding.pipeelo.com/${path}?token=${accessToken}`
-      : `https://onboarding.pipeelo.com/${path}`;
+    const targetUrl = onboardingTargetUrl({
+      slug: session.slug,
+      access_token: (session as { access_token?: string }).access_token,
+      modo,
+    });
+    const { short_url: shortUrl } = await ensureShortLink(supabase, {
+      session_id, modo, target_url: targetUrl,
+      host: req.headers.host, proto: req.headers['x-forwarded-proto'] as string | undefined,
+    });
 
-    // 2. Resolver/criar shortlink
-    const host = req.headers.host ?? 'onboarding.pipeelo.com';
-    const proto = (req.headers['x-forwarded-proto'] as string) ?? 'https';
-
-    let code: string | null = null;
-    const { data: existing } = await supabase
-      .from('short_links')
-      .select('code, target_url')
-      .eq('session_id', session_id)
-      .eq('modo', modo)
-      .maybeSingle();
-
-    if (existing) {
-      if (existing.target_url !== targetUrl) {
-        await supabase.from('short_links').update({ target_url: targetUrl }).eq('code', existing.code);
-      }
-      code = existing.code;
-    } else {
-      for (let i = 0; i < 5; i++) {
-        const candidate = generateCode();
-        const { error: insErr } = await supabase.from('short_links').insert({
-          code: candidate,
-          target_url: targetUrl,
-          session_id,
-          modo,
-        });
-        if (!insErr) {
-          code = candidate;
-          break;
-        }
-        if ((insErr as { code?: string }).code !== '23505') {
-          throw insErr;
-        }
-      }
-    }
-
-    if (!code) {
-      return res.status(500).json({ error: 'shortlink_generation_failed' });
-    }
-
-    const shortUrl = `${proto}://${host}/s/${code}`;
-
-    // 3. Buscar grupo WhatsApp pelo nome da empresa
-    const group = await findGroupByName(session.empresa_nome);
+    // 3. Buscar grupo WhatsApp: usa o grupo_jid salvo na sessão se existir,
+    // senão cai pra busca por nome (fluxo legado).
+    const grupoJid = (session as { grupo_jid?: string | null }).grupo_jid;
+    const group = grupoJid
+      ? { id: grupoJid, subject: `(grupo salvo) ${session.empresa_nome}` }
+      : await findGroupByName(session.empresa_nome);
     if (!group) {
       return res.status(404).json({
         error: 'group_not_found',

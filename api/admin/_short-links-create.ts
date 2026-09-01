@@ -1,18 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { assertAdminUser, AdminAuthError } from '../_lib/admin-auth';
 import { getServiceSupabase } from '../_lib/supabase';
-
-const ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // sem 0/o/O/1/l/I
-const CODE_LEN = 6;
-const MAX_RETRIES = 5;
-
-function generateCode(len = CODE_LEN): string {
-  let out = '';
-  for (let i = 0; i < len; i++) {
-    out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-  }
-  return out;
-}
+import { ensureShortLink } from '../_lib/short-links';
 
 /**
  * POST /api/admin/short-links-create
@@ -50,66 +39,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .update({ modo })
       .eq('id', session_id);
 
-    // Idempotência: já existe shortlink pra esse (session_id, modo)?
-    const { data: existing, error: existingErr } = await supabase
-      .from('short_links')
-      .select('code, target_url')
-      .eq('session_id', session_id)
-      .eq('modo', modo)
-      .maybeSingle();
-
-    if (existingErr) {
-      console.error('[short-links-create] existing lookup failed:', existingErr);
-      return res.status(500).json({ error: existingErr.message });
-    }
-
-    const host = req.headers.host ?? 'onboarding.pipeelo.com';
-    const proto = (req.headers['x-forwarded-proto'] as string) ?? 'https';
-
-    if (existing) {
-      // Se target mudou (token regenerado), atualiza in-place
-      if (existing.target_url !== target_url) {
-        await supabase
-          .from('short_links')
-          .update({ target_url })
-          .eq('code', existing.code);
-      }
-      return res.status(200).json({
-        code: existing.code,
-        short_url: `${proto}://${host}/s/${existing.code}`,
+    let result: { code: string; short_url: string };
+    try {
+      result = await ensureShortLink(supabase, {
+        session_id, modo, target_url,
+        host: req.headers.host, proto: req.headers['x-forwarded-proto'] as string | undefined,
       });
-    }
-
-    // Gera novo code, retry se colidir
-    let code: string | null = null;
-    for (let i = 0; i < MAX_RETRIES; i++) {
-      const candidate = generateCode();
-      const { error: insertErr } = await supabase.from('short_links').insert({
-        code: candidate,
-        target_url,
-        session_id,
-        modo,
-      });
-      if (!insertErr) {
-        code = candidate;
-        break;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'shortlink_generation_failed') {
+        return res.status(500).json({ error: 'code_generation_exhausted' });
       }
-      // 23505 = unique_violation
-      const errCode = (insertErr as { code?: string }).code;
-      if (errCode !== '23505') {
-        console.error('[short-links-create] insert failed:', insertErr);
-        return res.status(500).json({ error: insertErr.message });
-      }
+      const message = (err as { message?: string })?.message ?? 'internal';
+      console.error('[short-links-create]', err);
+      return res.status(500).json({ error: message });
     }
 
-    if (!code) {
-      return res.status(500).json({ error: 'code_generation_exhausted' });
-    }
-
-    return res.status(200).json({
-      code,
-      short_url: `${proto}://${host}/s/${code}`,
-    });
+    return res.status(200).json(result);
   } catch (e: unknown) {
     if (e instanceof AdminAuthError) return res.status(e.status).json({ error: e.message });
     console.error('[admin/short-links-create]', e);
