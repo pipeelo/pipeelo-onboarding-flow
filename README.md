@@ -50,6 +50,16 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
+## Variáveis de ambiente (EasyPanel, serviço onboarding-pipeelo)
+
+O cadastro com criação de grupo WhatsApp (`/cadastro/:slug`) depende destas variáveis, configuradas manualmente no EasyPanel (ver `.env.production.example`):
+
+- `EVOLUTION_API_BASE_URL`: URL base da instância Evolution que cria o grupo do cliente.
+- `EVOLUTION_API_INSTANCE`: nome da instância Evolution (`Avisos`).
+- `EVOLUTION_API_KEY`: chave de autenticação da instância Evolution.
+- `STAFF_GROUP_JID`: JID do grupo interno do Staff que recebe o aviso de novo cadastro.
+- `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto de convite ao grupo.
+
 ## What technologies are used for this project?
 
 This project is built with:

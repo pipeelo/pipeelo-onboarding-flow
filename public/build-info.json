@@ -1,1 +1,1 @@
-{"commit":"salvar-cpf-atendimento","feature":"Config salvar_cpf_atendimento em Processos Especiais (sac_geral): IA reutiliza último CPF vs perguntar em todo atendimento — questions.json 3.5.0/140"}
+{"commit":"cadastro-grupo","feature":"Página /cadastro/:slug cria grupo WhatsApp (Evolution) com admin + boas-vindas; equipe entra no grupo na conclusão — questions.json 3.6.0/140"}
