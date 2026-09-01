@@ -129,6 +129,21 @@ export default function Onboarding() {
         ofDept.forEach((r) => {
           setResposta(r.pergunta_id, r.valor);
         });
+
+        // Identificação: dados já informados no /cadastro entram como default
+        // (só quando o cliente ainda não respondeu). O autosave persiste ao avançar.
+        if (urlDepartamento === 'identificacao') {
+          const cad = (session as { cadastro?: Record<string, unknown> | null }).cadastro ?? null;
+          const respondidas = new Set(ofDept.map((r) => r.pergunta_id));
+          const prefill: Array<[string, unknown]> = [
+            ['cnpj', cad?.cnpj],
+            ['razao_social', cad?.razao_social],
+            ['nome_fantasia', cad?.nome_fantasia],
+          ];
+          for (const [id, valor] of prefill) {
+            if (!respondidas.has(id) && typeof valor === 'string' && valor) setResposta(id, valor);
+          }
+        }
       } catch (e) {
         if (e instanceof ApiError) {
           if (e.status === 401) {
