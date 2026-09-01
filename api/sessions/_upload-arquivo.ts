@@ -2,16 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   UploadArquivoSchema,
   UPLOAD_BUCKET,
-  UPLOAD_EXTENSOES,
-  UPLOAD_MAX_BYTES,
+  resolveUploadContexto,
 } from '../_lib/schemas/upload';
 import { assertSessionAccess, HttpError } from '../_lib/auth-session';
 import { getServiceSupabase } from '../_lib/supabase';
 
 /**
  * POST /api/sessions/upload-arquivo — recebe arquivo em base64 (planilha de
- * equipe/departamentos), grava no bucket privado `onboarding-uploads` via
- * service role e retorna o metadata que o front salva como resposta.
+ * equipe/departamentos ou documentos do cadastro), grava no bucket privado
+ * `onboarding-uploads` via service role e retorna o metadata que o front salva
+ * como resposta.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -22,18 +22,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = UploadArquivoSchema.parse(req.body);
     const session = await assertSessionAccess(body.slug, body.token);
 
+    const ctx = resolveUploadContexto(body.departamento);
     const ext = body.nome.split('.').pop()?.toLowerCase() ?? '';
-    if (!(UPLOAD_EXTENSOES as readonly string[]).includes(ext))
+    if (!(ctx.extensoes as readonly string[]).includes(ext))
       throw new HttpError(400, 'extensao_nao_permitida');
 
     const buffer = Buffer.from(body.base64, 'base64');
     if (buffer.length === 0) throw new HttpError(400, 'arquivo_vazio');
-    if (buffer.length > UPLOAD_MAX_BYTES) throw new HttpError(413, 'arquivo_muito_grande');
+    if (buffer.length > ctx.maxBytes) throw new HttpError(413, 'arquivo_muito_grande');
 
     const nomeSanitizado = body.nome
       .replace(/[^a-zA-Z0-9._-]+/g, '_')
       .slice(-120);
-    const path = `${(session as { id: string }).id}/${body.pergunta_id}/${Date.now()}-${nomeSanitizado}`;
+    const prefixo = body.departamento === 'cadastro' ? 'cadastro/' : '';
+    const path = `${(session as { id: string }).id}/${prefixo}${body.pergunta_id}/${Date.now()}-${nomeSanitizado}`;
 
     const supabase = getServiceSupabase();
     const { error } = await supabase.storage

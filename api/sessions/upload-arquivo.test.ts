@@ -106,4 +106,35 @@ describe('POST /api/sessions/upload-arquivo', () => {
     });
     expect(r.statusCode).toBe(500);
   });
+
+  it('200 cadastro — aceita PDF de até 10MB e grava em /cadastro/', async () => {
+    (assertSessionAccess as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sess-1' });
+    const m = makeStorageMock({ data: { path: 'x' }, error: null });
+    (getServiceSupabase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(m.client);
+    const r = await invokeHandler(handler as never, {
+      method: 'POST',
+      body: { ...validBody, departamento: 'cadastro', pergunta_id: 'doc_contrato_social', nome: 'contrato social.pdf', content_type: 'application/pdf', base64: Buffer.alloc(6 * 1024 * 1024, 1).toString('base64') },
+    });
+    expect(r.statusCode).toBe(200);
+    expect((r.body as { path: string }).path).toMatch(/^sess-1\/cadastro\/doc_contrato_social\/\d+-contrato_social\.pdf$/);
+  });
+
+  it('400 cadastro — recusa xlsx', async () => {
+    (assertSessionAccess as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sess-1' });
+    const r = await invokeHandler(handler as never, {
+      method: 'POST',
+      body: { ...validBody, departamento: 'cadastro', pergunta_id: 'doc_contrato_social' },
+    });
+    expect(r.statusCode).toBe(400);
+    expect((r.body as { error: string }).error).toBe('extensao_nao_permitida');
+  });
+
+  it('413 cadastro — recusa acima de 10MB', async () => {
+    (assertSessionAccess as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sess-1' });
+    const r = await invokeHandler(handler as never, {
+      method: 'POST',
+      body: { ...validBody, departamento: 'cadastro', pergunta_id: 'doc_responsaveis', nome: 'rg.png', base64: Buffer.alloc(10 * 1024 * 1024 + 1, 1).toString('base64') },
+    });
+    expect(r.statusCode).toBe(413);
+  });
 });

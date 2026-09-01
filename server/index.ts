@@ -38,9 +38,10 @@ const routes: Array<[string, Loader]> = [
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', true);
-// Upload de planilha vem em base64 (5MB de arquivo ≈ 6.7MB de JSON) — parser
-// maior SÓ nessa rota; o parser global de 1mb abaixo pula body já parseado.
-app.use('/api/sessions/upload-arquivo', express.json({ limit: '8mb' }));
+// Upload de planilha (5MB ≈ 6.7MB em base64) e documentos cadastro (10MB ≈ 13.4MB
+// em base64) — parser maior SÓ nessa rota; o parser global de 1mb abaixo pula body
+// já parseado.
+app.use('/api/sessions/upload-arquivo', express.json({ limit: '15mb' }));
 app.use(express.json({ limit: '1mb' }));
 
 for (const [route, loader] of routes) {

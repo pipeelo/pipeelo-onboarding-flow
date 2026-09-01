@@ -126,7 +126,7 @@ export const sessionApi = {
   uploadArquivo: (input: {
     slug: string;
     token: string;
-    departamento: DepartamentoId;
+    departamento: DepartamentoId | 'cadastro';
     pergunta_id: string;
     nome: string;
     content_type?: string;
