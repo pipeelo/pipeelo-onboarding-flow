@@ -23,7 +23,7 @@ export type QuestionType =
 export interface RepeaterFieldDef {
   id: string;
   label: string;
-  tipo: 'text' | 'textarea' | 'number' | 'currency' | 'select' | 'checkbox_multiple' | 'boolean';
+  tipo: 'text' | 'textarea' | 'number' | 'currency' | 'select' | 'checkbox_multiple' | 'boolean' | 'phone';
   obrigatoria?: boolean;
   placeholder?: string;
   hint?: string;

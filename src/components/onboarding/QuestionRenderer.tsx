@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ClockTimePicker } from '@/components/ui/clock-time-picker';
 import { ExternalLink, FileSpreadsheet, Info, Loader2, Upload, X } from 'lucide-react';
+import { maskPhone } from '@/lib/phone';
 
 interface QuestionRendererProps {
   question: Question;
@@ -173,17 +174,6 @@ export function QuestionRenderer({
       }
 
       case 'phone': {
-        const maskPhone = (v: string) => {
-          const d = v.replace(/\D/g, '').slice(0, 11);
-          if (d.length <= 10) {
-            return d
-              .replace(/(\d{2})(\d)/, '($1) $2')
-              .replace(/(\d{4})(\d)/, '$1-$2');
-          }
-          return d
-            .replace(/(\d{2})(\d)/, '($1) $2')
-            .replace(/(\d{5})(\d)/, '$1-$2');
-        };
         return (
           <Input
             type="tel"
@@ -556,6 +546,16 @@ export function QuestionRenderer({
                             value={(fieldVal as string | number | undefined) ?? ''}
                             onChange={(e) => updateItem(idx, { [campo.id]: e.target.value })}
                             placeholder={campo.placeholder}
+                            className="text-base"
+                          />
+                        )}
+                        {campo.tipo === 'phone' && (
+                          <Input
+                            type="tel"
+                            inputMode="tel"
+                            value={maskPhone(String(fieldVal ?? ''))}
+                            onChange={(e) => updateItem(idx, { [campo.id]: maskPhone(e.target.value) })}
+                            placeholder={campo.placeholder ?? '(00) 00000-0000'}
                             className="text-base"
                           />
                         )}

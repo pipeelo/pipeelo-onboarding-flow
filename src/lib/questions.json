@@ -4,7 +4,7 @@
     "ordem_sugerida": ["identificacao", "sac_geral", "financeiro", "suporte", "vendas"],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v3.0 - 5 departamentos, primeiro (identificacao) é bloqueante e cria o tenant no admin-pipeelo",
-    "versao": "3.5.0",
+    "versao": "3.6.0",
     "total_perguntas": 140
   },
 
@@ -642,7 +642,7 @@
               "rotulo_item": "Pessoa",
               "rotulo_adicionar": "Adicionar pessoa",
               "minimo": 1,
-              "hint": "Cada pessoa listada aqui recebe um acesso à plataforma no e-mail informado.",
+              "hint": "Cada pessoa listada aqui recebe um acesso à plataforma no e-mail informado. Quem tiver WhatsApp entra no grupo com a Pipeelo.",
               "campos": [
                 {"id": "nome", "label": "Nome completo", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Ana Souza", "largura": 6},
                 {"id": "email", "label": "E-mail (será o login)", "tipo": "text", "obrigatoria": true, "placeholder": "ana@provedor.com.br", "largura": 6},
@@ -651,7 +651,26 @@
                 {"id": "papel", "label": "Papel", "tipo": "select", "obrigatoria": true, "largura": 3, "opcoes": [
                   {"value": "gestor", "label": "Gestor (vê tudo e relatórios)"},
                   {"value": "atendente", "label": "Atendente (só atende)"}
-                ]}
+                ]},
+                {
+                  "id": "whatsapp",
+                  "label": "WhatsApp",
+                  "tipo": "phone",
+                  "obrigatoria": false,
+                  "placeholder": "(00) 00000-0000",
+                  "largura": 4
+                },
+                {
+                  "id": "adicionar_grupo",
+                  "label": "Adicionar ao grupo da Pipeelo?",
+                  "tipo": "select",
+                  "obrigatoria": false,
+                  "largura": 4,
+                  "opcoes": [
+                    { "value": "sim", "label": "Sim" },
+                    { "value": "nao", "label": "Não" }
+                  ]
+                }
               ]
             },
             {

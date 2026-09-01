@@ -11,6 +11,7 @@
 import { findGroupByName, sendText, EvolutionConfigError } from './evolution';
 import { getServiceSupabase } from './supabase';
 import { buildIntegrationRequestMessage } from './integration-request';
+import { addTeamToGroup } from './equipe-grupo';
 
 const TEMPLATE_COMPLETO = (empresa: string) => `✅ *Onboarding concluído!*
 
@@ -32,6 +33,7 @@ type SessionRow = {
   status_financeiro: string | null;
   status_suporte: string | null;
   status_vendas: string | null;
+  grupo_jid: string | null;
 };
 
 function isOnboardingFinished(s: SessionRow): boolean {
@@ -66,7 +68,7 @@ export async function maybeNotifyOnboardingComplete(
   const { data, error } = await supabase
     .from('onboarding_sessions')
     .select(
-      'id, empresa_nome, modo, notificacao_conclusao_enviada_at, ' +
+      'id, empresa_nome, modo, notificacao_conclusao_enviada_at, grupo_jid, cadastro, ' +
         'status_identificacao, status_sac_geral, status_financeiro, status_suporte, status_vendas'
     )
     .eq('id', sessionId)
@@ -99,7 +101,9 @@ export async function maybeNotifyOnboardingComplete(
   }
 
   try {
-    const group = await findGroupByName(data.empresa_nome);
+    const group = data.grupo_jid
+      ? { id: data.grupo_jid, subject: `Pipeelo & ${data.empresa_nome}` }
+      : await findGroupByName(data.empresa_nome);
     if (!group) {
       // Sem grupo: libera o claim pra permitir retry futuro (ex: admin cria o grupo depois).
       await supabase.rpc('release_notification_claim', { p_session_id: sessionId });
@@ -122,6 +126,10 @@ export async function maybeNotifyOnboardingComplete(
     } catch (e) {
       console.error('[whatsapp-notify] pedido de integração falhou:', e);
     }
+
+    // Equipe da seção "Equipe e Acessos" entra no grupo. Falha aqui não desfaz o claim.
+    const nomeFantasia = ((data as { cadastro?: { nome_fantasia?: string } | null }).cadastro?.nome_fantasia) || data.empresa_nome;
+    void addTeamToGroup(supabase, sessionId, group.id, nomeFantasia);
 
     return { sent: true, group: { id: group.id, name: group.subject } };
   } catch (e) {
