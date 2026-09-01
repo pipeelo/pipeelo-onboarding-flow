@@ -153,7 +153,13 @@ export default function Cadastro() {
       setResultado(grupo);
       try { localStorage.removeItem(storageKey(slug)); } catch { /* ok */ }
     } catch (e) {
-      setErro(e instanceof ApiError && e.status === 400 ? 'Algum campo está inválido. Revise os passos anteriores.' : 'Não foi possível enviar. Tente de novo em instantes.');
+      if (e instanceof ApiError && (e.status === 401 || e.status === 410)) {
+        setErro('Link inválido ou expirado. Peça um novo link ao seu contato na Pipeelo.');
+      } else if (e instanceof ApiError && e.status === 400) {
+        setErro('Algum campo está inválido. Revise os passos anteriores.');
+      } else {
+        setErro('Não foi possível enviar. Tente de novo em instantes.');
+      }
     } finally {
       setEnviando(false);
     }

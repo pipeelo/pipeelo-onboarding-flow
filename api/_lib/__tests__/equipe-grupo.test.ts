@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../evolution', () => ({
-  toJid: (d: string) => `55${d}@s.whatsapp.net`,
+  toJid: (phoneDigits: string) => {
+    let d = phoneDigits.replace(/\D/g, '');
+    if ((d.length === 12 || d.length === 13) && d.startsWith('55')) d = d.slice(2);
+    if (d.length !== 10 && d.length !== 11) throw new Error('telefone_invalido');
+    return `55${d}@s.whatsapp.net`;
+  },
   updateParticipants: vi.fn(async () => undefined),
   getParticipants: vi.fn(),
   getInviteUrl: vi.fn(async () => 'https://chat.whatsapp.com/abc'),
@@ -44,5 +49,11 @@ describe('addTeamToGroup', () => {
     (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
     const r = await addTeamToGroup(sb([{ pergunta_id: 'equipe_pessoas', valor: [pessoas[0], { nome: 'Zé', email: 'z@x.com', whatsapp: '123', adicionar_grupo: 'sim' }] }]), 's1', '1@g.us', 'X');
     expect(r.total).toBe(1);
+  });
+  it('adiciona quem digitou o whatsapp com +55 na frente', async () => {
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
+    const r = await addTeamToGroup(sb([{ pergunta_id: 'equipe_pessoas', valor: [{ nome: 'Ana', email: 'ana@x.com', whatsapp: '+55 43 99666-1541', adicionar_grupo: 'sim' }] }]), 's1', '1@g.us', 'X');
+    expect(updateParticipants).toHaveBeenCalledWith('1@g.us', 'add', ['5543996661541@s.whatsapp.net']);
+    expect(r).toEqual({ adicionados: 1, total: 1, nao_adicionados: [] });
   });
 });

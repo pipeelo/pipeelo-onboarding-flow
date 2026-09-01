@@ -29,11 +29,9 @@ export async function addTeamToGroup(
 
     const alvo: Array<{ nome: string; email?: string; jid: string }> = [];
     for (const p of lista) {
-      if ((p.adicionar_grupo ?? 'sim') !== 'sim' || !p.whatsapp) continue;
-      const digitos = p.whatsapp.replace(/\D/g, '');
-      if (digitos.length !== 10 && digitos.length !== 11) continue; // número inválido: ignora
+      if ((p.adicionar_grupo || 'sim') !== 'sim' || !p.whatsapp) continue;
       try {
-        alvo.push({ nome: p.nome?.trim() || p.email || 'sem nome', email: p.email?.trim() || undefined, jid: toJid(digitos) });
+        alvo.push({ nome: p.nome?.trim() || p.email || 'sem nome', email: p.email?.trim() || undefined, jid: toJid(p.whatsapp) });
       } catch { /* número inválido: ignora */ }
     }
     if (alvo.length === 0) return vazio;

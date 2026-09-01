@@ -26,6 +26,10 @@ describe('evolution grupo', () => {
   it('toJid rejeita número curto', () => {
     expect(() => toJid('99666')).toThrow('telefone_invalido');
   });
+  it('toJid aceita número já com o 55 na frente', () => {
+    expect(toJid('+55 43 99666-1541')).toBe('5543996661541@s.whatsapp.net');
+    expect(toJid('5543996661541')).toBe('5543996661541@s.whatsapp.net');
+  });
   it('groupSubject aplica o padrão', () => {
     expect(groupSubject('  Provedor X ')).toBe('Pipeelo & Provedor X');
   });

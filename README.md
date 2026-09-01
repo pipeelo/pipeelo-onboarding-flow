@@ -59,6 +59,7 @@ O cadastro com criação de grupo WhatsApp (`/cadastro/:slug`) depende destas va
 - `EVOLUTION_API_KEY`: chave de autenticação da instância Evolution.
 - `STAFF_GROUP_JID`: JID do grupo interno do Staff que recebe o aviso de novo cadastro.
 - `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto de convite ao grupo.
+- `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`: rate limit e cache de CNPJ; obrigatórias para `/api/sessions/create` e `/api/sessions/cadastro-submit`.
 
 ## What technologies are used for this project?
 

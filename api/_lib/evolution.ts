@@ -139,7 +139,8 @@ export async function sendText(jid: string, text: string): Promise<{ ok: true }>
 // ---- Grupos ---------------------------------------------------------------
 
 export function toJid(phoneDigits: string): string {
-  const d = phoneDigits.replace(/\D/g, '');
+  let d = phoneDigits.replace(/\D/g, '');
+  if ((d.length === 12 || d.length === 13) && d.startsWith('55')) d = d.slice(2);
   if (d.length !== 10 && d.length !== 11) throw new Error('telefone_invalido');
   return `55${d}@s.whatsapp.net`;
 }

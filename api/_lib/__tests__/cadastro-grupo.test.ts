@@ -18,7 +18,7 @@ vi.mock('../short-links', () => ({
 vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })) }));
 vi.mock('../email-sender', () => ({ sendTransactionalEmail: vi.fn(async () => ({ skipped: false })) }));
 
-import { createGroup, getParticipants, updateParticipants, sendText } from '../evolution';
+import { createGroup, getParticipants, updateParticipants, sendText, getInviteUrl } from '../evolution';
 import { notifyStaff } from '../staff-notify';
 import { sendTransactionalEmail } from '../email-sender';
 import { criarGrupoParaSessao } from '../cadastro-grupo';
@@ -117,6 +117,43 @@ describe('criarGrupoParaSessao', () => {
     if (r.status === 'criado') expect(r.nao_adicionados).toEqual(['43991112233']);
     expect(sendTransactionalEmail).not.toHaveBeenCalled();
     expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Sem e-mail para convite (chamar manualmente): 43991112233'));
+  });
+
+  it('getInviteUrl falha: grupo continua criado, participantes seguem sendo conferidos, erro isolado', async () => {
+    (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: null });
+    (getInviteUrl as never as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('invite indisponível'));
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
+    const sb = makeSupabase();
+
+    const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+    expect(r.status).toBe('criado');
+    if (r.status === 'criado') {
+      expect(r.jid).toBe('1@g.us');
+      expect(r.nao_adicionados).toEqual(['43991112233']); // conferência de participantes rodou normalmente
+      expect(r.erros).toEqual(expect.arrayContaining([expect.stringContaining('convite: invite indisponível')]));
+    }
+    // sem inviteUrl, não há como convidar por e-mail quem ficou de fora
+    expect(sendTransactionalEmail).not.toHaveBeenCalled();
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Falhas:'));
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('invite indisponível'));
+  });
+
+  it('falha ao enviar e-mail de convite é isolada: fica em erros mas não impede o restante do fluxo', async () => {
+    (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543991112233@s.whatsapp.net']); // só o João entrou
+    (sendTransactionalEmail as never as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('e-mail indisponível'));
+    const sb = makeSupabase();
+
+    const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+    expect(r.status).toBe('criado');
+    if (r.status === 'criado') {
+      expect(r.erros).toEqual(expect.arrayContaining([expect.stringContaining(`email ${cadastro.responsavel_whatsapp}: e-mail indisponível`)]));
+    }
+    expect(sendTransactionalEmail).toHaveBeenCalledTimes(1); // único elegível: só o responsável tem e-mail no Cadastro
+    expect(sendText).toHaveBeenCalled(); // boas-vindas segue mandada normalmente
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Falhas:'));
   });
 
   it('reaproveita grupo existente quando a sessão já tem grupo_jid', async () => {

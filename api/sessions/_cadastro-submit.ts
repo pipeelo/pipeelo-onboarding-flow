@@ -36,8 +36,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const session = (await assertSessionAccess(body.slug, body.token)) as Row;
 
     const ip = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ?? 'unknown';
-    const { success } = await createSessionLimiter().limit(`cadastro:${ip}`);
-    if (!success) return res.status(429).json({ error: 'rate_limited' });
+    // A sessão já está autenticada por slug+token; se o Upstash cair, seguimos
+    // sem limitar em vez de derrubar o cadastro (fail-open). Um { success: false }
+    // real ainda bloqueia com 429.
+    try {
+      const { success } = await createSessionLimiter().limit(`cadastro:${ip}`);
+      if (!success) return res.status(429).json({ error: 'rate_limited' });
+    } catch (e) {
+      console.warn('[cadastro-submit] rate limit indisponível, seguindo sem limitar:', e instanceof Error ? e.message : String(e));
+    }
 
     if (session.cadastro_enviado_at) {
       return res.status(200).json(estadoAtual(session));
@@ -56,9 +63,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 0 linhas afetadas: outra requisição concorrente já reivindicou o envio entre o
-    // assertSessionAccess e este UPDATE. Devolve o estado já carregado, sem criar grupo.
+    // assertSessionAccess e este UPDATE. Relê a sessão uma vez pra tentar pegar o
+    // grupo que a requisição vencedora acabou de criar, em vez do estado carregado
+    // antes da corrida (que ainda não tinha grupo_jid).
     if (!data || data.length === 0) {
-      return res.status(200).json(estadoAtual(session));
+      let atual: Row = session;
+      if (!session.grupo_jid) {
+        const { data: fresh } = await supabase
+          .from('onboarding_sessions')
+          .select('grupo_jid, grupo_invite_url, grupo_erro')
+          .eq('id', session.id)
+          .maybeSingle<Pick<Row, 'grupo_jid' | 'grupo_invite_url' | 'grupo_erro'>>();
+        if (fresh) atual = { ...session, ...fresh };
+      }
+      return res.status(200).json(estadoAtual(atual));
     }
 
     const grupo = await criarGrupoParaSessao(supabase, session, body.cadastro, {

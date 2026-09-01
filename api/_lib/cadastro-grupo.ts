@@ -116,25 +116,44 @@ export async function criarGrupoParaSessao(
     erros.push(`promote: ${msg(e)}`);
   }
 
-  // 3. Conferir quem entrou; quem ficou de fora recebe convite por e-mail
+  // 3a. Buscar o link de convite (se ainda não temos), independente do resto
+  if (!inviteUrl) {
+    try {
+      inviteUrl = await getInviteUrl(groupJid);
+      await patch(supabase, sessao.id, { grupo_invite_url: inviteUrl });
+    } catch (e) {
+      erros.push(`convite: ${msg(e)}`);
+    }
+  }
+
+  // 3b. Conferir quem entrou — falha aqui não impede o convite por e-mail abaixo
   let naoAdicionados: string[] = [];
+  let dentro = new Set<string>();
   try {
-    if (!inviteUrl) inviteUrl = await getInviteUrl(groupJid);
-    const dentro = new Set(await getParticipants(groupJid));
+    dentro = new Set(await getParticipants(groupJid));
     naoAdicionados = pessoas.filter((p) => !dentro.has(jidPor.get(p.whatsapp)!)).map((p) => p.whatsapp);
+  } catch (e) {
+    erros.push(`participantes: ${msg(e)}`);
+  }
+
+  // 3c. Quem ficou de fora recebe convite por e-mail — cada envio isolado, e só
+  // é possível quando temos o link do grupo.
+  if (inviteUrl) {
+    const url = inviteUrl;
     for (const p of pessoas) {
       if (dentro.has(jidPor.get(p.whatsapp)!) || !p.email) continue;
-      await sendTransactionalEmail({
-        template: 'ConviteGrupo',
-        sessionId: sessao.id,
-        to: p.email,
-        idempotencyKey: `convite-grupo:${sessao.id}:${p.whatsapp}`,
-        props: { nome: p.nome, empresaNome: cadastro.nome_fantasia, grupoNome: groupSubject(cadastro.nome_fantasia), inviteUrl },
-      });
+      try {
+        await sendTransactionalEmail({
+          template: 'ConviteGrupo',
+          sessionId: sessao.id,
+          to: p.email,
+          idempotencyKey: `convite-grupo:${sessao.id}:${p.whatsapp}`,
+          props: { nome: p.nome, empresaNome: cadastro.nome_fantasia, grupoNome: groupSubject(cadastro.nome_fantasia), inviteUrl: url },
+        });
+      } catch (e) {
+        erros.push(`email ${p.whatsapp}: ${msg(e)}`);
+      }
     }
-    if (inviteUrl) await patch(supabase, sessao.id, { grupo_invite_url: inviteUrl });
-  } catch (e) {
-    erros.push(`conferencia: ${msg(e)}`);
   }
 
   // 4. Boas-vindas com link curto do onboarding (uma vez só)

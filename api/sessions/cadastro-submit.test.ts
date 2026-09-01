@@ -7,7 +7,8 @@ vi.mock('../_lib/auth-session', async () => {
 });
 vi.mock('../_lib/supabase', () => ({ getServiceSupabase: vi.fn() }));
 vi.mock('../_lib/cadastro-grupo', () => ({ criarGrupoParaSessao: vi.fn() }));
-vi.mock('../_lib/ratelimit', () => ({ createSessionLimiter: () => ({ limit: vi.fn(async () => ({ success: true })) }) }));
+const limitMock = vi.fn(async () => ({ success: true }));
+vi.mock('../_lib/ratelimit', () => ({ createSessionLimiter: () => ({ limit: limitMock }) }));
 
 import { assertSessionAccess } from '../_lib/auth-session';
 import { getServiceSupabase } from '../_lib/supabase';
@@ -26,12 +27,21 @@ const body = { slug: 's', token: 'tok-32-chars-xxxxxxxxxxxxxxxxxx', cadastro };
 const sessao = { id: 's1', slug: 's', access_token: 'tok', empresa_nome: 'Provedor X', modo: 'completo', cadastro_enviado_at: null, grupo_jid: null };
 
 // Cadeia real do handler: .update(...).eq('id', ...).is('cadastro_enviado_at', null).select('id')
-function makeSupabase(selectResult: { data: unknown; error: unknown } = { data: [{ id: 's1' }], error: null }) {
-  const select = vi.fn(async () => selectResult);
-  const is = vi.fn(() => ({ select }));
+// e, na releitura pós-corrida: .select(...).eq('id', ...).maybeSingle()
+function makeSupabase(
+  selectResult: { data: unknown; error: unknown } = { data: [{ id: 's1' }], error: null },
+  freshResult: { data: unknown; error: unknown } = { data: null, error: null }
+) {
+  const updateSelect = vi.fn(async () => selectResult);
+  const is = vi.fn(() => ({ select: updateSelect }));
   const eq = vi.fn(() => ({ is }));
   const update = vi.fn(() => ({ eq }));
-  return { client: { from: vi.fn(() => ({ update })) }, update, select };
+
+  const maybeSingle = vi.fn(async () => freshResult);
+  const eqRead = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ eq: eqRead }));
+
+  return { client: { from: vi.fn(() => ({ update, select })) }, update, select, maybeSingle };
 }
 
 describe('POST /api/sessions/cadastro-submit', () => {
@@ -62,13 +72,28 @@ describe('POST /api/sessions/cadastro-submit', () => {
 
   it('corrida: UPDATE concorrente devolve 0 linhas → 200 com estado atual, sem criar grupo', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
-    const sb = makeSupabase({ data: [], error: null });
+    const sb = makeSupabase({ data: [], error: null }, { data: null, error: null });
     (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
 
     const r = await invokeHandler(handler as never, { method: 'POST', body });
 
     expect(r.statusCode).toBe(200);
     expect(r.body).toEqual({ ok: true, grupo: { status: 'erro', motivo: 'grupo_nao_criado' } });
+    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+  });
+
+  it('corrida: releitura pega o grupo criado pela requisição vencedora', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    const sb = makeSupabase(
+      { data: [], error: null },
+      { data: { grupo_jid: '9@g.us', grupo_invite_url: 'https://chat.whatsapp.com/y', grupo_erro: null }, error: null }
+    );
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
+
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+
+    expect(r.statusCode).toBe(200);
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '9@g.us', invite_url: 'https://chat.whatsapp.com/y', nao_adicionados: [] } });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
   });
 
@@ -85,6 +110,28 @@ describe('POST /api/sessions/cadastro-submit', () => {
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(500);
     expect(r.body).toEqual({ error: 'internal' });
+    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+  });
+
+  it('rate limit indisponível (Upstash lança): segue sem limitar, 200', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    limitMock.mockRejectedValueOnce(new Error('upstash indisponível'));
+    const sb = makeSupabase();
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
+    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] });
+
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+
+    expect(r.statusCode).toBe(200);
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] } });
+  });
+
+  it('rate limit real (success: false): 429', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    limitMock.mockResolvedValueOnce({ success: false });
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+    expect(r.statusCode).toBe(429);
+    expect(r.body).toEqual({ error: 'rate_limited' });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
   });
 });
