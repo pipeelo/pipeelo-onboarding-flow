@@ -19,6 +19,9 @@ import CredentialsReady, {
 import JarvisFailedAlert, {
   type JarvisFailedAlertProps,
 } from '../../src/emails/JarvisFailedAlert';
+import ConviteGrupo, {
+  type ConviteGrupoProps,
+} from '../../src/emails/ConviteGrupo';
 
 /**
  * Plan 05-02 — Wrapper transacional idempotente sobre Resend.
@@ -41,7 +44,8 @@ export type EmailTemplate =
   | 'WelcomeCEO'
   | 'ReminderStalled'
   | 'CredentialsReady'
-  | 'JarvisFailedAlert';
+  | 'JarvisFailedAlert'
+  | 'ConviteGrupo';
 
 // Mapping de subject por template.
 const SUBJECTS: Record<EmailTemplate, (props: unknown) => string> = {
@@ -57,6 +61,7 @@ const SUBJECTS: Record<EmailTemplate, (props: unknown) => string> = {
     const props = p as JarvisFailedAlertProps;
     return `[Jarvis] Falhou — ${props.sessionId.slice(0, 8)} (${props.empresaNome})`;
   },
+  ConviteGrupo: (p) => `Entre no grupo ${(p as ConviteGrupoProps).grupoNome} no WhatsApp`,
 };
 
 // Renderer mapping — separado por template pra type-safety dos props.
@@ -82,6 +87,8 @@ async function renderTemplate(
           props as JarvisFailedAlertProps,
         ),
       );
+    case 'ConviteGrupo':
+      return render(React.createElement(ConviteGrupo, props as ConviteGrupoProps));
     default: {
       const _exhaustive: never = template;
       throw new Error(`unknown template: ${String(_exhaustive)}`);
