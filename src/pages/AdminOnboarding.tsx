@@ -662,6 +662,16 @@ const AdminOnboarding = () => {
     return accessToken ? `${base}?token=${accessToken}` : base;
   };
 
+  const getCadastroUrl = (session: OnboardingSession) => {
+    const accessToken = (session as { access_token?: string }).access_token;
+    const base = `https://onboarding.pipeelo.com/cadastro/${session.slug}`;
+    return accessToken ? `${base}?token=${accessToken}` : base;
+  };
+  const copyCadastroLink = async (session: OnboardingSession) => {
+    await navigator.clipboard.writeText(getCadastroUrl(session));
+    toast.success('Link de cadastro copiado');
+  };
+
   const resolveShortLink = async (
     session: OnboardingSession,
     tipo: OnboardingTipo
@@ -742,6 +752,23 @@ const AdminOnboarding = () => {
       }
     } finally {
       setSendingWelcome(null);
+    }
+  };
+
+  const [recriando, setRecriando] = useState<string | null>(null);
+  const recriarGrupo = async (session: OnboardingSession) => {
+    setRecriando(session.id);
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const { grupo } = await adminSessionApi.recriarGrupo(authToken, session.id);
+      if (grupo.status === 'criado') toast.success(`Grupo criado: ${grupo.jid}`);
+      else toast.error(`Grupo falhou: ${grupo.motivo}`);
+      await fetchSessions();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao recriar grupo');
+    } finally {
+      setRecriando(null);
     }
   };
 
@@ -1129,6 +1156,15 @@ const AdminOnboarding = () => {
                             </>
                           )}
                           {getStatusBadge(session.status_vendas, 'Vendas')}
+                          {session.cadastro_enviado_at ? (
+                            session.grupo_jid ? (
+                              <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Cadastro + grupo OK</Badge>
+                            ) : (
+                              <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">Grupo com erro</Badge>
+                            )
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Cadastro pendente</Badge>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -1159,6 +1195,16 @@ const AdminOnboarding = () => {
                             session.modo === 'comercial' ? 'comercial' : 'completo';
                           return (
                             <>
+                              <Button variant="outline" size="sm" onClick={() => copyCadastroLink(session)}>
+                                <Copy className="w-4 h-4 mr-2" />
+                                Link de cadastro
+                              </Button>
+                              {session.cadastro_enviado_at && !session.grupo_jid && (
+                                <Button variant="outline" size="sm" disabled={recriando === session.id} onClick={() => recriarGrupo(session)}>
+                                  {recriando === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                                  Recriar grupo
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"

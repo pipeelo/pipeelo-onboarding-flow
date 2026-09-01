@@ -16,6 +16,7 @@ const routes: Array<[string, Loader]> = [
   ['/api/admin/sessions-delete',        () => import('../api/admin/_sessions-delete.ts')],
   ['/api/admin/short-links-create',     () => import('../api/admin/_short-links-create.ts')],
   ['/api/admin/whatsapp-send-welcome',  () => import('../api/admin/_whatsapp-send-welcome.ts')],
+  ['/api/admin/cadastro-recriar-grupo', () => import('../api/admin/_cadastro-recriar-grupo.ts')],
   ['/api/sessions/cnpj-lookup',         () => import('../api/sessions/_cnpj-lookup.ts')],
   ['/api/sessions/create',              () => import('../api/sessions/_create.ts')],
   ['/api/sessions/get',                 () => import('../api/sessions/_get.ts')],

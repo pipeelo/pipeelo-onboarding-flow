@@ -5,6 +5,7 @@ import sessionsList from './_sessions-list';
 import sessionsUpdate from './_sessions-update';
 import shortLinksCreate from './_short-links-create';
 import whatsappSendWelcome from './_whatsapp-send-welcome';
+import cadastroRecriarGrupo from './_cadastro-recriar-grupo';
 
 /**
  * Router /api/admin/[action] — consolida os endpoints admin em 1 serverless
@@ -18,6 +19,7 @@ const HANDLERS: Record<string, (req: VercelRequest, res: VercelResponse) => unkn
   'sessions-update': sessionsUpdate,
   'short-links-create': shortLinksCreate,
   'whatsapp-send-welcome': whatsappSendWelcome,
+  'cadastro-recriar-grupo': cadastroRecriarGrupo,
 };
 
 export default function handler(req: VercelRequest, res: VercelResponse) {

@@ -270,4 +270,10 @@ export const adminSessionApi = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+
+  recriarGrupo: (authToken: string, session_id: string) =>
+    adminApi<{ ok: true; grupo: ResultadoGrupoDTO }>('/api/admin/cadastro-recriar-grupo', authToken, {
+      method: 'POST',
+      body: JSON.stringify({ session_id }),
+    }),
 };
