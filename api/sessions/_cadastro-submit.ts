@@ -1,0 +1,54 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { CadastroSubmitSchema } from '../_lib/schemas/cadastro';
+import { assertSessionAccess, HttpError } from '../_lib/auth-session';
+import { getServiceSupabase } from '../_lib/supabase';
+import { createSessionLimiter } from '../_lib/ratelimit';
+import { criarGrupoParaSessao, type SessaoGrupo } from '../_lib/cadastro-grupo';
+
+type Row = SessaoGrupo & { cadastro_enviado_at?: string | null; grupo_invite_url?: string | null };
+
+/**
+ * POST /api/sessions/cadastro-submit — salva o cadastro e dispara a criação do grupo.
+ * Idempotente: segundo envio devolve o estado atual sem tocar na Evolution.
+ */
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+
+  try {
+    const body = CadastroSubmitSchema.parse(req.body);
+    const session = (await assertSessionAccess(body.slug, body.token)) as Row;
+
+    const ip = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ?? 'unknown';
+    const { success } = await createSessionLimiter().limit(`cadastro:${ip}`);
+    if (!success) return res.status(429).json({ error: 'rate_limited' });
+
+    if (session.cadastro_enviado_at) {
+      return res.status(200).json({
+        ok: true,
+        grupo: session.grupo_jid
+          ? { status: 'criado', jid: session.grupo_jid, invite_url: session.grupo_invite_url ?? null, nao_adicionados: [] }
+          : { status: 'erro', motivo: (session as { grupo_erro?: string }).grupo_erro ?? 'grupo_nao_criado' },
+      });
+    }
+
+    const supabase = getServiceSupabase();
+    const { error } = await supabase
+      .from('onboarding_sessions')
+      .update({ cadastro: body.cadastro, cadastro_enviado_at: new Date().toISOString() })
+      .eq('id', session.id);
+    if (error) throw new HttpError(500, error.message);
+
+    const grupo = await criarGrupoParaSessao(supabase, session, body.cadastro, {
+      host: req.headers.host,
+      proto: req.headers['x-forwarded-proto'] as string | undefined,
+    });
+    return res.status(200).json({ ok: true, grupo });
+  } catch (e: unknown) {
+    if (e instanceof HttpError) return res.status(e.status).json({ error: e.message });
+    const err = e as { name?: string; flatten?: () => unknown };
+    if (err.name === 'ZodError') return res.status(400).json({ error: 'invalid_payload', details: err.flatten?.() });
+    console.error('[sessions/cadastro-submit]', e);
+    return res.status(500).json({ error: 'internal' });
+  }
+}

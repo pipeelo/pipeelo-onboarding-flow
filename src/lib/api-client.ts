@@ -88,6 +88,10 @@ export type DepartamentoId =
   | 'suporte'
   | 'vendas';
 
+export type ResultadoGrupoDTO =
+  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[] }
+  | { status: 'erro'; motivo: string };
+
 export const sessionApi = {
   create: (input: { empresa_nome: string; cnpj: string; turnstileToken: string }) =>
     api<{ slug: string; access_token: string }>('/api/sessions/create', {
@@ -147,6 +151,12 @@ export const sessionApi = {
     api<{ ok: true; link_preview?: string }>('/api/sessions/send-magic-link', {
       method: 'POST',
       body: JSON.stringify({ slug }),
+    }),
+
+  cadastroSubmit: (input: { slug: string; token: string; cadastro: Record<string, unknown> }) =>
+    api<{ ok: true; grupo: ResultadoGrupoDTO }>('/api/sessions/cadastro-submit', {
+      method: 'POST',
+      body: JSON.stringify(input),
     }),
 };
 

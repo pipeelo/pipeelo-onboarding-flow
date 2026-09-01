@@ -24,6 +24,7 @@ const routes: Array<[string, Loader]> = [
   ['/api/sessions/send-magic-link',     () => import('../api/sessions/_send-magic-link.ts')],
   ['/api/sessions/upload-arquivo',      () => import('../api/sessions/_upload-arquivo.ts')],
   ['/api/sessions/validate-cnpj',       () => import('../api/sessions/_validate-cnpj.ts')],
+  ['/api/sessions/cadastro-submit',     () => import('../api/sessions/_cadastro-submit.ts')],
   ['/api/email/send-credentials',       () => import('../api/email/_send-credentials.ts')],
   ['/api/email/send-failure-alert',     () => import('../api/email/_send-failure-alert.ts')],
   ['/api/email/send-welcome',           () => import('../api/email/_send-welcome.ts')],
