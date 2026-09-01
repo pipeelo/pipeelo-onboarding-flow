@@ -62,6 +62,13 @@ export type SessionDTO = {
   valor_mensal?: number | string | null;
   dia_vencimento?: number | null;
   observacoes?: string | null;
+  cadastro?: Record<string, unknown> | null;
+  cadastro_enviado_at?: string | null;
+  grupo_jid?: string | null;
+  grupo_invite_url?: string | null;
+  grupo_criado_at?: string | null;
+  grupo_erro?: string | null;
+  notificacao_boas_vindas_enviada_at?: string | null;
   created_at?: string;
   updated_at?: string;
   [k: string]: unknown;
