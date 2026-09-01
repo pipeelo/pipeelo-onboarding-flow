@@ -135,3 +135,76 @@ export async function sendText(jid: string, text: string): Promise<{ ok: true }>
   }
   return { ok: true };
 }
+
+// ---- Grupos ---------------------------------------------------------------
+
+export function toJid(phoneDigits: string): string {
+  const d = phoneDigits.replace(/\D/g, '');
+  if (d.length !== 10 && d.length !== 11) throw new Error('telefone_invalido');
+  return `55${d}@s.whatsapp.net`;
+}
+
+export function groupSubject(nomeFantasia: string): string {
+  return `Pipeelo & ${nomeFantasia.trim().replace(/\s+/g, ' ')}`;
+}
+
+async function evoRequest<T>(path: string, init: RequestInit & { query?: Record<string, string> } = {}): Promise<T> {
+  const { baseUrl, instance, apiKey } = getConfig();
+  const qs = init.query ? '?' + new URLSearchParams(init.query).toString() : '';
+  const url = `${baseUrl}/${path}/${encodeURIComponent(instance)}${qs}`;
+  const r = await fetch(url, {
+    method: init.method ?? 'GET',
+    headers: { apikey: apiKey, 'Content-Type': 'application/json' },
+    body: init.body,
+  });
+  if (!r.ok) throw new EvolutionApiError(r.status, await r.text());
+  return (await r.json()) as T;
+}
+
+/**
+ * POST /group/create/{instance}. A Evolution v2 responde ora `{ groupJid, inviteCode }`,
+ * ora o metadata do grupo (`{ id, subject, ... }`). Aceitamos os dois.
+ */
+export async function createGroup(
+  subject: string,
+  participants: string[]
+): Promise<{ groupJid: string; inviteCode: string | null }> {
+  const data = await evoRequest<{ groupJid?: string; id?: string; inviteCode?: string }>('group/create', {
+    method: 'POST',
+    body: JSON.stringify({ subject, participants }),
+  });
+  const groupJid = data.groupJid ?? data.id;
+  if (!groupJid) throw new EvolutionApiError(502, 'group_create_sem_jid');
+  return { groupJid, inviteCode: data.inviteCode ?? null };
+}
+
+export async function updateParticipants(
+  groupJid: string,
+  action: 'add' | 'promote',
+  participants: string[]
+): Promise<void> {
+  if (participants.length === 0) return;
+  await evoRequest('group/updateParticipant', {
+    method: 'PUT',
+    query: { groupJid },
+    body: JSON.stringify({ action, participants }),
+  });
+}
+
+export async function getParticipants(groupJid: string): Promise<string[]> {
+  const data = await evoRequest<{ participants?: Array<{ id: string }> } | Array<{ id: string }>>(
+    'group/participants',
+    { query: { groupJid } }
+  );
+  const list = Array.isArray(data) ? data : data.participants ?? [];
+  return list.map((p) => p.id);
+}
+
+export async function getInviteUrl(groupJid: string): Promise<string> {
+  const data = await evoRequest<{ inviteCode?: string; inviteUrl?: string }>('group/inviteCode', {
+    query: { groupJid },
+  });
+  if (data.inviteUrl) return data.inviteUrl;
+  if (!data.inviteCode) throw new EvolutionApiError(502, 'invite_code_vazio');
+  return `https://chat.whatsapp.com/${data.inviteCode}`;
+}
