@@ -100,6 +100,23 @@ describe('criarGrupoParaSessao', () => {
     expect(r.status).toBe('criado');
     expect(sb.updates.some((u) => String((u as { grupo_erro?: string }).grupo_erro ?? '').includes('promote falhou'))).toBe(true);
     expect(sendText).toHaveBeenCalled();
+    if (r.status === 'criado') expect(r.erros).toEqual(['promote: promote falhou']);
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Falhas:'));
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('promote falhou'));
+  });
+
+  it('contato extra sem e-mail que não entrou aparece como "chamar manualmente" pro Staff', async () => {
+    (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
+    // Só a admin (Ana) entrou; o contato extra (João, sem e-mail no Cadastro) ficou de fora.
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
+    const sb = makeSupabase();
+
+    const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+    expect(r.status).toBe('criado');
+    if (r.status === 'criado') expect(r.nao_adicionados).toEqual(['43991112233']);
+    expect(sendTransactionalEmail).not.toHaveBeenCalled();
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Sem e-mail para convite (chamar manualmente): 43991112233'));
   });
 
   it('reaproveita grupo existente quando a sessão já tem grupo_jid', async () => {

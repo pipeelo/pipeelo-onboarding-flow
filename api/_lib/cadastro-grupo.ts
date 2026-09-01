@@ -19,7 +19,7 @@ export type SessaoGrupo = {
 };
 
 export type ResultadoGrupo =
-  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[] }
+  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[] }
   | { status: 'erro'; motivo: string };
 
 type Pessoa = { nome: string; whatsapp: string; email?: string; admin: boolean };
@@ -53,7 +53,18 @@ export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoG
     `Painel: ${(process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '')}/admin?s=${s.slug}`,
   ];
   if (r.status === 'criado' && r.nao_adicionados.length) {
-    linhas.push(`Não entraram (privacidade): ${r.nao_adicionados.join(', ')} — convite enviado por e-mail`);
+    // Só o responsável tem e-mail no Cadastro; contatos extras não têm campo de e-mail.
+    const comEmail = r.nao_adicionados.filter((w) => w === c.responsavel_whatsapp);
+    const semEmail = r.nao_adicionados.filter((w) => w !== c.responsavel_whatsapp);
+    if (comEmail.length) {
+      linhas.push(`Não entraram (privacidade): ${comEmail.join(', ')} — convite enviado por e-mail`);
+    }
+    if (semEmail.length) {
+      linhas.push(`Sem e-mail para convite (chamar manualmente): ${semEmail.join(', ')}`);
+    }
+  }
+  if (r.status === 'criado' && r.erros?.length) {
+    linhas.push(`⚠️ Falhas: ${r.erros.join(' | ')}`);
   }
   return linhas.join('\n');
 }
@@ -142,9 +153,14 @@ export async function criarGrupoParaSessao(
     }
   }
 
-  if (erros.length) await patch(supabase, sessao.id, { grupo_erro: erros.join(' | ') });
+  // Sempre grava o estado final de grupo_erro — limpa uma falha anterior quando a
+  // reexecução dá certo (ex.: reaproveitar grupo depois de um erro de promote).
+  await patch(supabase, sessao.id, { grupo_erro: erros.length ? erros.join(' | ') : null });
 
-  const resultado: ResultadoGrupo = { status: 'criado', jid: groupJid, invite_url: inviteUrl, nao_adicionados: naoAdicionados };
+  const resultado: ResultadoGrupo = {
+    status: 'criado', jid: groupJid, invite_url: inviteUrl, nao_adicionados: naoAdicionados,
+    erros: erros.length ? erros : undefined,
+  };
   await notifyStaff(mensagemStaffCadastro(sessao, cadastro, resultado));
   return resultado;
 }

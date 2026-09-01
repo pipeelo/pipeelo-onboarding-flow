@@ -25,10 +25,13 @@ const cadastro = {
 const body = { slug: 's', token: 'tok-32-chars-xxxxxxxxxxxxxxxxxx', cadastro };
 const sessao = { id: 's1', slug: 's', access_token: 'tok', empresa_nome: 'Provedor X', modo: 'completo', cadastro_enviado_at: null, grupo_jid: null };
 
-function makeSupabase() {
-  const eq = vi.fn(async () => ({ error: null }));
+// Cadeia real do handler: .update(...).eq('id', ...).is('cadastro_enviado_at', null).select('id')
+function makeSupabase(selectResult: { data: unknown; error: unknown } = { data: [{ id: 's1' }], error: null }) {
+  const select = vi.fn(async () => selectResult);
+  const is = vi.fn(() => ({ select }));
+  const eq = vi.fn(() => ({ is }));
   const update = vi.fn(() => ({ eq }));
-  return { client: { from: vi.fn(() => ({ update })) }, update };
+  return { client: { from: vi.fn(() => ({ update })) }, update, select };
 }
 
 describe('POST /api/sessions/cadastro-submit', () => {
@@ -57,18 +60,31 @@ describe('POST /api/sessions/cadastro-submit', () => {
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
   });
 
+  it('corrida: UPDATE concorrente devolve 0 linhas → 200 com estado atual, sem criar grupo', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    const sb = makeSupabase({ data: [], error: null });
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
+
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+
+    expect(r.statusCode).toBe(200);
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'erro', motivo: 'grupo_nao_criado' } });
+    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+  });
+
   it('400 com payload inválido', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
     const r = await invokeHandler(handler as never, { method: 'POST', body: { ...body, cadastro: { ...cadastro, aceite_dados: false } } });
     expect(r.statusCode).toBe(400);
   });
 
-  it('500 se salvar falhar; grupo não é criado', async () => {
+  it('500 se salvar falhar; grupo não é criado e a mensagem do banco não vaza pro cliente', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
-    const eq = vi.fn(async () => ({ error: { message: 'db down' } }));
-    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue({ from: () => ({ update: () => ({ eq }) }) });
+    const sb = makeSupabase({ data: null, error: { message: 'db down' } });
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(500);
+    expect(r.body).toEqual({ error: 'internal' });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
   });
 });
