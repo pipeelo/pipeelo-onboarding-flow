@@ -8,6 +8,7 @@ import Onboarding from "./pages/Onboarding";
 import OnboardingSession from "./pages/OnboardingSession";
 import AdminOnboarding from "./pages/AdminOnboarding";
 import ComercialEntry from "./pages/ComercialEntry";
+import Cadastro from "./pages/Cadastro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/novo" element={<NovoOnboarding />} />
           <Route path="/admin" element={<AdminOnboarding />} />
           <Route path="/comercial/:slug" element={<ComercialEntry />} />
+          <Route path="/cadastro/:slug" element={<Cadastro />} />
           <Route path="/:slug" element={<OnboardingSession />} />
           <Route path="/:slug/:departamento" element={<Onboarding />} />
           <Route path="*" element={<NotFound />} />
