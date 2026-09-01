@@ -63,10 +63,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       access_token: (session as { access_token?: string }).access_token,
       modo,
     });
-    const { short_url: shortUrl } = await ensureShortLink(supabase, {
-      session_id, modo, target_url: targetUrl,
-      host: req.headers.host, proto: req.headers['x-forwarded-proto'] as string | undefined,
-    });
+    let shortUrl: string;
+    try {
+      const result = await ensureShortLink(supabase, {
+        session_id, modo, target_url: targetUrl,
+        host: req.headers.host, proto: req.headers['x-forwarded-proto'] as string | undefined,
+      });
+      shortUrl = result.short_url;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'shortlink_generation_failed') {
+        return res.status(500).json({ error: 'shortlink_generation_failed' });
+      }
+      throw err;
+    }
 
     // 3. Buscar grupo WhatsApp: usa o grupo_jid salvo na sessão se existir,
     // senão cai pra busca por nome (fluxo legado).
