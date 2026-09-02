@@ -27,3 +27,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# relatórios de sessão do Claude (não versionar)
+.superpowers/
