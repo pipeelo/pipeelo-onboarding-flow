@@ -84,6 +84,8 @@ describe('formatadores', () => {
   it('data por extenso em pt-BR', () => {
     expect(dataPorExtenso(new Date(2026, 8, 2))).toBe('2 de setembro de 2026');
     expect(dataPorExtenso(new Date(2026, 2, 31))).toBe('31 de março de 2026');
+    // 23h30 em Brasília ainda é dia 2, mesmo já sendo dia 3 em UTC.
+    expect(dataPorExtenso(new Date('2026-09-03T02:30:00.000Z'))).toBe('2 de setembro de 2026');
   });
 
   it('CNPJ mascarado', () => {
@@ -95,8 +97,9 @@ describe('formatadores', () => {
 describe('dataAssinatura', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('usa o dia do envio do cadastro', () => {
+  it('usa o dia do envio do cadastro, no fuso de São Paulo', () => {
     expect(dataAssinatura('2026-09-15T13:20:00.000Z')).toBe('15 de setembro de 2026');
+    expect(dataAssinatura('2026-09-16T02:30:00.000Z')).toBe('15 de setembro de 2026');
   });
 
   it('cai para hoje sem carimbo ou com carimbo inválido', () => {

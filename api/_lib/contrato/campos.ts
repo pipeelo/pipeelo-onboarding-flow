@@ -48,10 +48,17 @@ const FAIXAS: Array<{ min: number; max: number; rotulo: string }> = [
   { min: 25000, max: Number.POSITIVE_INFINITY, rotulo: 'Acima de 25.000 sessões/mês' },
 ];
 
-const MESES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
+/**
+ * O contrato é assinado no Brasil: a data por extenso segue sempre o fuso de
+ * São Paulo, não o do servidor. Sem isso, um envio às 23h30 (BRT) vira o dia
+ * seguinte em UTC e o contrato sai com a data errada.
+ */
+const FORMATO_EXTENSO = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
 
 function numero(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null;
@@ -81,9 +88,10 @@ export function dataCurta(v: unknown): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
 }
 
-/** `new Date()` → `2 de setembro de 2026`. */
+/** `new Date()` → `2 de setembro de 2026` (sempre no fuso de São Paulo). */
 export function dataPorExtenso(d: Date = new Date()): string {
-  return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+  // NBSP aparece em algumas versões do ICU; o .docx fica melhor com espaço normal.
+  return FORMATO_EXTENSO.format(d).replace(/\u00a0/g, ' ');
 }
 
 /**

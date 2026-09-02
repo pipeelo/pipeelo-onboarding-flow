@@ -106,6 +106,23 @@ describe('POST /api/admin/cadastro-cobrar-conta-azul', () => {
     const r = await invokeHandler(cobrarHandler as never, { method: 'POST', body: {}, headers: auth });
     expect(r.statusCode).toBe(400);
   });
+
+  it('409 ja_cobrado quando a sessão já tem ca_cobrado_at', async () => {
+    sb({ ...sessaoOk, ca_cobrado_at: '2026-09-02T13:00:00.000Z' });
+    const r = await invokeHandler(cobrarHandler as never, { method: 'POST', body: { session_id: 's1' }, headers: auth });
+    expect(r.statusCode).toBe(409);
+    expect(r.body).toEqual({ error: 'ja_cobrado', ca_cobrado_at: '2026-09-02T13:00:00.000Z' });
+    expect(cobrarContaAzul).not.toHaveBeenCalled();
+  });
+
+  it('force: true refaz mesmo já cobrado', async () => {
+    sb({ ...sessaoOk, ca_cobrado_at: '2026-09-02T13:00:00.000Z' });
+    const r = await invokeHandler(cobrarHandler as never, {
+      method: 'POST', body: { session_id: 's1', force: true }, headers: auth,
+    });
+    expect(r.statusCode).toBe(200);
+    expect(cobrarContaAzul).toHaveBeenCalled();
+  });
 });
 
 describe('GET /api/admin/contrato-download', () => {

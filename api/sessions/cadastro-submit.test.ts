@@ -7,12 +7,14 @@ vi.mock('../_lib/auth-session', async () => {
 });
 vi.mock('../_lib/supabase', () => ({ getServiceSupabase: vi.fn() }));
 vi.mock('../_lib/cadastro-grupo', () => ({ criarGrupoParaSessao: vi.fn() }));
+vi.mock('../_lib/pos-cadastro', () => ({ processarPosCadastro: vi.fn(async () => ({})) }));
 const limitMock = vi.fn(async () => ({ success: true }));
 vi.mock('../_lib/ratelimit', () => ({ createSessionLimiter: () => ({ limit: limitMock }) }));
 
 import { assertSessionAccess } from '../_lib/auth-session';
 import { getServiceSupabase } from '../_lib/supabase';
 import { criarGrupoParaSessao } from '../_lib/cadastro-grupo';
+import { processarPosCadastro } from '../_lib/pos-cadastro';
 import handler from './_cadastro-submit';
 
 const upload = { path: 'p', nome_original: 'a.pdf', tamanho: 1 };
@@ -62,12 +64,56 @@ describe('POST /api/sessions/cadastro-submit', () => {
     expect(saved.cadastro_enviado_at).toBeTruthy();
   });
 
+  it('dispara o pós-cadastro depois do grupo, com o carimbo do envio, sem mudar a resposta', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    const sb = makeSupabase();
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
+
+    // O pós-cadastro só pode rodar depois que o grupo resolveu.
+    let grupoResolvido = false;
+    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      grupoResolvido = true;
+      return { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] };
+    });
+    let grupoJaTinhaResolvido = false;
+    (processarPosCadastro as never as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      grupoJaTinhaResolvido = grupoResolvido;
+      return {};
+    });
+
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+
+    // Resposta HTTP igual à de antes do pós-cadastro.
+    expect(r.statusCode).toBe(200);
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] } });
+
+    expect(processarPosCadastro).toHaveBeenCalledTimes(1);
+    expect(grupoJaTinhaResolvido).toBe(true);
+
+    const carimbo = (sb.update.mock.calls[0] as unknown as [Record<string, unknown>])[0].cadastro_enviado_at;
+    const sessaoRecebida = (processarPosCadastro as never as ReturnType<typeof vi.fn>).mock.calls[0][1] as Record<string, unknown>;
+    expect(sessaoRecebida.id).toBe('s1');
+    expect(sessaoRecebida.cadastro_enviado_at).toBe(carimbo);
+  });
+
+  it('pós-cadastro que falha não derruba a resposta', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    const sb = makeSupabase();
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
+    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] });
+    (processarPosCadastro as never as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('boom'));
+
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+    expect(r.statusCode).toBe(200);
+  });
+
   it('idempotente: cadastro já enviado devolve estado atual sem recriar grupo', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue({ ...sessao, cadastro_enviado_at: '2026-09-01', grupo_jid: '1@g.us', grupo_invite_url: 'https://chat.whatsapp.com/x' });
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(200);
     expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: 'https://chat.whatsapp.com/x', nao_adicionados: [] } });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
   it('corrida: UPDATE concorrente devolve 0 linhas → 200 com estado atual, sem criar grupo', async () => {
@@ -80,6 +126,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
     expect(r.statusCode).toBe(200);
     expect(r.body).toEqual({ ok: true, grupo: { status: 'erro', motivo: 'grupo_nao_criado' } });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
   it('corrida: releitura pega o grupo criado pela requisição vencedora', async () => {
@@ -95,6 +142,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
     expect(r.statusCode).toBe(200);
     expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '9@g.us', invite_url: 'https://chat.whatsapp.com/y', nao_adicionados: [] } });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
   it('400 com payload inválido', async () => {
@@ -111,6 +159,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
     expect(r.statusCode).toBe(500);
     expect(r.body).toEqual({ error: 'internal' });
     expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
   it('rate limit indisponível (Upstash lança): segue sem limitar, 200', async () => {

@@ -73,6 +73,12 @@ Depois do cadastro o serviço gera o contrato e cobra no Conta Azul (ver
 Sem `OPENAI_API_KEY` o contrato fica pendente; sem `CA_INTERNAL_SECRET` a cobrança fica pendente. Nos dois
 casos o cadastro e o grupo seguem normalmente e o `/admin` mostra o botão de reprocessar.
 
+O pipeline pós-cadastro roda em background no processo do EasyPanel (`server/index.ts`), depois da resposta
+HTTP — não em função da Vercel, que encerraria o processo antes de o contrato e a cobrança terminarem.
+
+O envio para assinatura eletrônica ainda é manual: o contrato nasce com `assinatura_status = 'pendente'`
+e a etapa automática entra quando o parceiro do Assina PDF liberar a API (decisão 7 do design).
+
 ## What technologies are used for this project?
 
 This project is built with:

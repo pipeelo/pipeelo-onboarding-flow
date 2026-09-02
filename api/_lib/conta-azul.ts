@@ -49,15 +49,62 @@ function presente(v: unknown): boolean {
   return v !== null && v !== undefined && String(v).trim() !== '';
 }
 
-function numero(v: unknown): number | null {
+/**
+ * Número vindo do banco ou de um campo de texto. Aceita `1234.56`, `"1234,56"`,
+ * `"1.234,56"` e `"1,234.56"`. Devolve null quando não dá para interpretar —
+ * quem chama trata como pendente, nunca manda `valor: null` para o Conta Azul.
+ */
+export function numero(v: unknown): number | null {
   if (!presente(v)) return null;
-  const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+
+  let s = String(v).trim().replace(/\s/g, '').replace(/^R\$/i, '');
+  const temVirgula = s.includes(',');
+  const temPonto = s.includes('.');
+
+  if (temVirgula && temPonto) {
+    // O último separador é o decimal; o outro é milhar.
+    s = s.lastIndexOf(',') > s.lastIndexOf('.')
+      ? s.replace(/\./g, '').replace(',', '.')
+      : s.replace(/,/g, '');
+  } else if (temVirgula) {
+    s = s.replace(',', '.');
+  } else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+    // Só pontos e em grupos de 3: é milhar ("1.234" = 1234, não 1,234).
+    s = s.replace(/\./g, '');
+  }
+
+  const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
 
 async function patch(supabase: SupabaseClient, id: string, data: Record<string, unknown>) {
   const { error } = await supabase.from('onboarding_sessions').update(data).eq('id', id);
   if (error) console.error('[conta-azul] update falhou:', error.message);
+}
+
+/**
+ * Marca em `ca_erro` que a cobrança está em curso. É a trava contra cobrança
+ * dupla: só quem consegue trocar a marca segue para o site. A condição
+ * `ca_cobrado_at is null` cobre a sessão já cobrada; a condição sobre `ca_erro`
+ * cobre duas execuções simultâneas (background do cadastro + botão do admin).
+ */
+export const EM_ANDAMENTO = 'processando';
+
+async function reservar(supabase: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('onboarding_sessions')
+    .update({ ca_erro: EM_ANDAMENTO })
+    .eq('id', id)
+    .is('ca_cobrado_at', null)
+    .or(`ca_erro.is.null,ca_erro.neq.${EM_ANDAMENTO}`)
+    .select('id');
+  if (error) {
+    // Sem conseguir reservar, não cobra: repetir é pior do que atrasar.
+    console.error('[conta-azul] reserva falhou:', error.message);
+    return false;
+  }
+  return Array.isArray(data) && data.length > 0;
 }
 
 /** Campos do fechamento sem os quais não dá para cobrar. */
@@ -86,11 +133,28 @@ export async function cobrarContaAzul(
   try {
     const faltando = faltamDadosDoFechamento(sessao);
     if (faltando.length) {
-      return { status: 'pendente', motivo: `faltam dados do fechamento: ${faltando.join(', ')}` };
+      return pendente(`faltam dados do fechamento: ${faltando.join(', ')}`, true);
+    }
+
+    const valorImplantacao = numero(sessao.valor_implantacao);
+    const valorMensal = numero(sessao.valor_mensal);
+    const diaVencimento = numero(sessao.dia_vencimento);
+    const invalidos = [
+      valorImplantacao === null ? 'valor da implantação' : '',
+      valorMensal === null ? 'valor mensal' : '',
+      diaVencimento === null ? 'dia de vencimento' : '',
+    ].filter(Boolean);
+    if (invalidos.length) {
+      return pendente(`valores inválidos no fechamento: ${invalidos.join(', ')}`, true);
     }
 
     const secret = process.env.CA_INTERNAL_SECRET;
     if (!secret) return pendente('CA_INTERNAL_SECRET não configurado', true);
+
+    // Trava contra cobrança dupla — depois das validações locais, antes da rede.
+    if (!(await reservar(supabase, sessao.id))) {
+      return { status: 'pendente', motivo: 'cobrança em andamento ou já feita' };
+    }
 
     const payload = {
       secret,
@@ -105,13 +169,13 @@ export async function cobrarContaAzul(
           : {}),
       },
       implantacao: {
-        valor: numero(sessao.valor_implantacao),
+        valor: valorImplantacao,
         vencimento: sessao.implantacao_vencimento,
       },
       mensalidade: {
-        valor: numero(sessao.valor_mensal),
+        valor: valorMensal,
         primeira_em: sessao.primeira_mensalidade_em,
-        dia_vencimento: numero(sessao.dia_vencimento),
+        dia_vencimento: diaVencimento,
       },
     };
 
@@ -129,12 +193,14 @@ export async function cobrarContaAzul(
     const corpo = (await resposta.json().catch(() => ({}))) as RespostaSite;
 
     // 409: outra execução já está criando as cobranças. Não é erro — só esperar.
+    // Libera a marca de "processando" para o próximo reprocesso poder tentar.
     if (resposta.status === 409) {
+      await patch(supabase, sessao.id, { ca_erro: null });
       return { status: 'pendente', motivo: 'cobrança já em andamento no Conta Azul; tentar de novo em instantes' };
     }
     if (resposta.status === 400 || resposta.status === 401) {
       const detalhe = corpo.erro || `HTTP ${resposta.status}`;
-      return { status: 'pendente', motivo: `Conta Azul recusou o pedido: ${detalhe}` };
+      return pendente(`Conta Azul recusou o pedido: ${detalhe}`, true);
     }
 
     // 200 com ok:false é falha de etapa — grava para o /admin mostrar.

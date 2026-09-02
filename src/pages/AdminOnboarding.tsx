@@ -1370,7 +1370,7 @@ const AdminOnboarding = () => {
                                   Gerar contrato
                                 </Button>
                               )}
-                              {session.cadastro_enviado_at && (
+                              {session.cadastro_enviado_at && !session.ca_cobrado_at && (
                                 <Button
                                   variant="outline"
                                   size="sm"

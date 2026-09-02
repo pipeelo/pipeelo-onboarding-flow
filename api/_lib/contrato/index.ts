@@ -193,6 +193,8 @@ export async function gerarContratoParaSessao(
       contrato_gerado_at: agora.toISOString(),
       contrato_extracao: extracao,
       contrato_erro: null,
+      // O envio para assinatura ainda é manual (decisão 7): nasce pendente.
+      assinatura_status: 'pendente',
     });
 
     return { status: 'gerado', path: caminho, representante: extracao.representante.nome, avisos };
