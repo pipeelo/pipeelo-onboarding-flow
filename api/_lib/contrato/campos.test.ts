@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { dataCurta, dataPorExtenso, formatarCnpj, inteiro, moeda, montarCampos, type SessaoContrato } from './campos';
+import { dataAssinatura, dataCurta, dataPorExtenso, formatarCnpj, inteiro, moeda, montarCampos, type SessaoContrato } from './campos';
 import type { Extracao } from './extracao';
 import type { Cadastro } from '../schemas/cadastro';
 import { placeholdersDoTemplate } from './template';
@@ -92,6 +92,21 @@ describe('formatadores', () => {
   });
 });
 
+describe('dataAssinatura', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('usa o dia do envio do cadastro', () => {
+    expect(dataAssinatura('2026-09-15T13:20:00.000Z')).toBe('15 de setembro de 2026');
+  });
+
+  it('cai para hoje sem carimbo ou com carimbo inválido', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 2, 10));
+    expect(dataAssinatura(null)).toBe('2 de setembro de 2026');
+    expect(dataAssinatura('xxx')).toBe('2 de setembro de 2026');
+  });
+});
+
 describe('montarCampos', () => {
   it('preenche todos os placeholders do template quando há dados', () => {
     vi.useFakeTimers();
@@ -108,7 +123,15 @@ describe('montarCampos', () => {
     expect(campos.CONTRATANTE_REPRESENTANTE).toBe('Ana Souza');
     expect(campos.CONTRATANTE_RG).toBe('12.345.678-9 SSP/PR');
     expect(campos.CONTRATANTE_CIDADE_ASSINATURA).toBe('LONDRINA');
+    // Sem `cadastro_enviado_at` na sessão, a data de assinatura cai para hoje.
     expect(campos.DATA_ASSINATURA).toBe('2 de setembro de 2026');
+    // Com o carimbo do envio, é o dia em que o cliente mandou o cadastro.
+    expect(
+      montarCampos({ ...sessao, cadastro_enviado_at: '2026-09-15T13:20:00.000Z' }, cadastro, extracao, {
+        municipio: 'LONDRINA',
+        uf: 'PR',
+      }).campos.DATA_ASSINATURA,
+    ).toBe('15 de setembro de 2026');
 
     expect(campos.ANEXO_PROVEDOR).toBe('Provedor X');
     expect(campos.ANEXO_ERP).toBe('IXC');

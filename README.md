@@ -61,6 +61,18 @@ O cadastro com criação de grupo WhatsApp (`/cadastro/:slug`) depende destas va
 - `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto de convite ao grupo.
 - `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`: rate limit e cache de CNPJ; obrigatórias para `/api/sessions/create` e `/api/sessions/cadastro-submit`.
 
+Depois do cadastro o serviço gera o contrato e cobra no Conta Azul (ver
+`docs/superpowers/specs/2026-09-02-pos-cadastro-contrato-conta-azul-design.md`). Essas etapas dependem de:
+
+- `OPENAI_API_KEY`: chave usada para ler o contrato social e o documento pessoal e identificar quem assina.
+- `OPENAI_MODEL_EXTRACAO`: modelo da leitura. Padrão `gpt-5-mini`.
+- `CA_INTERNAL_SECRET`: segredo compartilhado com o router de Conta Azul do site de vendas.
+- `VENDAS_API_URL`: base do site de vendas. Padrão `https://pipeelo.com` — use o domínio primário, porque
+  `vendas.pipeelo.com` só redireciona e o redirect pode descartar o corpo do POST.
+
+Sem `OPENAI_API_KEY` o contrato fica pendente; sem `CA_INTERNAL_SECRET` a cobrança fica pendente. Nos dois
+casos o cadastro e o grupo seguem normalmente e o `/admin` mostra o botão de reprocessar.
+
 ## What technologies are used for this project?
 
 This project is built with:

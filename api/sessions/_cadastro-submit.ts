@@ -4,8 +4,9 @@ import { assertSessionAccess, HttpError } from '../_lib/auth-session';
 import { getServiceSupabase } from '../_lib/supabase';
 import { createSessionLimiter } from '../_lib/ratelimit';
 import { criarGrupoParaSessao, type SessaoGrupo } from '../_lib/cadastro-grupo';
+import { processarPosCadastro, type SessaoPosCadastro } from '../_lib/pos-cadastro';
 
-type Row = SessaoGrupo & {
+type Row = SessaoGrupo & SessaoPosCadastro & {
   cadastro_enviado_at?: string | null;
   grupo_invite_url?: string | null;
   grupo_erro?: string | null;
@@ -51,9 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const supabase = getServiceSupabase();
+    const enviadoEm = new Date().toISOString();
     const { data, error } = await supabase
       .from('onboarding_sessions')
-      .update({ cadastro: body.cadastro, cadastro_enviado_at: new Date().toISOString() })
+      .update({ cadastro: body.cadastro, cadastro_enviado_at: enviadoEm })
       .eq('id', session.id)
       .is('cadastro_enviado_at', null)
       .select('id');
@@ -83,6 +85,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       host: req.headers.host,
       proto: req.headers['x-forwarded-proto'] as string | undefined,
     });
+    // Contrato + Conta Azul rodam em background: o cliente não espera (decisão 6).
+    void processarPosCadastro(supabase, { ...session, cadastro_enviado_at: enviadoEm }, body.cadastro)
+      .catch(console.error);
+
     return res.status(200).json({ ok: true, grupo });
   } catch (e: unknown) {
     if (e instanceof HttpError) return res.status(e.status).json({ error: e.message });

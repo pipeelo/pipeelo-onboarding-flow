@@ -86,6 +86,19 @@ export function dataPorExtenso(d: Date = new Date()): string {
   return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
+/**
+ * Data que vai no fecho do contrato: o dia em que o cliente enviou o cadastro
+ * (design, seção "Placeholders"). Sem esse carimbo — reprocesso de sessão
+ * antiga — cai para hoje.
+ */
+export function dataAssinatura(cadastroEnviadoAt?: string | null): string {
+  if (cadastroEnviadoAt && String(cadastroEnviadoAt).trim()) {
+    const d = new Date(cadastroEnviadoAt);
+    if (!Number.isNaN(d.getTime())) return dataPorExtenso(d);
+  }
+  return dataPorExtenso();
+}
+
 /** 14 dígitos → `11.222.333/0001-81`. */
 export function formatarCnpj(v: string): string {
   const d = (v || '').replace(/\D/g, '');
@@ -126,7 +139,7 @@ export function montarCampos(
     CONTRATANTE_CPF: rep?.cpf || '',
     CONTRATANTE_END_REP: rep?.endereco || '',
     CONTRATANTE_CIDADE_ASSINATURA: endereco?.municipio || '',
-    DATA_ASSINATURA: dataPorExtenso(),
+    DATA_ASSINATURA: dataAssinatura(sessao.cadastro_enviado_at),
 
     // Anexo I — cadastro e fechamento comercial prevalecem.
     ANEXO_PROVEDOR: cadastro.nome_fantasia || cadastro.razao_social || '',

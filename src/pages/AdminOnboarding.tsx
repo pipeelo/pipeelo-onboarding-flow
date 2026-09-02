@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Copy, Plus, Building2, ExternalLink, Check, Clock, RefreshCw, Trash2, Loader2, LogOut, Layers, X, ChevronDown, Send, CircleDollarSign } from 'lucide-react';
+import { Copy, Plus, Building2, ExternalLink, Check, Clock, RefreshCw, Trash2, Loader2, LogOut, Layers, X, ChevronDown, Send, CircleDollarSign, FileText, Download } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { PipeeloLogo } from '@/components/PipeeloLogo';
 import { AdminLogin } from '@/components/AdminLogin';
@@ -840,6 +840,55 @@ const AdminOnboarding = () => {
     }
   };
 
+  const [gerandoContrato, setGerandoContrato] = useState<string | null>(null);
+  const gerarContrato = async (session: OnboardingSession) => {
+    setGerandoContrato(session.id);
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const { contrato } = await adminSessionApi.gerarContrato(authToken, session.id);
+      if (contrato.status === 'gerado') toast.success(`Contrato gerado — assina ${contrato.representante}`);
+      else toast.error(`Contrato pendente: ${contrato.motivo}`);
+      await fetchSessions();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao gerar contrato');
+    } finally {
+      setGerandoContrato(null);
+    }
+  };
+
+  const [cobrandoCa, setCobrandoCa] = useState<string | null>(null);
+  const cobrarContaAzul = async (session: OnboardingSession) => {
+    setCobrandoCa(session.id);
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const { cobranca } = await adminSessionApi.cobrarContaAzul(authToken, session.id);
+      if (cobranca.status === 'cobrado') toast.success('Cobranças criadas no Conta Azul');
+      else toast.error(`Cobrança pendente: ${cobranca.motivo}`);
+      await fetchSessions();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao cobrar no Conta Azul');
+    } finally {
+      setCobrandoCa(null);
+    }
+  };
+
+  const [baixandoContrato, setBaixandoContrato] = useState<string | null>(null);
+  const baixarContrato = async (session: OnboardingSession) => {
+    setBaixandoContrato(session.id);
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const { url } = await adminSessionApi.contratoDownloadUrl(authToken, session.id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao baixar contrato');
+    } finally {
+      setBaixandoContrato(null);
+    }
+  };
+
   const getStatusBadge = (status: string | null, label: string) => {
     if (status === 'concluido') {
       return <Badge className="bg-green-500/20 text-green-500 border-green-500/30"><Check className="w-3 h-3 mr-1" />{label}</Badge>;
@@ -1233,6 +1282,24 @@ const AdminOnboarding = () => {
                           ) : (
                             <Badge variant="outline" className="text-xs">Cadastro pendente</Badge>
                           )}
+                          {session.cadastro_enviado_at && (
+                            <>
+                              {session.contrato_path ? (
+                                <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Contrato gerado</Badge>
+                              ) : (
+                                <Badge className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                  Contrato pendente{session.contrato_erro ? `: ${session.contrato_erro}` : ''}
+                                </Badge>
+                              )}
+                              {session.ca_cobrado_at ? (
+                                <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Cobrança OK</Badge>
+                              ) : (
+                                <Badge className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                  Cobrança pendente{session.ca_erro ? `: ${session.ca_erro}` : ''}
+                                </Badge>
+                              )}
+                            </>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -1277,6 +1344,58 @@ const AdminOnboarding = () => {
                                 >
                                   {recriando === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                                   {session.grupo_jid ? 'Reprocessar grupo' : 'Recriar grupo'}
+                                </Button>
+                              )}
+                              {session.cadastro_enviado_at && session.contrato_path && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={baixandoContrato === session.id}
+                                  onClick={() => baixarContrato(session)}
+                                  title="Abre o .docx do contrato com link temporário (60 min)"
+                                >
+                                  {baixandoContrato === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                                  Baixar contrato
+                                </Button>
+                              )}
+                              {session.cadastro_enviado_at && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={gerandoContrato === session.id}
+                                  onClick={() => gerarContrato(session)}
+                                  title="Lê os documentos de novo e regera o .docx do contrato"
+                                >
+                                  {gerandoContrato === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+                                  Gerar contrato
+                                </Button>
+                              )}
+                              {session.cadastro_enviado_at && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={cobrandoCa === session.id}
+                                  onClick={() => cobrarContaAzul(session)}
+                                  title="Cria o cliente e as cobranças de implantação e 1ª mensalidade no Conta Azul"
+                                >
+                                  {cobrandoCa === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CircleDollarSign className="w-4 h-4 mr-2" />}
+                                  Cobrar no Conta Azul
+                                </Button>
+                              )}
+                              {session.ca_implantacao_url && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={session.ca_implantacao_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Boleto implantação
+                                  </a>
+                                </Button>
+                              )}
+                              {session.ca_mensalidade_url && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={session.ca_mensalidade_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Boleto 1ª mensalidade
+                                  </a>
                                 </Button>
                               )}
                               <Button

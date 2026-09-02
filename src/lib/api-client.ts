@@ -104,6 +104,14 @@ export type DepartamentoId =
   | 'suporte'
   | 'vendas';
 
+export type ResultadoContratoDTO =
+  | { status: 'gerado'; path: string; representante: string; avisos: string[] }
+  | { status: 'pendente'; motivo: string; faltando: string[] };
+
+export type ResultadoCobrancaDTO =
+  | { status: 'cobrado'; implantacao_url: string | null; mensalidade_url: string | null; recorrente: boolean }
+  | { status: 'pendente'; motivo: string };
+
 export type ResultadoGrupoDTO =
   | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[]; equipe_pipeelo?: { adicionados: number; total: number } }
   | { status: 'erro'; motivo: string };
@@ -299,4 +307,23 @@ export const adminSessionApi = {
       method: 'POST',
       body: JSON.stringify({ session_id }),
     }),
+
+  gerarContrato: (authToken: string, session_id: string) =>
+    adminApi<{ ok: true; contrato: ResultadoContratoDTO }>('/api/admin/cadastro-gerar-contrato', authToken, {
+      method: 'POST',
+      body: JSON.stringify({ session_id }),
+    }),
+
+  cobrarContaAzul: (authToken: string, session_id: string) =>
+    adminApi<{ ok: true; cobranca: ResultadoCobrancaDTO }>('/api/admin/cadastro-cobrar-conta-azul', authToken, {
+      method: 'POST',
+      body: JSON.stringify({ session_id }),
+    }),
+
+  /** Link assinado (60 min) do `.docx` no bucket privado. */
+  contratoDownloadUrl: (authToken: string, session_id: string) =>
+    adminApi<{ url: string }>(
+      `/api/admin/contrato-download?session_id=${encodeURIComponent(session_id)}`,
+      authToken
+    ),
 };
