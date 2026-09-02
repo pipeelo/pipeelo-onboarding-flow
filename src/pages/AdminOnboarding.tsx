@@ -1132,8 +1132,8 @@ const AdminOnboarding = () => {
               return (
                 <Card key={session.id} className="bg-card/50 hover:bg-card/80 transition-colors">
                   <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      <div className="flex-1">
+                    <div className="flex flex-col gap-4">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <Building2 className="w-4 h-4 text-primary" />
                           <span className="font-semibold text-foreground">{session.empresa_nome}</span>
@@ -1189,7 +1189,7 @@ const AdminOnboarding = () => {
                         <ComercialEditor session={session} onSave={updateSessionStack} />
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
                         {(() => {
                           const sessionTipo: OnboardingTipo =
                             session.modo === 'comercial' ? 'comercial' : 'completo';
