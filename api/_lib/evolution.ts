@@ -185,20 +185,23 @@ export async function updateParticipants(
   participants: string[]
 ): Promise<void> {
   if (participants.length === 0) return;
+  // Evolution 2.3.x desta instância só aceita POST aqui (a doc v2 diz PUT → 404).
   await evoRequest('group/updateParticipant', {
-    method: 'PUT',
+    method: 'POST',
     query: { groupJid },
     body: JSON.stringify({ action, participants }),
   });
 }
 
+/**
+ * JIDs dos participantes. A Evolution 2.3.x devolve `id` como `…@lid` e o número real
+ * em `phoneNumber` (`55…@s.whatsapp.net`); preferimos o telefone para bater com `toJid`.
+ */
 export async function getParticipants(groupJid: string): Promise<string[]> {
-  const data = await evoRequest<{ participants?: Array<{ id: string }> } | Array<{ id: string }>>(
-    'group/participants',
-    { query: { groupJid } }
-  );
+  type P = { id: string; phoneNumber?: string | null };
+  const data = await evoRequest<{ participants?: P[] } | P[]>('group/participants', { query: { groupJid } });
   const list = Array.isArray(data) ? data : data.participants ?? [];
-  return list.map((p) => p.id);
+  return list.map((p) => p.phoneNumber || p.id);
 }
 
 export async function getInviteUrl(groupJid: string): Promise<string> {

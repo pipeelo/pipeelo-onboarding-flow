@@ -19,7 +19,7 @@ export type SessaoGrupo = {
 };
 
 export type ResultadoGrupo =
-  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[] }
+  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[]; equipe_pipeelo?: { adicionados: number; total: number } }
   | { status: 'erro'; motivo: string };
 
 type Pessoa = { nome: string; whatsapp: string; email?: string; admin: boolean };
@@ -40,33 +40,64 @@ async function patch(supabase: SupabaseClient, id: string, data: Record<string, 
   if (error) console.error('[cadastro-grupo] update falhou:', error.message);
 }
 
+function fmtTelefone(d: string): string {
+  const n = d.replace(/\D/g, '');
+  if (n.length === 11) return `(${n.slice(0, 2)}) ${n.slice(2, 7)}-${n.slice(7)}`;
+  if (n.length === 10) return `(${n.slice(0, 2)}) ${n.slice(2, 6)}-${n.slice(6)}`;
+  return d;
+}
+
+/** Traduz o erro bruto (JSON da Evolution, env faltando) para uma frase curta. */
+export function resumirErro(e: string): string {
+  if (/RESEND_API_KEY/.test(e)) return 'e-mail de convite não configurado (RESEND_API_KEY)';
+  const m = e.match(/"status":\s*(\d{3})/);
+  if (m) return `Evolution respondeu ${m[1]}`;
+  return e.length > 120 ? `${e.slice(0, 117)}…` : e;
+}
+
 export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoGrupo): string {
   const subject = groupSubject(c.nome_fantasia);
-  const grupo = r.status === 'criado' ? `${subject} (criado ✅)` : `${subject} (falhou ❌ ${r.motivo})`;
+  const base = (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
   const docs = c.doc_contrato_social.length + c.doc_responsaveis.length;
+  const nomePor = new Map<string, string>([[c.responsavel_whatsapp, c.responsavel_nome], ...c.contatos_extras.map((x) => [x.whatsapp, x.nome] as [string, string])]);
+
+  if (r.status === 'erro') {
+    return [
+      `📋 Cadastro recebido: ${c.nome_fantasia}`,
+      `❌ Grupo ${subject} NÃO foi criado: ${resumirErro(r.motivo)}`,
+      `Contato: ${c.responsavel_nome} — ${fmtTelefone(c.responsavel_whatsapp)}`,
+      `Ação: abrir ${base}/admin e clicar em "Recriar grupo".`,
+    ].join('
+');
+  }
+
   const linhas = [
     `📋 Cadastro recebido: ${c.nome_fantasia}`,
-    `Grupo: ${grupo}`,
-    `Admin: ${c.responsavel_nome} — ${c.responsavel_whatsapp}`,
-    `Documentos: ${docs} arquivo${docs === 1 ? '' : 's'}`,
-    `Contrato → ${c.contrato_email} · Vencimento dia ${c.dia_vencimento}`,
-    `Painel: ${(process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '')}/admin?s=${s.slug}`,
+    `✅ Grupo ${subject} criado — admin do cliente: ${c.responsavel_nome} (${fmtTelefone(c.responsavel_whatsapp)})`,
   ];
-  if (r.status === 'criado' && r.nao_adicionados.length) {
+  if (r.equipe_pipeelo) {
+    const { adicionados, total } = r.equipe_pipeelo;
+    linhas.push(adicionados === total ? `👥 Equipe Pipeelo no grupo: ${total} de ${total}` : `👥 Equipe Pipeelo no grupo: ${adicionados} de ${total} — ver falhas abaixo`);
+  }
+  linhas.push(`📎 ${docs} documento${docs === 1 ? '' : 's'} · contrato → ${c.contrato_email} · vencimento dia ${c.dia_vencimento}`);
+  linhas.push(`Painel: ${base}/admin`);
+
+  if (r.nao_adicionados.length) {
     // Só o responsável tem e-mail no Cadastro; contatos extras não têm campo de e-mail.
-    const comEmail = r.nao_adicionados.filter((w) => w === c.responsavel_whatsapp);
-    const semEmail = r.nao_adicionados.filter((w) => w !== c.responsavel_whatsapp);
-    if (comEmail.length) {
-      linhas.push(`Não entraram (privacidade): ${comEmail.join(', ')} — convite enviado por e-mail`);
-    }
-    if (semEmail.length) {
-      linhas.push(`Sem e-mail para convite (chamar manualmente): ${semEmail.join(', ')}`);
+    const emailOk = !r.erros?.some((e) => /^email /.test(e));
+    linhas.push('', 'Não entraram no grupo (privacidade do WhatsApp):');
+    for (const w of r.nao_adicionados) {
+      const nome = nomePor.get(w) ?? 'contato';
+      const temEmail = w === c.responsavel_whatsapp;
+      const fim = temEmail && emailOk ? 'convite enviado por e-mail' : 'sem convite por e-mail, chamar manualmente';
+      linhas.push(`• ${nome} — ${fmtTelefone(w)} — ${fim}`);
     }
   }
-  if (r.status === 'criado' && r.erros?.length) {
-    linhas.push(`⚠️ Falhas: ${r.erros.join(' | ')}`);
+  if (r.erros?.length) {
+    linhas.push('', `⚠️ Falhas: ${r.erros.map(resumirErro).join(' | ')}`);
   }
-  return linhas.join('\n');
+  return linhas.join('
+');
 }
 
 /**
@@ -88,6 +119,7 @@ export async function criarGrupoParaSessao(
   const erros: string[] = [];
   let groupJid = sessao.grupo_jid ?? null;
   let inviteUrl: string | null = null;
+  let equipe: { adicionados: number; total: number } | undefined;
 
   // 1. Criar (ou reaproveitar) o grupo
   try {
@@ -118,6 +150,9 @@ export async function criarGrupoParaSessao(
       const jaNoGrupo = new Set(await getParticipants(groupJid));
       const faltam = equipePipeelo.filter((j) => !jaNoGrupo.has(j) && !todosJids.includes(j));
       await updateParticipants(groupJid, 'add', faltam);
+      const depois = new Set(await getParticipants(groupJid));
+      const alvo = equipePipeelo.filter((j) => !todosJids.includes(j));
+      equipe = { adicionados: alvo.filter((j) => depois.has(j)).length, total: alvo.length };
     } catch (e) {
       erros.push(`equipe pipeelo: ${msg(e)}`);
     }

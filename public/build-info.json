@@ -1,1 +1,1 @@
-{"commit":"upload-sem-keepalive","feature":"Upload do cadastro/planilha sem keepalive (Chrome limita corpo keepalive a 64 KB) — questions.json 3.6.0/140"}
+{"commit":"evolution-post-lid","feature":"Evolution 2.3.x: updateParticipant via POST e participantes por phoneNumber (@lid); mensagem do Staff reescrita com equipe Pipeelo adicionada — questions.json 3.6.0/140"}

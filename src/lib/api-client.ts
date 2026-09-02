@@ -91,7 +91,7 @@ export type DepartamentoId =
   | 'vendas';
 
 export type ResultadoGrupoDTO =
-  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[] }
+  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[]; equipe_pipeelo?: { adicionados: number; total: number } }
   | { status: 'erro'; motivo: string };
 
 export const sessionApi = {

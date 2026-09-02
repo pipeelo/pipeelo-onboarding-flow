@@ -54,18 +54,22 @@ describe('evolution grupo', () => {
     await expect(createGroup('x', [])).rejects.toBeInstanceOf(EvolutionApiError);
   });
 
-  it('updateParticipants usa PUT /group/updateParticipant com groupJid na query', async () => {
+  it('updateParticipants usa POST /group/updateParticipant com groupJid na query', async () => {
     const f = mockFetch(200, {});
     await updateParticipants('1@g.us', 'promote', ['a@s.whatsapp.net']);
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://evo.test/group/updateParticipant/Avisos?groupJid=1%40g.us');
-    expect(init.method).toBe('PUT');
+    expect(init.method).toBe('POST');
     expect(JSON.parse(String(init.body))).toEqual({ action: 'promote', participants: ['a@s.whatsapp.net'] });
   });
 
   it('getParticipants devolve só os JIDs', async () => {
     mockFetch(200, { participants: [{ id: 'a@s.whatsapp.net', admin: 'admin' }, { id: 'b@s.whatsapp.net' }] });
     expect(await getParticipants('1@g.us')).toEqual(['a@s.whatsapp.net', 'b@s.whatsapp.net']);
+  });
+  it('getParticipants prefere phoneNumber quando o id vem como @lid (Evolution 2.3.x)', async () => {
+    mockFetch(200, { participants: [{ id: '8996@lid', phoneNumber: '5543996661541@s.whatsapp.net' }, { id: 'c@s.whatsapp.net', phoneNumber: null }] });
+    expect(await getParticipants('1@g.us')).toEqual(['5543996661541@s.whatsapp.net', 'c@s.whatsapp.net']);
   });
   it('getParticipants aceita array puro', async () => {
     mockFetch(200, [{ id: 'a@s.whatsapp.net' }]);
