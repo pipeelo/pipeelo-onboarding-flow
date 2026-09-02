@@ -100,3 +100,13 @@ describe('sessionApi', () => {
     }
   });
 });
+
+describe('sessionApi.uploadArquivo', () => {
+  it('não usa keepalive (corpo acima de 64 KB seria recusado pelo Chrome)', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ path: 'p', nome_original: 'a.pdf', tamanho: 1 }) }));
+    vi.stubGlobal('fetch', fetchMock);
+    await sessionApi.uploadArquivo({ slug: 's', token: 't'.repeat(32), departamento: 'cadastro', pergunta_id: 'doc_contrato_social', nome: 'a.pdf', base64: 'QUJD' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/sessions/upload-arquivo', expect.objectContaining({ keepalive: false }));
+    vi.unstubAllGlobals();
+  });
+});

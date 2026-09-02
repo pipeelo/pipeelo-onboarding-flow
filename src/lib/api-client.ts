@@ -18,10 +18,12 @@ export class ApiError extends Error {
 }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  // `keepalive` garante o autosave durante pagehide, mas o Chrome limita o corpo
+  // de requisições keepalive a 64 KB — upload de arquivo precisa desligar isso.
   const r = await fetch(path, {
+    keepalive: true,
     ...init,
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    keepalive: true,
   });
   if (!r.ok) {
     const body = await r.json().catch(() => ({} as { error?: string; code?: string }));
@@ -138,7 +140,8 @@ export const sessionApi = {
   }) =>
     api<{ path: string; nome_original: string; tamanho: number }>(
       '/api/sessions/upload-arquivo',
-      { method: 'POST', body: JSON.stringify(input) }
+      // Sem keepalive: corpo em base64 passa fácil dos 64 KB que o Chrome permite.
+      { method: 'POST', body: JSON.stringify(input), keepalive: false }
     ),
 
   cnpjLookup: (input: { slug: string; token: string; cnpj: string }) =>
