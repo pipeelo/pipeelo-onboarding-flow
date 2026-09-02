@@ -72,6 +72,9 @@ type ComercialPatch = {
   valor_mensal?: number | null;
   dia_vencimento?: number | null;
   observacoes?: string | null;
+  valor_implantacao?: number | null;
+  implantacao_vencimento?: string | null;
+  primeira_mensalidade_em?: string | null;
 };
 
 const DIAS_VENCIMENTO = Array.from({ length: 31 }, (_, i) => String(i + 1));
@@ -101,6 +104,13 @@ function formatBRL(v: number | string | null | undefined): string | null {
 function numToInput(v: number | string | null | undefined): string {
   if (v == null || v === '') return '';
   return String(v).replace('.', ',');
+}
+
+/** "YYYY-MM-DD" → "DD/MM" — sem passar por Date (evita fuso deslocando o dia). */
+function formatDateBR(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  return m ? `${m[3]}/${m[2]}` : null;
 }
 
 const STACK_FIELDS: Array<{
@@ -289,6 +299,9 @@ function ComercialEditor({
   const [valorMensal, setValorMensal] = useState('');
   const [diaVencimento, setDiaVencimento] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [valorImplantacao, setValorImplantacao] = useState('');
+  const [implantacaoVencimento, setImplantacaoVencimento] = useState('');
+  const [primeiraMensalidadeEm, setPrimeiraMensalidadeEm] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -298,6 +311,9 @@ function ComercialEditor({
       setValorMensal(numToInput(session.valor_mensal));
       setDiaVencimento(session.dia_vencimento != null ? String(session.dia_vencimento) : '');
       setObservacoes(session.observacoes ?? '');
+      setValorImplantacao(numToInput(session.valor_implantacao));
+      setImplantacaoVencimento(session.implantacao_vencimento ?? '');
+      setPrimeiraMensalidadeEm(session.primeira_mensalidade_em ?? '');
     }
   }, [
     open,
@@ -306,6 +322,9 @@ function ComercialEditor({
     session.valor_mensal,
     session.dia_vencimento,
     session.observacoes,
+    session.valor_implantacao,
+    session.implantacao_vencimento,
+    session.primeira_mensalidade_em,
   ]);
 
   const hasComercial =
@@ -313,7 +332,10 @@ function ComercialEditor({
     session.qtd_sessoes != null ||
     session.valor_mensal != null ||
     session.dia_vencimento != null ||
-    Boolean(session.observacoes);
+    Boolean(session.observacoes) ||
+    session.valor_implantacao != null ||
+    Boolean(session.implantacao_vencimento) ||
+    Boolean(session.primeira_mensalidade_em);
 
   const handleSave = async () => {
     setSaving(true);
@@ -324,6 +346,9 @@ function ComercialEditor({
         valor_mensal: parseMoney(valorMensal),
         dia_vencimento: diaVencimento ? Number(diaVencimento) : null,
         observacoes: observacoes.trim() || null,
+        valor_implantacao: parseMoney(valorImplantacao),
+        implantacao_vencimento: implantacaoVencimento || null,
+        primeira_mensalidade_em: primeiraMensalidadeEm || null,
       });
       setOpen(false);
     } finally {
@@ -343,6 +368,19 @@ function ComercialEditor({
       : null,
     session.dia_vencimento != null
       ? { label: 'Venc.', value: `dia ${session.dia_vencimento}` }
+      : null,
+    session.valor_implantacao != null
+      ? {
+          label: 'Implantação',
+          value: `${formatBRL(session.valor_implantacao) ?? ''}${
+            session.implantacao_vencimento
+              ? ` · venc ${formatDateBR(session.implantacao_vencimento)}`
+              : ''
+          }`,
+        }
+      : null,
+    session.primeira_mensalidade_em
+      ? { label: '1ª mensalidade', value: formatDateBR(session.primeira_mensalidade_em) ?? '' }
       : null,
     session.observacoes
       ? {
@@ -435,6 +473,36 @@ function ComercialEditor({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Valor da implantação (R$)</label>
+            <Input
+              inputMode="decimal"
+              placeholder="1.500,00"
+              value={valorImplantacao}
+              onChange={(e) => setValorImplantacao(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Venc. da implantação</label>
+            <Input
+              type="date"
+              value={implantacaoVencimento}
+              onChange={(e) => setImplantacaoVencimento(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1 col-span-2">
+            <label className="text-xs text-muted-foreground">Data da 1ª mensalidade</label>
+            <Input
+              type="date"
+              value={primeiraMensalidadeEm}
+              onChange={(e) => setPrimeiraMensalidadeEm(e.target.value)}
+              className="h-9"
+            />
           </div>
         </div>
         <div className="space-y-1">

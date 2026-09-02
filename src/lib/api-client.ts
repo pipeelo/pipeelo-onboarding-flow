@@ -64,6 +64,20 @@ export type SessionDTO = {
   valor_mensal?: number | string | null;
   dia_vencimento?: number | null;
   observacoes?: string | null;
+  // Valores do fechamento — implantação + 1ª mensalidade (pós-cadastro)
+  valor_implantacao?: number | string | null;
+  implantacao_vencimento?: string | null;
+  primeira_mensalidade_em?: string | null;
+  // Contrato automático + Conta Azul (pós-cadastro)
+  contrato_path?: string | null;
+  contrato_gerado_at?: string | null;
+  contrato_erro?: string | null;
+  ca_cliente_id?: string | null;
+  ca_implantacao_url?: string | null;
+  ca_mensalidade_url?: string | null;
+  ca_cobrado_at?: string | null;
+  ca_erro?: string | null;
+  assinatura_status?: string | null;
   cadastro?: Record<string, unknown> | null;
   cadastro_enviado_at?: string | null;
   grupo_jid?: string | null;
@@ -201,6 +215,9 @@ export type ComercialPatch = {
   valor_mensal?: number | null;
   dia_vencimento?: number | null;
   observacoes?: string | null;
+  valor_implantacao?: number | null;
+  implantacao_vencimento?: string | null;
+  primeira_mensalidade_em?: string | null;
 };
 
 export const ERP_OPTIONS = ['IXC', 'SGP', 'MK Solution', 'RBX', 'Topp Sap', 'Hubsoft', 'Voalle', 'Outros'] as const;
@@ -228,6 +245,9 @@ export const adminSessionApi = {
       valor_mensal?: number;
       dia_vencimento?: number;
       observacoes?: string;
+      valor_implantacao?: number;
+      implantacao_vencimento?: string;
+      primeira_mensalidade_em?: string;
     }
   ) =>
     adminApi<{ session: SessionDTO }>('/api/admin/sessions-create', authToken, {

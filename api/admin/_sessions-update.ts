@@ -11,6 +11,13 @@ const GATEWAY_OPTIONS = ['7AZ (Bemobi)', 'Outros'] as const;
 const nullableEnum = <T extends readonly [string, ...string[]]>(vals: T) =>
   z.enum(vals).nullable().or(z.literal('').transform(() => null));
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const nullableIsoDate = z
+  .string()
+  .regex(ISO_DATE, 'formato de data inválido (YYYY-MM-DD)')
+  .nullable()
+  .or(z.literal('').transform(() => null));
+
 const Body = z.object({
   session_id: z.string().uuid(),
   erp: nullableEnum(ERP_OPTIONS).optional(),
@@ -24,6 +31,10 @@ const Body = z.object({
   valor_mensal: z.number().positive().max(9999999999.99).nullable().optional(),
   dia_vencimento: z.number().int().min(1).max(31).nullable().optional(),
   observacoes: z.string().max(4000).nullable().optional(),
+  // Valores do fechamento — implantação + 1ª mensalidade (Design pós-cadastro, decisão 4)
+  valor_implantacao: z.number().positive().max(99999999.99).nullable().optional(),
+  implantacao_vencimento: nullableIsoDate.optional(),
+  primeira_mensalidade_em: nullableIsoDate.optional(),
 });
 
 /**
@@ -56,6 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if ('valor_mensal' in body) patch.valor_mensal = body.valor_mensal ?? null;
     if ('dia_vencimento' in body) patch.dia_vencimento = body.dia_vencimento ?? null;
     if ('observacoes' in body) patch.observacoes = body.observacoes?.trim() || null;
+    if ('valor_implantacao' in body) patch.valor_implantacao = body.valor_implantacao ?? null;
+    if ('implantacao_vencimento' in body)
+      patch.implantacao_vencimento = body.implantacao_vencimento ?? null;
+    if ('primeira_mensalidade_em' in body)
+      patch.primeira_mensalidade_em = body.primeira_mensalidade_em ?? null;
 
     if (Object.keys(patch).length === 0) {
       return res.status(400).json({ error: 'no_fields_to_update' });

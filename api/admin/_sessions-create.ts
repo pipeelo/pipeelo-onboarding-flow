@@ -13,6 +13,14 @@ const GATEWAY_OPTIONS = ['7AZ (Bemobi)', 'Outros'] as const;
 const optionalEnum = <T extends readonly [string, ...string[]]>(vals: T) =>
   z.enum(vals).optional().or(z.literal('').transform(() => undefined)).or(z.null().transform(() => undefined));
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const optionalIsoDate = z
+  .string()
+  .regex(ISO_DATE, 'formato de data inválido (YYYY-MM-DD)')
+  .optional()
+  .nullable()
+  .or(z.literal('').transform(() => undefined));
+
 const Body = z.object({
   empresa_nome: z.string().min(2).max(160),
   ceo_email: z.string().email().optional().or(z.literal('').transform(() => undefined)),
@@ -28,6 +36,10 @@ const Body = z.object({
   valor_mensal: z.number().positive().max(9999999999.99).optional().nullable(),
   dia_vencimento: z.number().int().min(1).max(31).optional().nullable(),
   observacoes: z.string().max(4000).optional().nullable(),
+  // Valores do fechamento — implantação + 1ª mensalidade (Design pós-cadastro, decisão 4)
+  valor_implantacao: z.number().positive().max(99999999.99).optional().nullable(),
+  implantacao_vencimento: optionalIsoDate,
+  primeira_mensalidade_em: optionalIsoDate,
 });
 
 /**
@@ -75,6 +87,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         valor_mensal: body.valor_mensal ?? null,
         dia_vencimento: body.dia_vencimento ?? null,
         observacoes: body.observacoes?.trim() || null,
+        valor_implantacao: body.valor_implantacao ?? null,
+        implantacao_vencimento: body.implantacao_vencimento ?? null,
+        primeira_mensalidade_em: body.primeira_mensalidade_em ?? null,
         status_identificacao: 'pendente',
         status_sac_geral: statusDeptoExtra,
         status_financeiro: statusDeptoExtra,
