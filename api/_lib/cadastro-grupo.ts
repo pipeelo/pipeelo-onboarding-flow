@@ -67,8 +67,7 @@ export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoG
       `❌ Grupo ${subject} NÃO foi criado: ${resumirErro(r.motivo)}`,
       `Contato: ${c.responsavel_nome} — ${fmtTelefone(c.responsavel_whatsapp)}`,
       `Ação: abrir ${base}/admin e clicar em "Recriar grupo".`,
-    ].join('
-');
+    ].join('\n');
   }
 
   const linhas = [
@@ -96,8 +95,7 @@ export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoG
   if (r.erros?.length) {
     linhas.push('', `⚠️ Falhas: ${r.erros.map(resumirErro).join(' | ')}`);
   }
-  return linhas.join('
-');
+  return linhas.join('\n');
 }
 
 /**

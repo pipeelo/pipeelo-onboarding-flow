@@ -129,7 +129,7 @@ describe('criarGrupoParaSessao', () => {
 
     expect(r).toEqual({ status: 'erro', motivo: 'evolution 500' });
     expect(sb.updates.some((u) => (u as { grupo_erro?: string }).grupo_erro === 'evolution 500')).toBe(true);
-    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('falhou'));
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('NÃO foi criado'));
     expect(sendText).not.toHaveBeenCalled();
   });
 
@@ -160,7 +160,7 @@ describe('criarGrupoParaSessao', () => {
     expect(r.status).toBe('criado');
     if (r.status === 'criado') expect(r.nao_adicionados).toEqual(['43991112233']);
     expect(sendTransactionalEmail).not.toHaveBeenCalled();
-    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Sem e-mail para convite (chamar manualmente): 43991112233'));
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('João — (43) 99111-2233 — sem convite por e-mail, chamar manualmente'));
   });
 
   it('getInviteUrl falha: grupo continua criado, participantes seguem sendo conferidos, erro isolado', async () => {
