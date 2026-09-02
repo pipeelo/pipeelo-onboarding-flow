@@ -109,6 +109,22 @@ export async function criarGrupoParaSessao(
     return resultado;
   }
 
+  // 1b. Equipe Pipeelo: todo mundo que está no grupo Staff entra no grupo do cliente.
+  // Falha aqui não bloqueia; fica em grupo_erro e o Staff é avisado.
+  const staffJid = process.env.STAFF_GROUP_JID;
+  if (staffJid) {
+    try {
+      const equipePipeelo = await getParticipants(staffJid);
+      const jaNoGrupo = new Set(await getParticipants(groupJid));
+      const faltam = equipePipeelo.filter((j) => !jaNoGrupo.has(j) && !todosJids.includes(j));
+      await updateParticipants(groupJid, 'add', faltam);
+    } catch (e) {
+      erros.push(`equipe pipeelo: ${msg(e)}`);
+    }
+  } else {
+    console.warn('[cadastro-grupo] STAFF_GROUP_JID não configurado; equipe Pipeelo não adicionada');
+  }
+
   // 2. Promover admin
   try {
     await updateParticipants(groupJid, 'promote', [adminJid]);

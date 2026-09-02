@@ -62,6 +62,50 @@ describe('criarGrupoParaSessao', () => {
     expect(sendTransactionalEmail).not.toHaveBeenCalled();
   });
 
+  it('equipe Pipeelo (membros do grupo Staff) entra no grupo do cliente, sem repetir quem já está', async () => {
+    process.env.STAFF_GROUP_JID = 'staff@g.us';
+    try {
+      (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
+      (getParticipants as never as ReturnType<typeof vi.fn>)
+        // 1ª chamada: membros do Staff (inclui o número da instância, que já é dono do grupo novo)
+        .mockResolvedValueOnce(['5511900000001@s.whatsapp.net', '5511900000002@s.whatsapp.net', '5543996661541@s.whatsapp.net'])
+        // 2ª chamada: quem já está no grupo recém-criado
+        .mockResolvedValueOnce(['5511900000001@s.whatsapp.net', '5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net'])
+        // 3ª chamada (conferência do passo 3b)
+        .mockResolvedValue(['5511900000001@s.whatsapp.net', '5511900000002@s.whatsapp.net', '5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net']);
+      const sb = makeSupabase();
+
+      const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+      expect(r.status).toBe('criado');
+      expect(getParticipants).toHaveBeenCalledWith('staff@g.us');
+      expect(updateParticipants).toHaveBeenCalledWith('1@g.us', 'add', ['5511900000002@s.whatsapp.net']);
+      if (r.status === 'criado') expect(r.nao_adicionados).toEqual([]);
+    } finally {
+      delete process.env.STAFF_GROUP_JID;
+    }
+  });
+
+  it('falha ao buscar o Staff não bloqueia: erro fica registrado e o fluxo segue', async () => {
+    process.env.STAFF_GROUP_JID = 'staff@g.us';
+    try {
+      (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
+      (getParticipants as never as ReturnType<typeof vi.fn>)
+        .mockRejectedValueOnce(new Error('staff indisponível'))
+        .mockResolvedValue(['5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net']);
+      const sb = makeSupabase();
+
+      const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+      expect(r.status).toBe('criado');
+      if (r.status === 'criado') expect(r.erros).toEqual(expect.arrayContaining([expect.stringContaining('equipe pipeelo: staff indisponível')]));
+      expect(sendText).toHaveBeenCalled();
+      expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Falhas:'));
+    } finally {
+      delete process.env.STAFF_GROUP_JID;
+    }
+  });
+
   it('quem não entrou recebe e-mail de convite e volta em nao_adicionados', async () => {
     (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: null });
     (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543991112233@s.whatsapp.net']);
