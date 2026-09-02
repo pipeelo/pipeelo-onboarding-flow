@@ -7,6 +7,7 @@ vi.mock('../contrato', () => ({
 }));
 vi.mock('../conta-azul', () => ({ cobrarContaAzul: vi.fn() }));
 vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })) }));
+vi.mock('../assinatura', () => ({ enviarParaAssinatura: vi.fn(async () => ({ status: 'enviado', solicitacao_id: 66, link: 'https://x/l', dm: true, grupo: true, reenvio: false })) }));
 
 import { gerarContratoParaSessao } from '../contrato';
 import { cobrarContaAzul } from '../conta-azul';

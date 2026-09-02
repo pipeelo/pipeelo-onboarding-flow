@@ -121,13 +121,19 @@ describe('gerarContratoParaSessao', () => {
     expect(extrairMock.mock.calls[0][0].map((a: { nome: string; mime: string }) => a.mime))
       .toEqual(['application/pdf', 'image/jpeg']);
 
-    expect(sb.uploads).toHaveLength(1);
+    // .docx (editável, Staff) + .pdf (o que vai para a AssinaPDF).
+    expect(sb.uploads).toHaveLength(2);
     expect(sb.uploads[0].bucket).toBe(CONTRATO_BUCKET);
     expect(sb.uploads[0].corpo.subarray(0, 2).toString()).toBe('PK');
     expect(textoDoDocx(sb.uploads[0].corpo)).toContain('Ana Souza');
+    expect(sb.uploads[1].corpo.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(r.status === 'gerado' && r.pdf_path).toMatch(/\.pdf$/);
 
     const patch = sb.updates.at(-1)!;
     expect(patch.contrato_path).toBe(r.path);
+    expect(patch.contrato_pdf_path).toBe(r.status === 'gerado' ? r.pdf_path : null);
+    expect(patch.assinatura_status).toBe('pendente');
+    expect(patch.assinapdf_solicitacao_id).toBeNull();
     expect(patch.contrato_erro).toBeNull();
     expect(patch.contrato_extracao).toEqual(extracaoOk);
     expect(typeof patch.contrato_gerado_at).toBe('string');

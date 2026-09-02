@@ -14,7 +14,7 @@ import {
  */
 
 // ─── Identidade visual (skill pipeelo-financeiro) ────────────
-const COR = {
+export const COR = {
   navy: '1a2151',
   verde: '01d5ac',
   cinza: 'b0b0b0',
@@ -27,7 +27,7 @@ const TAM = { titulo: 28, clausula: 24, corpo: 24, rodape: 18 } as const;
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.join(DIR, 'template-contrato.md');
-const LOGO_PATH = path.join(DIR, 'assets', 'logo.png');
+export const LOGO_PATH = path.join(DIR, 'assets', 'logo.png');
 
 const RE_PLACEHOLDER = /\{\{([A-Z_]+)\}\}/g;
 const RE_SEPARADOR = /^[─—-]{5,}$/;
@@ -195,7 +195,7 @@ export function placeholdersDoTemplate(markdown?: string): string[] {
   return [...new Set([...alvo.matchAll(RE_PLACEHOLDER)].map((m) => m[1]))].sort();
 }
 
-function trocar(texto: string, valores: Record<string, string>, faltando: Set<string>): string {
+export function trocar(texto: string, valores: Record<string, string>, faltando: Set<string>): string {
   return texto.replace(RE_PLACEHOLDER, (_, chave: string) => {
     const v = valores[chave];
     if (v === undefined || String(v).trim() === '') {

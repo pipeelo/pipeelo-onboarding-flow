@@ -78,6 +78,16 @@ export type SessionDTO = {
   ca_cobrado_at?: string | null;
   ca_erro?: string | null;
   assinatura_status?: string | null;
+  // Assinatura pela AssinaPDF
+  contrato_pdf_path?: string | null;
+  assinapdf_solicitacao_id?: number | null;
+  assinapdf_link?: string | null;
+  assinapdf_estado?: string | null;
+  assinatura_enviada_at?: string | null;
+  assinatura_assinada_at?: string | null;
+  assinatura_finalizada_at?: string | null;
+  assinatura_erro?: string | null;
+  contrato_assinado_path?: string | null;
   cadastro?: Record<string, unknown> | null;
   cadastro_enviado_at?: string | null;
   grupo_jid?: string | null;
@@ -105,8 +115,37 @@ export type DepartamentoId =
   | 'vendas';
 
 export type ResultadoContratoDTO =
-  | { status: 'gerado'; path: string; representante: string; avisos: string[] }
+  | { status: 'gerado'; path: string; pdf_path?: string | null; representante: string; avisos: string[] }
   | { status: 'pendente'; motivo: string; faltando: string[] };
+
+export type ResultadoAssinaturaDTO =
+  | { status: 'enviado'; solicitacao_id: number; link: string; dm: boolean; grupo: boolean; reenvio: boolean }
+  | { status: 'pendente'; motivo: string };
+
+export type AssinaturaSignerDocDTO = { doc: string; file: string; campo: string; url: string | null };
+export type AssinaturaSignerDTO = {
+  id: number;
+  posicao_cli: number;
+  nome_cli: string;
+  estado: string;
+  nome: string;
+  cpf: string;
+  telefone?: string | null;
+  assinatura_url?: string | null;
+  documentos: AssinaturaSignerDocDTO[];
+  localizacao?: string | null;
+  ip?: string | null;
+  dispositivo?: string | null;
+  sisop?: string | null;
+  dta?: string | null;
+};
+export type AssinaturaDetalhesDTO = {
+  ok: true;
+  estado: string;
+  status: string | null;
+  link: string | null;
+  signers: AssinaturaSignerDTO[];
+};
 
 export type ResultadoCobrancaDTO =
   | { status: 'cobrado'; implantacao_url: string | null; mensalidade_url: string | null; recorrente: boolean }
@@ -320,10 +359,34 @@ export const adminSessionApi = {
       body: JSON.stringify({ session_id }),
     }),
 
-  /** Link assinado (60 min) do `.docx` no bucket privado. */
-  contratoDownloadUrl: (authToken: string, session_id: string) =>
+  /** Link assinado (60 min) do contrato no bucket privado (`docx`, `pdf` ou `assinado`). */
+  contratoDownloadUrl: (authToken: string, session_id: string, tipo: 'docx' | 'pdf' | 'assinado' = 'docx') =>
     adminApi<{ url: string }>(
-      `/api/admin/contrato-download?session_id=${encodeURIComponent(session_id)}`,
+      `/api/admin/contrato-download?session_id=${encodeURIComponent(session_id)}&tipo=${tipo}`,
       authToken
     ),
+
+  enviarAssinatura: (authToken: string, session_id: string, apenas_reenviar = false) =>
+    adminApi<{ ok: true; assinatura: ResultadoAssinaturaDTO }>('/api/admin/assinatura-enviar', authToken, {
+      method: 'POST',
+      body: JSON.stringify({ session_id, apenas_reenviar }),
+    }),
+
+  assinaturaDetalhes: (authToken: string, session_id: string) =>
+    adminApi<AssinaturaDetalhesDTO>(
+      `/api/admin/assinatura-detalhes?session_id=${encodeURIComponent(session_id)}`,
+      authToken
+    ),
+
+  aprovarAssinatura: (authToken: string, session_id: string) =>
+    adminApi<{ ok: true }>('/api/admin/assinatura-aprovar', authToken, {
+      method: 'POST',
+      body: JSON.stringify({ acao: 'aprovar', session_id }),
+    }),
+
+  corrigirAssinatura: (authToken: string, session_id: string, motivo: string, itens: string[]) =>
+    adminApi<{ ok: true }>('/api/admin/assinatura-aprovar', authToken, {
+      method: 'POST',
+      body: JSON.stringify({ acao: 'corrigir', session_id, motivo, itens }),
+    }),
 };

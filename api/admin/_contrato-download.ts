@@ -7,7 +7,7 @@ import { CONTRATO_BUCKET } from '../_lib/contrato';
 const EXPIRA_EM_SEGUNDOS = 60 * 60;
 
 /**
- * GET /api/admin/contrato-download?session_id=…
+ * GET /api/admin/contrato-download?session_id=…&tipo=docx|pdf|assinado
  *   200 { url } — link assinado (60 min) do bucket privado `onboarding-contratos`.
  *   Com `redirect=1`, responde 302 direto para o arquivo.
  */
@@ -23,16 +23,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const supabase = getServiceSupabase();
     const { data, error } = await supabase
       .from('onboarding_sessions')
-      .select('id, contrato_path')
+      .select('id, contrato_path, contrato_pdf_path, contrato_assinado_path')
       .eq('id', sessionId)
-      .maybeSingle<{ id: string; contrato_path: string | null }>();
+      .maybeSingle<{ id: string; contrato_path: string | null; contrato_pdf_path: string | null; contrato_assinado_path: string | null }>();
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(404).json({ error: 'session_not_found' });
-    if (!data.contrato_path) return res.status(409).json({ error: 'contrato_nao_gerado' });
+
+    const tipo = (Array.isArray(req.query.tipo) ? req.query.tipo[0] : req.query.tipo) || 'docx';
+    const caminho = tipo === 'assinado' ? data.contrato_assinado_path : tipo === 'pdf' ? data.contrato_pdf_path : data.contrato_path;
+    if (!caminho) return res.status(409).json({ error: tipo === 'assinado' ? 'contrato_assinado_indisponivel' : 'contrato_nao_gerado' });
 
     const { data: assinado, error: erroUrl } = await supabase.storage
       .from(CONTRATO_BUCKET)
-      .createSignedUrl(data.contrato_path, EXPIRA_EM_SEGUNDOS);
+      .createSignedUrl(caminho, EXPIRA_EM_SEGUNDOS);
     if (erroUrl || !assinado?.signedUrl) {
       return res.status(500).json({ error: erroUrl?.message ?? 'signed_url_falhou' });
     }

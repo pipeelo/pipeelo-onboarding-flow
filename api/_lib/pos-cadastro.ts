@@ -5,6 +5,7 @@ import type { SessaoContrato } from './contrato/campos';
 import { dataCurta, moeda } from './contrato/campos';
 import { cobrarContaAzul, type ResultadoCobranca, type SessaoCobranca } from './conta-azul';
 import { notifyStaff } from './staff-notify';
+import { enviarParaAssinatura, type ResultadoAssinatura, type SessaoAssinatura } from './assinatura';
 
 /**
  * Etapas que rodam depois do grupo de WhatsApp: contrato e cobrança no Conta
@@ -15,7 +16,8 @@ import { notifyStaff } from './staff-notify';
  */
 
 export type SessaoPosCadastro = SessaoContrato &
-  SessaoCobranca & {
+  SessaoCobranca &
+  Omit<SessaoAssinatura, 'id'> & {
     contrato_path?: string | null;
     contrato_erro?: string | null;
     contrato_extracao?: { endereco_sede?: string | null; representante?: { nome?: string | null } | null } | null;
@@ -25,7 +27,7 @@ export type SessaoPosCadastro = SessaoContrato &
     ca_cobrado_at?: string | null;
   };
 
-export type ResultadoPosCadastro = { contrato: ResultadoContrato; cobranca: ResultadoCobranca };
+export type ResultadoPosCadastro = { contrato: ResultadoContrato; assinatura: ResultadoAssinatura | null; cobranca: ResultadoCobranca };
 
 function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -45,6 +47,7 @@ export function mensagemStaffPosCadastro(
   sessao: SessaoPosCadastro,
   contrato: ResultadoContrato,
   cobranca: ResultadoCobranca,
+  assinatura: ResultadoAssinatura | null = null,
 ): string {
   const base = (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
   const linhas: string[] = [];
@@ -55,6 +58,17 @@ export function mensagemStaffPosCadastro(
   } else {
     const faltam = contrato.faltando.length ? `; faltam: ${contrato.faltando.join(', ')}` : '';
     linhas.push(`📄 Contrato de ${nomeFantasia}: ⚠️ pendente — ${contrato.motivo}${faltam}`);
+  }
+
+  if (contrato.status === 'gerado') {
+    if (!assinatura) {
+      linhas.push('✍️ Assinatura: não enviada (sem PDF) · enviar pelo painel');
+    } else if (assinatura.status === 'enviado') {
+      const por = [assinatura.dm ? 'WhatsApp do responsável' : null, assinatura.grupo ? 'grupo' : null].filter(Boolean).join(' + ');
+      linhas.push(`✍️ Assinatura: link enviado${por ? ` (${por})` : ''} · ${assinatura.link}`);
+    } else {
+      linhas.push(`✍️ Assinatura: ⚠️ pendente — ${assinatura.motivo}`);
+    }
   }
 
   if (cobranca.status === 'cobrado') {
@@ -100,6 +114,28 @@ export async function processarPosCadastro(
     }
   }
 
+  // 1b. Assinatura — só com contrato gerado e PDF; pula quando já enviada sem erro.
+  let assinatura: ResultadoAssinatura | null = null;
+  if (contrato.status === 'gerado') {
+    const pdfPath = contrato.pdf_path ?? sessao.contrato_pdf_path ?? null;
+    const jaEnviada = Boolean(sessao.assinapdf_solicitacao_id && sessao.assinapdf_link && !sessao.assinatura_erro
+      && sessao.assinatura_status && sessao.assinatura_status !== 'pendente' && sessao.assinatura_status !== 'erro');
+    if (jaEnviada) {
+      assinatura = { status: 'enviado', solicitacao_id: sessao.assinapdf_solicitacao_id as number, link: sessao.assinapdf_link as string, dm: true, grupo: true, reenvio: true };
+    } else if (pdfPath) {
+      try {
+        assinatura = await enviarParaAssinatura(
+          supabase,
+          { ...sessao, contrato_pdf_path: pdfPath, contrato_extracao: sessao.contrato_extracao ?? null },
+          cadastro,
+        );
+      } catch (e) {
+        assinatura = { status: 'pendente', motivo: `Erro inesperado ao enviar para assinatura: ${msg(e)}` };
+        console.error('[pos-cadastro] assinatura:', e);
+      }
+    }
+  }
+
   // 2. Conta Azul — pula quando já cobrado.
   let cobranca: ResultadoCobranca;
   if (sessao.ca_cobrado_at) {
@@ -121,11 +157,11 @@ export async function processarPosCadastro(
   // 3. Um aviso só, com os dois blocos.
   if (opts.avisarStaff !== false) {
     try {
-      await notifyStaff(mensagemStaffPosCadastro(cadastro.nome_fantasia, sessao, contrato, cobranca));
+      await notifyStaff(mensagemStaffPosCadastro(cadastro.nome_fantasia, sessao, contrato, cobranca, assinatura));
     } catch (e) {
       console.error('[pos-cadastro] aviso no Staff falhou:', e);
     }
   }
 
-  return { contrato, cobranca };
+  return { contrato, assinatura, cobranca };
 }

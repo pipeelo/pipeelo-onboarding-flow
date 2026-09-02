@@ -9,6 +9,9 @@ import cadastroRecriarGrupo from './_cadastro-recriar-grupo';
 import cadastroGerarContrato from './_cadastro-gerar-contrato';
 import cadastroCobrarContaAzul from './_cadastro-cobrar-conta-azul';
 import contratoDownload from './_contrato-download';
+import assinaturaEnviar from './_assinatura-enviar';
+import assinaturaDetalhes from './_assinatura-detalhes';
+import assinaturaAprovar from './_assinatura-aprovar';
 
 /**
  * Router /api/admin/[action] — consolida os endpoints admin em 1 serverless
@@ -26,6 +29,9 @@ const HANDLERS: Record<string, (req: VercelRequest, res: VercelResponse) => unkn
   'cadastro-gerar-contrato': cadastroGerarContrato,
   'cadastro-cobrar-conta-azul': cadastroCobrarContaAzul,
   'contrato-download': contratoDownload,
+  'assinatura-enviar': assinaturaEnviar,
+  'assinatura-detalhes': assinaturaDetalhes,
+  'assinatura-aprovar': assinaturaAprovar,
 };
 
 export default function handler(req: VercelRequest, res: VercelResponse) {

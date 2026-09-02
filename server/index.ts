@@ -20,6 +20,9 @@ const routes: Array<[string, Loader]> = [
   ['/api/admin/cadastro-gerar-contrato', () => import('../api/admin/_cadastro-gerar-contrato.ts')],
   ['/api/admin/cadastro-cobrar-conta-azul', () => import('../api/admin/_cadastro-cobrar-conta-azul.ts')],
   ['/api/admin/contrato-download',      () => import('../api/admin/_contrato-download.ts')],
+  ['/api/admin/assinatura-enviar',      () => import('../api/admin/_assinatura-enviar.ts')],
+  ['/api/admin/assinatura-detalhes',    () => import('../api/admin/_assinatura-detalhes.ts')],
+  ['/api/admin/assinatura-aprovar',     () => import('../api/admin/_assinatura-aprovar.ts')],
   ['/api/sessions/cnpj-lookup',         () => import('../api/sessions/_cnpj-lookup.ts')],
   ['/api/sessions/create',              () => import('../api/sessions/_create.ts')],
   ['/api/sessions/get',                 () => import('../api/sessions/_get.ts')],
@@ -39,6 +42,7 @@ const routes: Array<[string, Loader]> = [
   ['/api/sync-department',              () => import('../api/sync-department.ts')],
   ['/api/cron/reconcile-webhooks',      () => import('../api/cron/reconcile-webhooks.ts')],
   ['/api/cron/reminder-stalled',        () => import('../api/cron/reminder-stalled.ts')],
+  ['/api/cron/assinatura-poll',         () => import('../api/cron/assinatura-poll.ts')],
 ];
 
 const app = express();
@@ -88,3 +92,25 @@ const port = Number(process.env.PORT ?? 8080);
 app.listen(port, '0.0.0.0', () => {
   console.log(`[server] listening on :${port}`);
 });
+
+// Polling da AssinaPDF (sem webhook): a cada N minutos. ASSINATURA_POLL_MINUTOS=0 desliga.
+const pollMinutos = Number(process.env.ASSINATURA_POLL_MINUTOS ?? 10);
+if (Number.isFinite(pollMinutos) && pollMinutos > 0) {
+  let rodando = false;
+  const tick = async () => {
+    if (rodando) return;
+    rodando = true;
+    try {
+      const mod = await import('../api/cron/assinatura-poll.ts');
+      const r = await mod.executarPollAssinatura();
+      if (r.consultadas || r.erros.length) console.log('[assinatura-poll]', JSON.stringify(r));
+    } catch (e) {
+      console.error('[assinatura-poll] falhou:', e instanceof Error ? e.message : e);
+    } finally {
+      rodando = false;
+    }
+  };
+  setTimeout(tick, 30_000);
+  setInterval(tick, pollMinutos * 60_000);
+  console.log(`[server] polling da assinatura a cada ${pollMinutos} min`);
+}

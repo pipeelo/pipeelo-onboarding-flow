@@ -5,6 +5,7 @@ import { fetchCnpj } from '../brasilapi';
 import { extrairDocumentos, type ArquivoEntrada, type Extracao } from './extracao';
 import { montarCampos, type EnderecoCnpj, type SessaoContrato } from './campos';
 import { CamposFaltando, renderDocx } from './template';
+import { renderPdf } from './pdf';
 
 /**
  * Orquestra a geração do contrato de uma sessão: baixa os documentos, lê com a
@@ -17,7 +18,7 @@ import { CamposFaltando, renderDocx } from './template';
 export const CONTRATO_BUCKET = 'onboarding-contratos';
 
 export type ResultadoContrato =
-  | { status: 'gerado'; path: string; representante: string; avisos: string[] }
+  | { status: 'gerado'; path: string; pdf_path: string | null; representante: string; avisos: string[] }
   | { status: 'pendente'; motivo: string; faltando: string[] };
 
 const MIMES: Record<string, string> = {
@@ -175,11 +176,19 @@ export async function gerarContratoParaSessao(
       return pendente(`Falha ao montar o .docx: ${msg(e)}`, [], extracao);
     }
 
+    // 6b. PDF — o que vai para a AssinaPDF. Falha aqui não derruba o .docx.
+    let pdf: Buffer | null = null;
+    try {
+      pdf = await renderPdf(campos, { crm: Boolean(sessao.contratou_crm) });
+    } catch (e) {
+      avisos.push(`PDF não gerado (${msg(e)}) — a assinatura fica pendente`);
+    }
+
     // 7. Upload.
     const agora = new Date();
     const mmaaaa = `${String(agora.getMonth() + 1).padStart(2, '0')}${agora.getFullYear()}`;
-    const nome = `Contrato_Pipeelo_${slugArquivo(cadastro.nome_fantasia)}_${mmaaaa}.docx`;
-    const caminho = `${sessao.id}/${nome}`;
+    const base = `Contrato_Pipeelo_${slugArquivo(cadastro.nome_fantasia)}_${mmaaaa}`;
+    const caminho = `${sessao.id}/${base}.docx`;
 
     const { error: upErr } = await supabase.storage.from(CONTRATO_BUCKET).upload(caminho, buffer, {
       contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -187,17 +196,38 @@ export async function gerarContratoParaSessao(
     });
     if (upErr) return pendente(`Falha ao salvar o contrato no storage: ${upErr.message}`, [], extracao);
 
-    // 8. Sessão.
+    let caminhoPdf: string | null = null;
+    if (pdf) {
+      caminhoPdf = `${sessao.id}/${base}.pdf`;
+      const { error: upPdf } = await supabase.storage.from(CONTRATO_BUCKET).upload(caminhoPdf, pdf, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+      if (upPdf) {
+        avisos.push(`PDF não salvo no storage (${upPdf.message}) — a assinatura fica pendente`);
+        caminhoPdf = null;
+      }
+    }
+
+    // 8. Sessão. Contrato novo zera a assinatura anterior: o envio recomeça.
     await patch(supabase, sessao.id, {
       contrato_path: caminho,
+      contrato_pdf_path: caminhoPdf,
       contrato_gerado_at: agora.toISOString(),
       contrato_extracao: extracao,
       contrato_erro: null,
-      // O envio para assinatura ainda é manual (decisão 7): nasce pendente.
       assinatura_status: 'pendente',
+      assinatura_erro: null,
+      assinapdf_solicitacao_id: null,
+      assinapdf_link: null,
+      assinapdf_estado: null,
+      assinatura_enviada_at: null,
+      assinatura_assinada_at: null,
+      assinatura_finalizada_at: null,
+      contrato_assinado_path: null,
     });
 
-    return { status: 'gerado', path: caminho, representante: extracao.representante.nome, avisos };
+    return { status: 'gerado', path: caminho, pdf_path: caminhoPdf, representante: extracao.representante.nome, avisos };
   } catch (e) {
     // Rede de segurança: gerarContratoParaSessao nunca lança.
     const motivo = `Erro inesperado ao gerar o contrato: ${msg(e)}`;

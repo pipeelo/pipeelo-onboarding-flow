@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Copy, Plus, Building2, ExternalLink, Check, Clock, RefreshCw, Trash2, Loader2, LogOut, Layers, X, ChevronDown, Send, CircleDollarSign, FileText, Download } from 'lucide-react';
+import { Copy, Plus, Building2, ExternalLink, Check, Clock, RefreshCw, Trash2, Loader2, LogOut, Layers, X, ChevronDown, Send, CircleDollarSign, FileText, Download, PenLine, ShieldCheck } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { PipeeloLogo } from '@/components/PipeeloLogo';
 import { AdminLogin } from '@/components/AdminLogin';
@@ -17,6 +18,7 @@ import {
   REDE_OPTIONS,
   GATEWAY_OPTIONS,
   type SessionDTO,
+  type AssinaturaDetalhesDTO,
 } from '@/lib/api-client';
 import {
   Select,
@@ -889,6 +891,118 @@ const AdminOnboarding = () => {
     }
   };
 
+  // ── Assinatura (AssinaPDF) ──────────────────────────────────
+  const [enviandoAssinatura, setEnviandoAssinatura] = useState<string | null>(null);
+  const enviarAssinatura = async (session: OnboardingSession, apenasReenviar = false) => {
+    setEnviandoAssinatura(session.id);
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const { assinatura } = await adminSessionApi.enviarAssinatura(authToken, session.id, apenasReenviar);
+      if (assinatura.status === 'enviado') {
+        const por = [assinatura.dm ? 'WhatsApp do responsável' : null, assinatura.grupo ? 'grupo' : null].filter(Boolean).join(' + ');
+        toast.success(`Link de assinatura enviado${por ? ` (${por})` : ''}`);
+      } else {
+        toast.error(`Assinatura pendente: ${assinatura.motivo}`);
+      }
+      await fetchSessions();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao enviar para assinatura');
+    } finally {
+      setEnviandoAssinatura(null);
+    }
+  };
+
+  const [revisao, setRevisao] = useState<OnboardingSession | null>(null);
+  const [revisaoDados, setRevisaoDados] = useState<AssinaturaDetalhesDTO | null>(null);
+  const [revisaoCarregando, setRevisaoCarregando] = useState(false);
+  const [revisaoAcao, setRevisaoAcao] = useState<'aprovar' | 'corrigir' | null>(null);
+  const [motivoCorrecao, setMotivoCorrecao] = useState('');
+  const [itensRejeitados, setItensRejeitados] = useState<string[]>([]);
+
+  const abrirRevisao = async (session: OnboardingSession) => {
+    setRevisao(session);
+    setRevisaoDados(null);
+    setMotivoCorrecao('');
+    setItensRejeitados([]);
+    setRevisaoCarregando(true);
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const dados = await adminSessionApi.assinaturaDetalhes(authToken, session.id);
+      setRevisaoDados(dados);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao consultar a AssinaPDF');
+    } finally {
+      setRevisaoCarregando(false);
+    }
+  };
+
+  const aprovarAssinatura = async () => {
+    if (!revisao) return;
+    setRevisaoAcao('aprovar');
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      await adminSessionApi.aprovarAssinatura(authToken, revisao.id);
+      toast.success('Assinatura aprovada — contrato finalizado');
+      setRevisao(null);
+      await fetchSessions();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao aprovar a assinatura');
+    } finally {
+      setRevisaoAcao(null);
+    }
+  };
+
+  const pedirCorrecaoAssinatura = async () => {
+    if (!revisao) return;
+    if (motivoCorrecao.trim().length < 3) { toast.error('Descreva o motivo da correção'); return; }
+    setRevisaoAcao('corrigir');
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      await adminSessionApi.corrigirAssinatura(authToken, revisao.id, motivoCorrecao.trim(), itensRejeitados);
+      toast.success('Correção pedida — o responsável foi avisado no WhatsApp');
+      setRevisao(null);
+      await fetchSessions();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao pedir correção');
+    } finally {
+      setRevisaoAcao(null);
+    }
+  };
+
+  const alternarItem = (chave: string) =>
+    setItensRejeitados((atual) => (atual.includes(chave) ? atual.filter((c) => c !== chave) : [...atual, chave]));
+
+  const badgeAssinatura = (session: OnboardingSession) => {
+    const st = session.assinatura_status;
+    const erro = session.assinatura_erro ? `: ${session.assinatura_erro}` : '';
+    if (session.contrato_assinado_path || st === 'finalizado')
+      return <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Contrato assinado</Badge>;
+    if (st === 'aguardando_validacao')
+      return <Badge className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">Assinado · revisar</Badge>;
+    if (st === 'correcao')
+      return <Badge className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">Assinatura em correção</Badge>;
+    if (st === 'enviado')
+      return <Badge className="text-xs bg-sky-500/20 text-sky-400 border-sky-500/30">Aguardando assinatura{erro}</Badge>;
+    if (st === 'erro')
+      return <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">Assinatura com erro{erro}</Badge>;
+    return <Badge variant="outline" className="text-xs">Assinatura não enviada</Badge>;
+  };
+
+  const baixarAssinado = async (session: OnboardingSession) => {
+    try {
+      const authToken = await getAuthToken();
+      if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
+      const { url } = await adminSessionApi.contratoDownloadUrl(authToken, session.id, 'assinado');
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao baixar o contrato assinado');
+    }
+  };
+
   const getStatusBadge = (status: string | null, label: string) => {
     if (status === 'concluido') {
       return <Badge className="bg-green-500/20 text-green-500 border-green-500/30"><Check className="w-3 h-3 mr-1" />{label}</Badge>;
@@ -1291,6 +1405,7 @@ const AdminOnboarding = () => {
                                   Contrato pendente{session.contrato_erro ? `: ${session.contrato_erro}` : ''}
                                 </Badge>
                               )}
+                              {session.contrato_path && badgeAssinatura(session)}
                               {session.ca_cobrado_at ? (
                                 <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Cobrança OK</Badge>
                               ) : (
@@ -1356,6 +1471,36 @@ const AdminOnboarding = () => {
                                 >
                                   {baixandoContrato === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                                   Baixar contrato
+                                </Button>
+                              )}
+                              {session.cadastro_enviado_at && session.contrato_pdf_path && !session.contrato_assinado_path
+                                && session.assinatura_status !== 'aguardando_validacao' && session.assinatura_status !== 'finalizado' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={enviandoAssinatura === session.id}
+                                  onClick={() => enviarAssinatura(session, Boolean(session.assinapdf_link && (session.assinatura_status === 'enviado' || session.assinatura_status === 'correcao')))}
+                                  title={session.assinapdf_link ? 'Manda o mesmo link de novo no WhatsApp do responsável e no grupo' : 'Cria a solicitação na AssinaPDF, anexa o PDF e manda o link no WhatsApp'}
+                                >
+                                  {enviandoAssinatura === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PenLine className="w-4 h-4 mr-2" />}
+                                  {session.assinapdf_link && session.assinatura_status !== 'erro' ? 'Reenviar link' : 'Enviar para assinatura'}
+                                </Button>
+                              )}
+                              {session.assinapdf_solicitacao_id && !session.contrato_assinado_path && session.assinatura_status !== 'finalizado' && (
+                                <Button
+                                  variant={session.assinatura_status === 'aguardando_validacao' ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => abrirRevisao(session)}
+                                  title="Consulta a AssinaPDF agora e mostra selfie, documento e assinatura para aprovar"
+                                >
+                                  <ShieldCheck className="w-4 h-4 mr-2" />
+                                  {session.assinatura_status === 'aguardando_validacao' ? 'Revisar assinatura' : 'Ver assinatura'}
+                                </Button>
+                              )}
+                              {session.contrato_assinado_path && (
+                                <Button variant="outline" size="sm" onClick={() => baixarAssinado(session)} title="PDF final assinado, salvo no bucket">
+                                  <Download className="w-4 h-4 mr-2" />
+                                  Contrato assinado
                                 </Button>
                               )}
                               {session.cadastro_enviado_at && (
@@ -1473,6 +1618,115 @@ const AdminOnboarding = () => {
             })}
           </div>
         )}
+
+        {/* Revisão da assinatura (AssinaPDF) */}
+        <Dialog open={revisao !== null} onOpenChange={(aberto) => { if (!aberto) setRevisao(null); }}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Assinatura — {revisao?.empresa_nome}</DialogTitle>
+              <DialogDescription>
+                {revisaoDados
+                  ? `Estado na AssinaPDF: ${revisaoDados.estado}${revisaoDados.status ? ` · ${revisaoDados.status}` : ''}`
+                  : 'Consultando a AssinaPDF…'}
+                {revisaoDados?.link && (
+                  <>
+                    {' · '}
+                    <a href={revisaoDados.link} target="_blank" rel="noopener noreferrer" className="underline">link de assinatura</a>
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            {revisaoCarregando && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+                <Loader2 className="w-4 h-4 animate-spin" /> Buscando documentos do assinante…
+              </div>
+            )}
+
+            {revisaoDados && revisaoDados.signers.length === 0 && (
+              <p className="text-sm text-muted-foreground py-4">O cliente ainda não assinou. Nada para revisar por enquanto.</p>
+            )}
+
+            {revisaoDados?.signers.map((sg) => (
+              <div key={sg.id} className="space-y-3 border border-border/50 rounded-lg p-4">
+                <div className="text-sm">
+                  <span className="font-medium">{sg.nome}</span>
+                  <span className="text-muted-foreground"> · CPF {sg.cpf} · {sg.nome_cli} · estado {sg.estado}</span>
+                  {sg.dta && <span className="text-muted-foreground"> · {sg.dta}</span>}
+                </div>
+                {(sg.ip || sg.dispositivo || sg.localizacao) && (
+                  <div className="text-xs text-muted-foreground">
+                    {[sg.dispositivo, sg.sisop, sg.ip, sg.localizacao].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {sg.assinatura_url && (
+                    <label className="space-y-1 cursor-pointer">
+                      <div className="text-xs font-medium flex items-center gap-2">
+                        <input type="checkbox" checked={itensRejeitados.includes('ass')} onChange={() => alternarItem('ass')} />
+                        Assinatura {itensRejeitados.includes('ass') && <span className="text-red-400">(rejeitar)</span>}
+                      </div>
+                      <a href={sg.assinatura_url} target="_blank" rel="noopener noreferrer">
+                        <img src={sg.assinatura_url} alt="Assinatura" className="w-full h-32 object-contain bg-white rounded border" />
+                      </a>
+                    </label>
+                  )}
+                  {sg.documentos.map((d) => (
+                    <label key={d.doc} className="space-y-1 cursor-pointer">
+                      <div className="text-xs font-medium flex items-center gap-2">
+                        <input type="checkbox" checked={itensRejeitados.includes(d.doc)} onChange={() => alternarItem(d.doc)} />
+                        {d.campo} {itensRejeitados.includes(d.doc) && <span className="text-red-400">(rejeitar)</span>}
+                      </div>
+                      {d.url ? (
+                        <a href={d.url} target="_blank" rel="noopener noreferrer">
+                          <img src={d.url} alt={d.campo} className="w-full h-32 object-cover rounded border" />
+                        </a>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">sem arquivo</div>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {revisaoDados && revisaoDados.signers.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Motivo da correção (só se for rejeitar)</label>
+                <Textarea
+                  value={motivoCorrecao}
+                  onChange={(e) => setMotivoCorrecao(e.target.value)}
+                  placeholder="Ex.: documento ilegível, refaça a foto da frente do RG"
+                  rows={2}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Marque acima o que precisa refazer. Sem marcação, a correção reabre só a assinatura.
+                </p>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setRevisao(null)}>Fechar</Button>
+              {revisaoDados && revisaoDados.signers.length > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    disabled={revisaoAcao !== null}
+                    onClick={pedirCorrecaoAssinatura}
+                    className="border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                  >
+                    {revisaoAcao === 'corrigir' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <X className="w-4 h-4 mr-2" />}
+                    Pedir correção
+                  </Button>
+                  <Button disabled={revisaoAcao !== null || revisaoDados.status === 'finalizado'} onClick={aprovarAssinatura}>
+                    {revisaoAcao === 'aprovar' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                    Aprovar e finalizar
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Footer with WhatsApp contact */}
         <div className="mt-12 text-center text-sm text-muted-foreground">
