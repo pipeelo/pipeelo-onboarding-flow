@@ -1199,10 +1199,16 @@ const AdminOnboarding = () => {
                                 <Copy className="w-4 h-4 mr-2" />
                                 Link de cadastro
                               </Button>
-                              {session.cadastro_enviado_at && !session.grupo_jid && (
-                                <Button variant="outline" size="sm" disabled={recriando === session.id} onClick={() => recriarGrupo(session)}>
+                              {session.cadastro_enviado_at && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={recriando === session.id}
+                                  onClick={() => recriarGrupo(session)}
+                                  title={session.grupo_jid ? 'Reaproveita o grupo: adiciona quem falta, promove o admin, sem repetir a boas-vindas' : 'Tenta criar o grupo de novo com o cadastro salvo'}
+                                >
                                   {recriando === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                                  Recriar grupo
+                                  {session.grupo_jid ? 'Reprocessar grupo' : 'Recriar grupo'}
                                 </Button>
                               )}
                               <Button
