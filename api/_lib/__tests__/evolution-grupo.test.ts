@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  toJid, groupSubject, createGroup, updateParticipants, getParticipants, getInviteUrl,
+  chaveNumero, mesmoNumero, toJid, groupSubject, createGroup, updateParticipants, getParticipants, getInviteUrl,
   EvolutionApiError,
 } from '../evolution';
 
@@ -29,6 +29,13 @@ describe('evolution grupo', () => {
   it('toJid aceita número já com o 55 na frente', () => {
     expect(toJid('+55 43 99666-1541')).toBe('5543996661541@s.whatsapp.net');
     expect(toJid('5543996661541')).toBe('5543996661541@s.whatsapp.net');
+  });
+  it('chaveNumero iguala celular com e sem o nono dígito', () => {
+    expect(chaveNumero('5543996661541@s.whatsapp.net')).toBe('554396661541');
+    expect(chaveNumero('554396661541@s.whatsapp.net')).toBe('554396661541');
+    expect(chaveNumero('43996661541')).toBe('554396661541');
+    expect(mesmoNumero('5543996661541@s.whatsapp.net', '554396661541@s.whatsapp.net')).toBe(true);
+    expect(mesmoNumero('5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net')).toBe(false);
   });
   it('groupSubject aplica o padrão', () => {
     expect(groupSubject('  Provedor X ')).toBe('Pipeelo & Provedor X');

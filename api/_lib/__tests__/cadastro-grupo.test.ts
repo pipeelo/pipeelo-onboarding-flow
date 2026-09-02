@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../evolution', () => ({
   toJid: (d: string) => `55${d}@s.whatsapp.net`,
+  chaveNumero: (j: string) => {
+    let d = j.replace(/@.*$/, '').replace(/\D/g, '');
+    if ((d.length === 10 || d.length === 11) && !d.startsWith('55')) d = `55${d}`;
+    if (d.length === 13 && d.startsWith('55') && d[4] === '9') d = d.slice(0, 4) + d.slice(5);
+    return d;
+  },
   groupSubject: (n: string) => `Pipeelo & ${n}`,
   createGroup: vi.fn(),
   updateParticipants: vi.fn(async () => undefined),
@@ -104,6 +110,18 @@ describe('criarGrupoParaSessao', () => {
     } finally {
       delete process.env.STAFF_GROUP_JID;
     }
+  });
+
+  it('reconhece quem entrou mesmo quando o WhatsApp devolve o número sem o nono dígito', async () => {
+    (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['554396661541@s.whatsapp.net', '554391112233@s.whatsapp.net']);
+    const sb = makeSupabase();
+
+    const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+    if (r.status === 'criado') expect(r.nao_adicionados).toEqual([]);
+    expect(updateParticipants).toHaveBeenCalledWith('1@g.us', 'promote', ['554396661541@s.whatsapp.net']);
+    expect(sendTransactionalEmail).not.toHaveBeenCalled();
   });
 
   it('quem não entrou recebe e-mail de convite e volta em nao_adicionados', async () => {

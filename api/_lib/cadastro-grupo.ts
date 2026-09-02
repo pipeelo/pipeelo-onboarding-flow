@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  toJid, groupSubject, createGroup, updateParticipants, getParticipants, getInviteUrl, sendText,
+  toJid, groupSubject, createGroup, updateParticipants, getParticipants, getInviteUrl, sendText, chaveNumero,
 } from './evolution';
 import { ensureShortLink, onboardingTargetUrl } from './short-links';
 import { WELCOME_TEMPLATE } from './welcome-template';
@@ -33,6 +33,37 @@ function pessoasDoCadastro(c: Cadastro): Pessoa[] {
 
 function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
+}
+
+const esperar = (ms: number) => (process.env.VITEST ? Promise.resolve() : new Promise((r) => setTimeout(r, ms)));
+
+/**
+ * Adiciona um número por vez, com pausa: o WhatsApp responde `rate-overlimit` quando
+ * recebe vários de uma vez. Em rate limit espera e tenta mais uma vez. Devolve quem falhou.
+ */
+export async function adicionarUmPorUm(groupJid: string, jids: string[]): Promise<string[]> {
+  const falhas: string[] = [];
+  for (const jid of jids) {
+    try {
+      await updateParticipants(groupJid, 'add', [jid]);
+    } catch (e) {
+      if (/rate-overlimit/i.test(msg(e))) {
+        await esperar(5000);
+        try { await updateParticipants(groupJid, 'add', [jid]); continue; } catch (e2) { falhas.push(`${jid}: ${msg(e2)}`); }
+      } else {
+        falhas.push(`${jid}: ${msg(e)}`);
+      }
+    }
+    await esperar(1500);
+  }
+  return falhas;
+}
+
+/** JID real (como o WhatsApp devolve) de um número dentro do grupo, ou null. */
+function jidNoGrupo(participantes: Iterable<string>, numero: string): string | null {
+  const alvo = chaveNumero(numero);
+  for (const p of participantes) if (chaveNumero(p) === alvo) return p;
+  return null;
 }
 
 async function patch(supabase: SupabaseClient, id: string, data: Record<string, unknown>) {
@@ -145,12 +176,14 @@ export async function criarGrupoParaSessao(
   if (staffJid) {
     try {
       const equipePipeelo = await getParticipants(staffJid);
-      const jaNoGrupo = new Set(await getParticipants(groupJid));
-      const faltam = equipePipeelo.filter((j) => !jaNoGrupo.has(j) && !todosJids.includes(j));
-      await updateParticipants(groupJid, 'add', faltam);
-      const depois = new Set(await getParticipants(groupJid));
-      const alvo = equipePipeelo.filter((j) => !todosJids.includes(j));
-      equipe = { adicionados: alvo.filter((j) => depois.has(j)).length, total: alvo.length };
+      const jaNoGrupo = await getParticipants(groupJid);
+      const doCliente = (j: string) => todosJids.some((c) => chaveNumero(c) === chaveNumero(j));
+      const alvo = equipePipeelo.filter((j) => !doCliente(j));
+      const faltam = alvo.filter((j) => !jidNoGrupo(jaNoGrupo, j));
+      const falhas = await adicionarUmPorUm(groupJid, faltam);
+      const depois = await getParticipants(groupJid);
+      equipe = { adicionados: alvo.filter((j) => jidNoGrupo(depois, j)).length, total: alvo.length };
+      if (falhas.length) erros.push(`equipe pipeelo: ${falhas.join('; ')}`);
     } catch (e) {
       erros.push(`equipe pipeelo: ${msg(e)}`);
     }
@@ -158,9 +191,10 @@ export async function criarGrupoParaSessao(
     console.warn('[cadastro-grupo] STAFF_GROUP_JID não configurado; equipe Pipeelo não adicionada');
   }
 
-  // 2. Promover admin
+  // 2. Promover admin — pelo JID real do participante (o WhatsApp pode tirar o nono dígito)
   try {
-    await updateParticipants(groupJid, 'promote', [adminJid]);
+    const atuais = await getParticipants(groupJid);
+    await updateParticipants(groupJid, 'promote', [jidNoGrupo(atuais, adminJid) ?? adminJid]);
   } catch (e) {
     erros.push(`promote: ${msg(e)}`);
   }
@@ -180,7 +214,7 @@ export async function criarGrupoParaSessao(
   let dentro = new Set<string>();
   try {
     dentro = new Set(await getParticipants(groupJid));
-    naoAdicionados = pessoas.filter((p) => !dentro.has(jidPor.get(p.whatsapp)!)).map((p) => p.whatsapp);
+    naoAdicionados = pessoas.filter((p) => !jidNoGrupo(dentro, p.whatsapp)).map((p) => p.whatsapp);
   } catch (e) {
     erros.push(`participantes: ${msg(e)}`);
   }
@@ -190,7 +224,7 @@ export async function criarGrupoParaSessao(
   if (inviteUrl) {
     const url = inviteUrl;
     for (const p of pessoas) {
-      if (dentro.has(jidPor.get(p.whatsapp)!) || !p.email) continue;
+      if (jidNoGrupo(dentro, p.whatsapp) || !p.email) continue;
       try {
         await sendTransactionalEmail({
           template: 'ConviteGrupo',

@@ -145,6 +145,21 @@ export function toJid(phoneDigits: string): string {
   return `55${d}@s.whatsapp.net`;
 }
 
+/**
+ * Chave de comparação de números BR no WhatsApp: celulares podem aparecer com ou sem o
+ * nono dígito (55 43 99666-1541 ≡ 55 43 9666-1541). Normaliza para a forma SEM o 9.
+ */
+export function chaveNumero(jidOuTelefone: string): string {
+  let d = jidOuTelefone.replace(/@.*$/, '').replace(/\D/g, '');
+  if ((d.length === 10 || d.length === 11) && !d.startsWith('55')) d = `55${d}`;
+  if (d.length === 13 && d.startsWith('55') && d[4] === '9') d = d.slice(0, 4) + d.slice(5);
+  return d;
+}
+
+export function mesmoNumero(a: string, b: string): boolean {
+  return chaveNumero(a) === chaveNumero(b);
+}
+
 export function groupSubject(nomeFantasia: string): string {
   return `Pipeelo & ${nomeFantasia.trim().replace(/\s+/g, ' ')}`;
 }
