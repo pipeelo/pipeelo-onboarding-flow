@@ -94,6 +94,9 @@ export type SessionDTO = {
   grupo_invite_url?: string | null;
   grupo_criado_at?: string | null;
   grupo_erro?: string | null;
+  grupo_instancia?: 'padrao' | 'grupos' | null;
+  /** Andamento da fila cadenciada de entrada no grupo. */
+  fila?: { pendentes: number; feitos: number; falhados: number; total: number } | null;
   notificacao_boas_vindas_enviada_at?: string | null;
   created_at?: string;
   updated_at?: string;

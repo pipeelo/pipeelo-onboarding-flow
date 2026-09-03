@@ -43,6 +43,7 @@ const routes: Array<[string, Loader]> = [
   ['/api/cron/reconcile-webhooks',      () => import('../api/cron/reconcile-webhooks.ts')],
   ['/api/cron/reminder-stalled',        () => import('../api/cron/reminder-stalled.ts')],
   ['/api/cron/assinatura-poll',         () => import('../api/cron/assinatura-poll.ts')],
+  ['/api/cron/evolution-fila',          () => import('../api/cron/evolution-fila.ts')],
 ];
 
 const app = express();
@@ -92,6 +93,31 @@ const port = Number(process.env.PORT ?? 8080);
 app.listen(port, '0.0.0.0', () => {
   console.log(`[server] listening on :${port}`);
 });
+
+// Fila cadenciada dos grupos de WhatsApp: uma ação por rodada, ritmo global
+// controlado em evolution_fila_estado. EVOLUTION_FILA_TICK_SEGUNDOS=0 desliga.
+// O tick é só o batimento; quem decide se pode agir é o slot no banco, então
+// diminuir o tick não acelera a fila — apenas confere com mais frequência.
+const filaTick = Number(process.env.EVOLUTION_FILA_TICK_SEGUNDOS ?? 30);
+if (Number.isFinite(filaTick) && filaTick > 0) {
+  let drenando = false;
+  const drenar = async () => {
+    if (drenando) return;
+    drenando = true;
+    try {
+      const mod = await import('../api/cron/evolution-fila.ts');
+      const r = await mod.drenarFilaEvolution();
+      if (r.processado || r.erro) console.log('[evolution-fila]', JSON.stringify(r));
+    } catch (e) {
+      console.error('[evolution-fila] falhou:', e instanceof Error ? e.message : e);
+    } finally {
+      drenando = false;
+    }
+  };
+  setTimeout(drenar, 20_000);
+  setInterval(drenar, filaTick * 1000);
+  console.log(`[server] fila de grupos conferida a cada ${filaTick}s`);
+}
 
 // Polling da AssinaPDF (sem webhook): a cada N minutos. ASSINATURA_POLL_MINUTOS=0 desliga.
 const pollMinutos = Number(process.env.ASSINATURA_POLL_MINUTOS ?? 10);

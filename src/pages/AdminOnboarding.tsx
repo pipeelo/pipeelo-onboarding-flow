@@ -1396,6 +1396,19 @@ const AdminOnboarding = () => {
                           ) : (
                             <Badge variant="outline" className="text-xs">Cadastro pendente</Badge>
                           )}
+                          {session.fila && session.fila.pendentes > 0 && (
+                            <Badge
+                              className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30"
+                              title="A equipe entra no grupo aos poucos para não derrubar o número"
+                            >
+                              Equipe entrando: {session.fila.feitos} de {session.fila.total}
+                            </Badge>
+                          )}
+                          {session.fila && session.fila.pendentes === 0 && session.fila.falhados > 0 && (
+                            <Badge className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
+                              Equipe: {session.fila.falhados} não entraram
+                            </Badge>
+                          )}
                           {session.cadastro_enviado_at && (
                             <>
                               {session.contrato_path ? (

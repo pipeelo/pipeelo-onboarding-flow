@@ -34,6 +34,8 @@ type SessionRow = {
   status_suporte: string | null;
   status_vendas: string | null;
   grupo_jid: string | null;
+  grupo_instancia: 'padrao' | 'grupos' | null;
+  grupo_invite_url: string | null;
 };
 
 function isOnboardingFinished(s: SessionRow): boolean {
@@ -68,7 +70,8 @@ export async function maybeNotifyOnboardingComplete(
   const { data, error } = await supabase
     .from('onboarding_sessions')
     .select(
-      'id, empresa_nome, modo, notificacao_conclusao_enviada_at, grupo_jid, cadastro, ' +
+      'id, empresa_nome, modo, notificacao_conclusao_enviada_at, grupo_jid, grupo_instancia, ' +
+        'grupo_invite_url, cadastro, ' +
         'status_identificacao, status_sac_geral, status_financeiro, status_suporte, status_vendas'
     )
     .eq('id', sessionId)
@@ -128,8 +131,15 @@ export async function maybeNotifyOnboardingComplete(
     }
 
     // Equipe da seção "Equipe e Acessos" entra no grupo. Falha aqui não desfaz o claim.
-    const nomeFantasia = ((data as { cadastro?: { nome_fantasia?: string } | null }).cadastro?.nome_fantasia) || data.empresa_nome;
-    void addTeamToGroup(supabase, sessionId, group.id, nomeFantasia).catch((e) =>
+    const cad = (data as { cadastro?: { nome_fantasia?: string; responsavel_nome?: string } | null }).cadastro;
+    // A instância dona do grupo manda: grupo antigo continua no número histórico,
+    // que é o admin dele. NULL = criado antes da fila cadenciada.
+    void addTeamToGroup(supabase, sessionId, group.id, {
+      empresaNome: cad?.nome_fantasia || data.empresa_nome,
+      instancia: data.grupo_instancia ?? 'padrao',
+      inviteUrl: data.grupo_invite_url,
+      responsavelNome: cad?.responsavel_nome ?? null,
+    }).catch((e) =>
       console.error('[whatsapp-notify] addTeamToGroup falhou:', e)
     );
 

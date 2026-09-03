@@ -58,6 +58,41 @@ O cadastro com criação de grupo WhatsApp (`/cadastro/:slug`) depende destas va
 - `EVOLUTION_API_INSTANCE`: nome da instância Evolution (`Avisos`).
 - `EVOLUTION_API_KEY`: chave de autenticação da instância Evolution.
 - `STAFF_GROUP_JID`: JID do grupo interno do Staff que recebe o aviso de novo cadastro.
+- `EVOLUTION_GRUPOS_BASE_URL` / `EVOLUTION_GRUPOS_INSTANCE` / `EVOLUTION_GRUPOS_KEY`: número
+  dedicado a criar e popular os grupos novos. Vazias = os grupos novos saem pelo número padrão.
+- `EVOLUTION_FILA_TICK_SEGUNDOS` (30), `EVOLUTION_FILA_MIN_SEGUNDOS` (45),
+  `EVOLUTION_FILA_MAX_SEGUNDOS` (120): ritmo da fila de grupos.
+
+## Fila cadenciada dos grupos de WhatsApp
+
+Criar um grupo disparava ~20 chamadas na Evolution em menos de um minuto — criar o
+grupo, adicionar um a um os membros da equipe, mandar as mensagens — e o WhatsApp
+respondia derrubando a conexão do número.
+
+Hoje o `POST /api/sessions/cadastro-submit` faz só o barato e visível: cria o grupo
+com os contatos do cliente, confere quem entrou, promove o admin e pega o link de
+convite. Todo add de participante e toda mensagem viram linhas em `evolution_fila`,
+drenadas **uma por vez** pelo worker do `server/index.ts`, com teto **global** em
+`evolution_fila_estado` — dois cadastros no mesmo dia dividem o mesmo ritmo em vez de
+gerarem duas rajadas.
+
+A equipe Pipeelo **não** é mais adicionada aos grupos dos clientes: o link do convite
+vai na mensagem que o Staff já recebe, e quem quiser entra sozinho. Adicionar dez
+desconhecidos num grupo recém-criado era o padrão que mais derrubava o número.
+
+`GRUPO_SOMENTE_RESPONSAVEL=true` liga o modo contenção: o grupo nasce só com o
+responsável da empresa, e o próprio grupo recebe um pedido para ele chamar os
+contatos extras e a equipe. Os adds passam a sair do celular dele, não do nosso
+número. Fica desligado por padrão; é a carta na manga se o bloqueio persistir.
+
+Dois números: o histórico (`EVOLUTION_API_*`) segue dono dos grupos criados antes
+disso e dos avisos no Staff; o dedicado (`EVOLUTION_GRUPOS_*`) cria e popula os
+grupos novos. Cada sessão guarda o dono do seu grupo em `onboarding_sessions.grupo_instancia`,
+porque o número novo não é admin dos grupos que o histórico criou.
+
+Se a instância cair ou o WhatsApp devolver `rate-overlimit`, o disjuntor pausa a fila
+inteira (15 e 10 minutos) e avisa o Staff, em vez de insistir num número que acabou
+de cair.
 - `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto de convite ao grupo.
 - `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`: rate limit e cache de CNPJ; obrigatórias para `/api/sessions/create` e `/api/sessions/cadastro-submit`.
 

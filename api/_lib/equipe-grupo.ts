@@ -1,22 +1,44 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { toJid, updateParticipants, getParticipants, getInviteUrl, groupSubject } from './evolution';
+import { toJid, chaveNumero, type InstanciaEvolution } from './evolution';
+import { somenteResponsavel, pedidoDeAdicionar } from './cadastro-grupo';
+import { enfileirar, type NovoItem } from './evolution-fila';
 import { notifyStaff } from './staff-notify';
-import { sendTransactionalEmail } from './email-sender';
 
 type PessoaEquipe = { nome?: string; email?: string; whatsapp?: string; adicionar_grupo?: string };
 
+export type OpcoesEquipe = {
+  empresaNome: string;
+  /** Número dono do grupo. Grupo antigo continua no histórico, que é admin dele. */
+  instancia?: InstanciaEvolution;
+  /** Link do convite, usado no e-mail de quem a privacidade do WhatsApp barrar. */
+  inviteUrl?: string | null;
+  /** A quem pedir que adicione a equipe, no modo contenção. */
+  responsavelNome?: string | null;
+};
+
 /**
- * Lê `equipe_pessoas` (sac_geral) e adiciona ao grupo quem tem WhatsApp e marcou
- * "adicionar ao grupo". Quem não entrou (privacidade) recebe o convite por e-mail.
+ * Lê `equipe_pessoas` (sac_geral) e ENFILEIRA a entrada no grupo de quem tem
+ * WhatsApp e marcou "adicionar ao grupo".
+ *
+ * Antes isto mandava a equipe inteira num único `updateParticipants` — era o
+ * ponto sem nenhuma cadência do fluxo, e sem tratamento de `rate-overlimit`.
+ * Agora cada pessoa é um item da fila, e o convite por e-mail para quem não
+ * entrou (privacidade do WhatsApp) sai no item de resumo, depois que os adds
+ * terminarem — só aí dá para saber quem ficou de fora.
+ *
+ * Com `GRUPO_SOMENTE_RESPONSAVEL` ligado, ninguém é adicionado por nós: o grupo
+ * recebe um pedido para o responsável chamar a equipe.
+ *
  * Nunca lança.
  */
 export async function addTeamToGroup(
   supabase: SupabaseClient,
   sessionId: string,
   groupJid: string,
-  empresaNome: string
-): Promise<{ adicionados: number; total: number; nao_adicionados: string[] }> {
-  const vazio = { adicionados: 0, total: 0, nao_adicionados: [] as string[] };
+  opts: OpcoesEquipe
+): Promise<{ enfileirados: number; total: number }> {
+  const vazio = { enfileirados: 0, total: 0 };
+  const { empresaNome, instancia = 'padrao', inviteUrl, responsavelNome } = opts;
   try {
     const { data, error } = await supabase
       .from('onboarding_respostas')
@@ -27,39 +49,58 @@ export async function addTeamToGroup(
     const raw = data?.find((r) => r.pergunta_id === 'equipe_pessoas')?.valor;
     const lista: PessoaEquipe[] = Array.isArray(raw) ? raw : [];
 
-    const alvo: Array<{ nome: string; email?: string; jid: string }> = [];
+    const alvo: Array<{ nome: string; email?: string; whatsapp: string; jid: string }> = [];
     for (const p of lista) {
       if ((p.adicionar_grupo || 'sim') !== 'sim' || !p.whatsapp) continue;
       try {
-        alvo.push({ nome: p.nome?.trim() || p.email || 'sem nome', email: p.email?.trim() || undefined, jid: toJid(p.whatsapp) });
+        alvo.push({
+          nome: p.nome?.trim() || p.email || 'sem nome',
+          email: p.email?.trim() || undefined,
+          whatsapp: p.whatsapp,
+          jid: toJid(p.whatsapp),
+        });
       } catch { /* número inválido: ignora */ }
     }
     if (alvo.length === 0) return vazio;
 
-    await updateParticipants(groupJid, 'add', alvo.map((a) => a.jid));
-    const dentro = new Set(await getParticipants(groupJid));
-    const fora = alvo.filter((a) => !dentro.has(a.jid));
-
-    if (fora.length) {
-      const inviteUrl = await getInviteUrl(groupJid);
-      for (const f of fora) {
-        if (!f.email) continue;
-        await sendTransactionalEmail({
-          template: 'ConviteGrupo', sessionId, to: f.email,
-          idempotencyKey: `convite-grupo:${sessionId}:${f.jid}`,
-          props: { nome: f.nome, empresaNome, grupoNome: groupSubject(empresaNome), inviteUrl },
-        });
-      }
+    if (somenteResponsavel()) {
+      await enfileirar(supabase, [{
+        sessionId, tipo: 'texto', grupoJid: groupJid, instancia,
+        chave: `pedido-equipe:${sessionId}`,
+        payload: {
+          texto: pedidoDeAdicionar(responsavelNome ?? null, alvo.map((a) => ({ nome: a.nome, whatsapp: a.whatsapp }))),
+          rotulo: 'pedido de adicionar equipe',
+        },
+      }]);
+      await notifyStaff(
+        `🔒 Equipe de ${empresaNome}: modo contenção ligado — pedimos ao responsável que adicione as ${alvo.length} pessoas.`
+      );
+      return { enfileirados: 0, total: alvo.length };
     }
 
-    const resumo = { adicionados: alvo.length - fora.length, total: alvo.length, nao_adicionados: fora.map((f) => f.nome) };
-    const linhas = [`👥 Equipe adicionada ao grupo ${groupSubject(empresaNome)}: ${resumo.adicionados} de ${resumo.total}`];
-    if (fora.length) linhas.push(`Não entraram (privacidade): ${resumo.nao_adicionados.join(', ')} — convite enviado por e-mail`);
-    await notifyStaff(linhas.join('\n'));
-    return resumo;
+    const itens: NovoItem[] = alvo.map((a) => ({
+      sessionId, tipo: 'add' as const, grupoJid: groupJid, instancia,
+      chave: `add:${sessionId}:${chaveNumero(a.jid)}`,
+      payload: { jid: a.jid, rotulo: a.nome },
+    }));
+    itens.push({
+      sessionId, tipo: 'resumo', grupoJid: groupJid, instancia,
+      chave: `resumo-equipe:${sessionId}`,
+      payload: {
+        empresa: empresaNome,
+        inviteUrl: inviteUrl ?? undefined,
+        esperados: alvo.map((a) => ({ jid: a.jid, nome: a.nome, email: a.email })),
+      },
+    });
+    await enfileirar(supabase, itens);
+
+    await notifyStaff(
+      `👥 Equipe de ${empresaNome} na fila do grupo: ${alvo.length} pessoa${alvo.length === 1 ? '' : 's'} entrando aos poucos — aviso quando terminar.`
+    );
+    return { enfileirados: alvo.length, total: alvo.length };
   } catch (e) {
     console.error('[equipe-grupo] falhou:', e);
-    await notifyStaff(`⚠️ Não consegui adicionar a equipe ao grupo de ${empresaNome}: ${e instanceof Error ? e.message : String(e)}`);
+    await notifyStaff(`⚠️ Não consegui enfileirar a equipe no grupo de ${empresaNome}: ${e instanceof Error ? e.message : String(e)}`);
     return vazio;
   }
 }
