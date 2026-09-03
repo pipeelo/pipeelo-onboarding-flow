@@ -43,6 +43,7 @@ const routes: Array<[string, Loader]> = [
   ['/api/cron/reconcile-webhooks',      () => import('../api/cron/reconcile-webhooks.ts')],
   ['/api/cron/reminder-stalled',        () => import('../api/cron/reminder-stalled.ts')],
   ['/api/cron/assinatura-poll',         () => import('../api/cron/assinatura-poll.ts')],
+  ['/api/cron/grupo-boas-vindas',       () => import('../api/cron/grupo-boas-vindas.ts')],
 ];
 
 const app = express();
@@ -113,4 +114,28 @@ if (Number.isFinite(pollMinutos) && pollMinutos > 0) {
   setTimeout(tick, 30_000);
   setInterval(tick, pollMinutos * 60_000);
   console.log(`[server] polling da assinatura a cada ${pollMinutos} min`);
+}
+
+// Boas-vindas seguradas: manda assim que o cliente entra no grupo (ele entra pelo
+// convite, porque a API muitas vezes não consegue adicionar). Intervalo curto —
+// é a mensagem que abre o onboarding e o cliente está esperando por ela.
+const boasVindasMinutos = Number(process.env.BOAS_VINDAS_POLL_MINUTOS ?? 3);
+if (Number.isFinite(boasVindasMinutos) && boasVindasMinutos > 0) {
+  let rodando = false;
+  const tick = async () => {
+    if (rodando) return;
+    rodando = true;
+    try {
+      const mod = await import('../api/cron/grupo-boas-vindas.ts');
+      const r = await mod.enviarBoasVindasPendentes();
+      if (r.enviadas || r.erros.length) console.log('[grupo-boas-vindas]', JSON.stringify(r));
+    } catch (e) {
+      console.error('[grupo-boas-vindas] falhou:', e instanceof Error ? e.message : e);
+    } finally {
+      rodando = false;
+    }
+  };
+  setTimeout(tick, 45_000);
+  setInterval(tick, boasVindasMinutos * 60_000);
+  console.log(`[server] boas-vindas pendentes a cada ${boasVindasMinutos} min`);
 }

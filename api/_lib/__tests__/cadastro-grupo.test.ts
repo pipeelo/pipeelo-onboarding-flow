@@ -78,6 +78,25 @@ describe('criarGrupoParaSessao', () => {
     expect((sendTransactionalEmail as never as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ to: 'ana@x.com' });
   });
 
+  it('cliente fora do grupo SEGURA as boas-vindas — nada é mandado no grupo', async () => {
+    (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
+    // Só o contato extra entrou; a Ana (responsável) ficou de fora.
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543991112233@s.whatsapp.net']);
+    const sb = makeSupabase();
+
+    const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+    expect(r.status).toBe('criado');
+    if (r.status !== 'criado') throw new Error('esperava criado');
+    expect(r.boas_vindas).toBe('aguardando_cliente');
+
+    // Nenhuma mensagem no grupo; só o convite por DM para quem ficou de fora.
+    const noGrupo = (sendText as never as ReturnType<typeof vi.fn>).mock.calls.filter((c) => String(c[0]).endsWith('@g.us'));
+    expect(noGrupo).toHaveLength(0);
+    expect(sb.updates.some((u) => 'notificacao_boas_vindas_enviada_at' in (u as object))).toBe(false);
+    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('Boas-vindas SEGURADAS'));
+  });
+
   it('caminho feliz: cria, promove, confere, manda boas-vindas e avisa Staff', async () => {
     (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
     (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net']);
@@ -85,7 +104,8 @@ describe('criarGrupoParaSessao', () => {
 
     const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
 
-    expect(r).toEqual({ status: 'criado', jid: '1@g.us', invite_url: 'https://chat.whatsapp.com/abc', nao_adicionados: [] });
+    // Cliente dentro do grupo → boas-vindas saem na hora.
+    expect(r).toEqual({ status: 'criado', jid: '1@g.us', invite_url: 'https://chat.whatsapp.com/abc', nao_adicionados: [], boas_vindas: 'enviada' });
     expect(createGroup).toHaveBeenCalledWith('Pipeelo & Provedor X', ['5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net']);
     expect(updateParticipants).toHaveBeenCalledWith('1@g.us', 'promote', ['5543996661541@s.whatsapp.net']);
     expect(sendText).toHaveBeenCalledWith('1@g.us', expect.stringContaining('https://onboarding.pipeelo.com/s/abc123'));

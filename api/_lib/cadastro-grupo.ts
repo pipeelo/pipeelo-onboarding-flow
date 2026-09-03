@@ -19,7 +19,19 @@ export type SessaoGrupo = {
 };
 
 export type ResultadoGrupo =
-  | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[]; equipe_pipeelo?: { adicionados: number; total: number } }
+  | {
+      status: 'criado';
+      jid: string;
+      invite_url: string | null;
+      nao_adicionados: string[];
+      erros?: string[];
+      equipe_pipeelo?: { adicionados: number; total: number };
+      /**
+       * `enviada` | `aguardando_cliente` (segurada até o cliente entrar) |
+       * `ja_enviada` (reexecução) | `falhou`.
+       */
+      boas_vindas?: 'enviada' | 'aguardando_cliente' | 'ja_enviada' | 'falhou';
+    }
   | { status: 'erro'; motivo: string };
 
 type Pessoa = { nome: string; whatsapp: string; email?: string; admin: boolean };
@@ -83,6 +95,27 @@ export async function adicionarUmPorUm(groupJid: string, jids: string[]): Promis
     }
   }
   return falhas;
+}
+
+/**
+ * Manda as boas-vindas com o link do onboarding no grupo e marca a sessão.
+ * Exportada porque o cron `grupo-boas-vindas` reenvia por aqui quando o cliente
+ * entra depois. Lança em falha — quem chama decide o que fazer.
+ */
+export async function enviarBoasVindasNoGrupo(
+  supabase: SupabaseClient,
+  sessao: SessaoGrupo,
+  groupJid: string,
+  opts: { host?: string; proto?: string } = {},
+): Promise<void> {
+  const modo = sessao.modo ?? 'completo';
+  const { short_url } = await ensureShortLink(supabase, {
+    session_id: sessao.id, modo,
+    target_url: onboardingTargetUrl({ slug: sessao.slug, access_token: sessao.access_token, modo }),
+    host: opts.host, proto: opts.proto,
+  });
+  await sendText(groupJid, WELCOME_TEMPLATE(short_url));
+  await patch(supabase, sessao.id, { notificacao_boas_vindas_enviada_at: new Date().toISOString() });
 }
 
 /** JID real (como o WhatsApp devolve) de um número dentro do grupo, ou null. */
@@ -153,6 +186,9 @@ export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoG
     // Quem não entrou pela API entra pelo convite. Sem o link aqui, o time fica
     // dependendo de alguém abrir o painel para descobrir como entrar.
     if (adicionados < total && r.invite_url) linhas.push(`🔗 Entrar no grupo: ${r.invite_url}`);
+  }
+  if (r.boas_vindas === 'aguardando_cliente') {
+    linhas.push(`⏳ Boas-vindas SEGURADAS: ${c.responsavel_nome} ainda não entrou no grupo. Saem sozinhas assim que ele entrar.`);
   }
   linhas.push(`📎 ${docs} documento${docs === 1 ? '' : 's'} · contrato → ${c.contrato_email} · vencimento dia ${c.dia_vencimento}`);
   linhas.push(`Painel: ${base}/admin`);
@@ -302,21 +338,26 @@ export async function criarGrupoParaSessao(
     }
   }
 
-  // 4. Boas-vindas com link curto do onboarding (uma vez só)
+  // 4. Boas-vindas SÓ com o cliente dentro do grupo (decisão do Felipe, 03/09).
+  // Mensagem em grupo que o cliente ainda não entrou não tem quem leia: o WhatsApp
+  // não mostra histórico para quem entra depois, então o link do onboarding se
+  // perderia. Como hoje a API muitas vezes não consegue adicionar (privacidade do
+  // destinatário e restrição ao número que administra), o cliente entra pelo
+  // convite — e o cron `grupo-boas-vindas` manda a mensagem quando ele entra.
+  let boasVindas: 'enviada' | 'aguardando_cliente' | 'ja_enviada' | 'falhou' = 'ja_enviada';
   if (!sessao.notificacao_boas_vindas_enviada_at) {
-    // Escrever a mensagem leva tempo para uma pessoa.
-    await pausar(RITMO.antesDasBoasVindas);
-    try {
-      const modo = sessao.modo ?? 'completo';
-      const { short_url } = await ensureShortLink(supabase, {
-        session_id: sessao.id, modo,
-        target_url: onboardingTargetUrl({ slug: sessao.slug, access_token: sessao.access_token, modo }),
-        host: opts.host, proto: opts.proto,
-      });
-      await sendText(groupJid, WELCOME_TEMPLATE(short_url));
-      await patch(supabase, sessao.id, { notificacao_boas_vindas_enviada_at: new Date().toISOString() });
-    } catch (e) {
-      erros.push(`boas-vindas: ${msg(e)}`);
+    if (!jidNoGrupo(dentro, cadastro.responsavel_whatsapp)) {
+      boasVindas = 'aguardando_cliente';
+    } else {
+      // Escrever a mensagem leva tempo para uma pessoa.
+      await pausar(RITMO.antesDasBoasVindas);
+      try {
+        await enviarBoasVindasNoGrupo(supabase, sessao, groupJid, opts);
+        boasVindas = 'enviada';
+      } catch (e) {
+        boasVindas = 'falhou';
+        erros.push(`boas-vindas: ${msg(e)}`);
+      }
     }
   }
 
@@ -327,6 +368,7 @@ export async function criarGrupoParaSessao(
   const resultado: ResultadoGrupo = {
     status: 'criado', jid: groupJid, invite_url: inviteUrl, nao_adicionados: naoAdicionados,
     erros: erros.length ? erros : undefined,
+    boas_vindas: boasVindas,
   };
   await notifyStaff(mensagemStaffCadastro(sessao, cadastro, resultado));
   return resultado;
