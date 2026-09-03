@@ -51,6 +51,33 @@ function makeSupabase() {
 describe('criarGrupoParaSessao', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('quem a API não conseguiu adicionar recebe o convite por WhatsApp e por e-mail', async () => {
+    (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: null });
+    // Só o João entrou; a Ana (responsável) ficou de fora.
+    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543991112233@s.whatsapp.net']);
+    // Once: `clearAllMocks` limpa chamadas, não implementação — sem isso o mock vazaria para o próximo teste.
+    (getInviteUrl as never as ReturnType<typeof vi.fn>).mockResolvedValueOnce('https://chat.whatsapp.com/zzz');
+    const sb = makeSupabase();
+
+    const r = await criarGrupoParaSessao(sb.client, sessao, cadastro);
+
+    expect(r.status).toBe('criado');
+    if (r.status !== 'criado') throw new Error('esperava criado');
+    expect(r.nao_adicionados).toEqual(['43996661541']);
+
+    // Convite por WhatsApp para o número que ficou de fora, com o link do grupo.
+    const dms = (sendText as never as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => String(c[0]).endsWith('@s.whatsapp.net'));
+    expect(dms).toHaveLength(1);
+    expect(dms[0][0]).toBe('5543996661541@s.whatsapp.net');
+    expect(dms[0][1]).toContain('https://chat.whatsapp.com/zzz');
+    expect(dms[0][1]).toContain('Pipeelo & Provedor X');
+
+    // E-mail continua saindo como segunda via, só para quem tem endereço.
+    expect(sendTransactionalEmail).toHaveBeenCalledTimes(1);
+    expect((sendTransactionalEmail as never as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ to: 'ana@x.com' });
+  });
+
   it('caminho feliz: cria, promove, confere, manda boas-vindas e avisa Staff', async () => {
     (createGroup as never as ReturnType<typeof vi.fn>).mockResolvedValue({ groupJid: '1@g.us', inviteCode: 'abc' });
     (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net']);

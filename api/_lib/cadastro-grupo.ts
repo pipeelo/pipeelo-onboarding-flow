@@ -112,6 +112,22 @@ export function resumirErro(e: string): string {
   return e.length > 120 ? `${e.slice(0, 117)}…` : e;
 }
 
+/**
+ * Convite por WhatsApp para quem a API não conseguiu adicionar. Sai pela instância
+ * principal (DM), que é o número que o cliente já conhece.
+ */
+export function mensagemConviteGrupo(nome: string, empresa: string, inviteUrl: string): string {
+  const primeiro = (nome || '').trim().split(/\s+/)[0] || '';
+  return [
+    `Olá${primeiro ? `, ${primeiro}` : ''}! Aqui é a Pipeelo. 👋`,
+    '',
+    `Criamos o grupo *${groupSubject(empresa)}* no WhatsApp para tocar a implantação com você.`,
+    'A configuração de privacidade do seu WhatsApp não permitiu que a gente te adicionasse direto, então entre por este link:',
+    '',
+    inviteUrl,
+  ].join('\n');
+}
+
 export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoGrupo): string {
   const subject = groupSubject(c.nome_fantasia);
   const base = (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
@@ -134,6 +150,9 @@ export function mensagemStaffCadastro(s: SessaoGrupo, c: Cadastro, r: ResultadoG
   if (r.equipe_pipeelo) {
     const { adicionados, total } = r.equipe_pipeelo;
     linhas.push(adicionados === total ? `👥 Equipe Pipeelo no grupo: ${total} de ${total}` : `👥 Equipe Pipeelo no grupo: ${adicionados} de ${total} — ver falhas abaixo`);
+    // Quem não entrou pela API entra pelo convite. Sem o link aqui, o time fica
+    // dependendo de alguém abrir o painel para descobrir como entrar.
+    if (adicionados < total && r.invite_url) linhas.push(`🔗 Entrar no grupo: ${r.invite_url}`);
   }
   linhas.push(`📎 ${docs} documento${docs === 1 ? '' : 's'} · contrato → ${c.contrato_email} · vencimento dia ${c.dia_vencimento}`);
   linhas.push(`Painel: ${base}/admin`);
@@ -252,10 +271,21 @@ export async function criarGrupoParaSessao(
     erros.push(`participantes: ${msg(e)}`);
   }
 
-  // 3c. Quem ficou de fora recebe convite por e-mail — cada envio isolado, e só
-  // é possível quando temos o link do grupo.
+  // 3c. Quem ficou de fora recebe o convite: WhatsApp primeiro (chega na hora e
+  // todo contato tem número), e-mail como segunda via para quem tem endereço.
+  // Adicionar pela API falha por privacidade do destinatário e, desde 09/2026,
+  // também por restrição do WhatsApp ao número que administra o grupo — o convite
+  // é o caminho que sempre funciona.
   if (inviteUrl) {
     const url = inviteUrl;
+    for (const p of pessoas) {
+      if (jidNoGrupo(dentro, p.whatsapp)) continue;
+      try {
+        await sendText(toJid(p.whatsapp), mensagemConviteGrupo(p.nome, cadastro.nome_fantasia, url));
+      } catch (e) {
+        erros.push(`convite whatsapp ${p.whatsapp}: ${msg(e)}`);
+      }
+    }
     for (const p of pessoas) {
       if (jidNoGrupo(dentro, p.whatsapp) || !p.email) continue;
       try {
