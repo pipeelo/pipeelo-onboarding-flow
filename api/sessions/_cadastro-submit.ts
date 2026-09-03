@@ -81,15 +81,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(estadoAtual(atual));
     }
 
-    const grupo = await criarGrupoParaSessao(supabase, session, body.cadastro, {
+    // O grupo agora nasce em RITMO HUMANO (pausas longas entre cada participante),
+    // o que leva mais de um minuto. O cliente não fica esperando: grupo e
+    // pós-cadastro rodam em background, NESSA ORDEM — o link de assinatura vai
+    // para o grupo, então o grupo precisa existir antes.
+    void criarGrupoParaSessao(supabase, session, body.cadastro, {
       host: req.headers.host,
       proto: req.headers['x-forwarded-proto'] as string | undefined,
-    });
-    // Contrato + Conta Azul rodam em background: o cliente não espera (decisão 6).
-    void processarPosCadastro(supabase, { ...session, cadastro_enviado_at: enviadoEm }, body.cadastro)
+    })
+      .catch((e) => { console.error('[cadastro-submit] grupo:', e); })
+      .then(() => processarPosCadastro(supabase, { ...session, cadastro_enviado_at: enviadoEm }, body.cadastro))
       .catch(console.error);
 
-    return res.status(200).json({ ok: true, grupo });
+    return res.status(200).json({ ok: true, grupo: { status: 'em_andamento' as const } });
   } catch (e: unknown) {
     if (e instanceof HttpError) return res.status(e.status).json({ error: e.message });
     const err = e as { name?: string; flatten?: () => unknown };

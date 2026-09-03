@@ -49,19 +49,26 @@ function makeSupabase(
 describe('POST /api/sessions/cadastro-submit', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('200: salva cadastro, cria grupo e devolve resultado', async () => {
+  it('200: salva o cadastro e responde em_andamento sem esperar o grupo', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
     const sb = makeSupabase();
     (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
-    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] });
+    // O grupo nasce em ritmo humano e demora: o handler não pode ficar preso nele.
+    let liberarGrupo: () => void = () => {};
+    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockImplementation(
+      () => new Promise((resolve) => { liberarGrupo = () => resolve({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] }); })
+    );
 
     const r = await invokeHandler(handler as never, { method: 'POST', body, headers: { host: 'onboarding.pipeelo.com' } });
 
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] } });
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
+    expect(criarGrupoParaSessao).toHaveBeenCalledTimes(1);
+
     const saved = (sb.update.mock.calls[0] as unknown as [Record<string, unknown>])[0];
     expect(saved.cadastro).toMatchObject({ cnpj: '11222333000181', responsavel_whatsapp: '43996661541' });
     expect(saved.cadastro_enviado_at).toBeTruthy();
+    liberarGrupo();
   });
 
   it('dispara o pós-cadastro depois do grupo, com o carimbo do envio, sem mudar a resposta', async () => {
@@ -83,11 +90,11 @@ describe('POST /api/sessions/cadastro-submit', () => {
 
     const r = await invokeHandler(handler as never, { method: 'POST', body });
 
-    // Resposta HTTP igual à de antes do pós-cadastro.
+    // A resposta não espera nem o grupo nem o pós-cadastro.
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] } });
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
 
-    expect(processarPosCadastro).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(processarPosCadastro).toHaveBeenCalledTimes(1));
     expect(grupoJaTinhaResolvido).toBe(true);
 
     const carimbo = (sb.update.mock.calls[0] as unknown as [Record<string, unknown>])[0].cadastro_enviado_at;
@@ -172,7 +179,20 @@ describe('POST /api/sessions/cadastro-submit', () => {
     const r = await invokeHandler(handler as never, { method: 'POST', body });
 
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] } });
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
+  });
+
+  it('grupo que falha não derruba a resposta e o pós-cadastro roda mesmo assim', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
+    const sb = makeSupabase();
+    (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
+    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('evolution fora'));
+
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+
+    expect(r.statusCode).toBe(200);
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
+    await vi.waitFor(() => expect(processarPosCadastro).toHaveBeenCalledTimes(1));
   });
 
   it('rate limit real (success: false): 429', async () => {

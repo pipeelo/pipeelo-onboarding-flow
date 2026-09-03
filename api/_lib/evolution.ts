@@ -1,10 +1,23 @@
 /**
  * Cliente mínimo da Evolution API (WhatsApp) usado pelo onboarding.
  *
+ * DUAS INSTÂNCIAS (03/09/2026): o número Avisos passou a ser deslogado pelo
+ * WhatsApp (401) em toda escrita de grupo — criar, adicionar, promover, convite.
+ * Desde então, grupo sai por uma instância dedicada e mensagem individual
+ * continua saindo pelo Avisos, que é o número que o cliente já conhece.
+ *
+ * O destino é escolhido pelo JID: `@g.us` → instância de grupos;
+ * `@s.whatsapp.net` → instância principal.
+ *
  * Env vars (config no EasyPanel):
- *   EVOLUTION_API_BASE_URL  ex: https://pipeelo-evolution-api.zhh0vo.easypanel.host
- *   EVOLUTION_API_INSTANCE  ex: Avisos
- *   EVOLUTION_API_KEY       header `apikey`
+ *   EVOLUTION_API_BASE_URL     ex: https://pipeelo-evolution-api.zhh0vo.easypanel.host
+ *   EVOLUTION_API_INSTANCE     ex: Avisos          (mensagem individual)
+ *   EVOLUTION_API_KEY          header `apikey` da instância principal
+ *   EVOLUTION_GROUP_INSTANCE   ex: Grupos          (opcional; grupo)
+ *   EVOLUTION_GROUP_API_KEY    header `apikey` da instância de grupos
+ *
+ * Sem as duas envs de grupo, tudo cai na instância principal — o comportamento
+ * anterior, para não quebrar ambiente que ainda não separou.
  */
 
 export class EvolutionConfigError extends Error {
@@ -21,7 +34,10 @@ export class EvolutionApiError extends Error {
   }
 }
 
-function getConfig() {
+/** `group` = operação de grupo; `main` = mensagem individual. */
+export type AlvoEvolution = 'main' | 'group';
+
+export function getConfig(alvo: AlvoEvolution = 'main') {
   const baseUrl = process.env.EVOLUTION_API_BASE_URL;
   const instance = process.env.EVOLUTION_API_INSTANCE;
   const apiKey = process.env.EVOLUTION_API_KEY;
@@ -30,7 +46,24 @@ function getConfig() {
       'Faltam env vars: EVOLUTION_API_BASE_URL, EVOLUTION_API_INSTANCE, EVOLUTION_API_KEY'
     );
   }
-  return { baseUrl: baseUrl.replace(/\/+$/, ''), instance, apiKey };
+  const base = baseUrl.replace(/\/+$/, '');
+  if (alvo === 'group') {
+    const gi = process.env.EVOLUTION_GROUP_INSTANCE?.trim();
+    const gk = process.env.EVOLUTION_GROUP_API_KEY?.trim();
+    // Só separa quando as DUAS estão configuradas: instância sem chave (ou o
+    // contrário) mandaria a requisição autenticada para a instância errada.
+    if (gi && gk) return { baseUrl: base, instance: gi, apiKey: gk };
+  }
+  return { baseUrl: base, instance, apiKey };
+}
+
+/** JID de grupo termina em `@g.us`. */
+export function ehGrupo(jid: string): boolean {
+  return jid.endsWith('@g.us');
+}
+
+export function alvoDoJid(jid: string): AlvoEvolution {
+  return ehGrupo(jid) ? 'group' : 'main';
 }
 
 export type EvolutionGroup = {
@@ -65,7 +98,7 @@ function normalize(s: string): string {
  * e ignoram acentos.
  */
 export async function findGroupByName(name: string): Promise<EvolutionGroup | null> {
-  const { baseUrl, instance, apiKey } = getConfig();
+  const { baseUrl, instance, apiKey } = getConfig('group');
   const url = `${baseUrl}/group/fetchAllGroups/${encodeURIComponent(instance)}?getParticipants=false`;
   const r = await fetch(url, { headers: { apikey: apiKey } });
   if (!r.ok) {
@@ -138,7 +171,9 @@ export async function resolveJid(jid: string): Promise<string> {
 }
 
 export async function sendText(jidPedido: string, text: string): Promise<{ ok: true }> {
-  const { baseUrl, instance, apiKey } = getConfig();
+  // Mensagem para grupo tem que sair de quem ESTÁ no grupo; DM sai do número
+  // que o cliente conhece.
+  const { baseUrl, instance, apiKey } = getConfig(alvoDoJid(jidPedido));
   const jid = await resolveJid(jidPedido);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instance)}`;
   const r = await fetch(url, {
@@ -188,8 +223,9 @@ export function groupSubject(nomeFantasia: string): string {
   return `Pipeelo & ${nomeFantasia.trim().replace(/\s+/g, ' ')}`;
 }
 
+/** Toda operação de grupo passa por aqui — e por isso vai na instância de grupos. */
 async function evoRequest<T>(path: string, init: RequestInit & { query?: Record<string, string> } = {}): Promise<T> {
-  const { baseUrl, instance, apiKey } = getConfig();
+  const { baseUrl, instance, apiKey } = getConfig('group');
   const qs = init.query ? '?' + new URLSearchParams(init.query).toString() : '';
   const url = `${baseUrl}/${path}/${encodeURIComponent(instance)}${qs}`;
   const r = await fetch(url, {

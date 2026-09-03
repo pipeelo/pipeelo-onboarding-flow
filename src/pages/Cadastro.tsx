@@ -194,7 +194,12 @@ export default function Cadastro() {
         <Card className="p-6 md:p-8 space-y-4">
           <CheckCircle2 className="h-10 w-10 text-primary" />
           <h1 className="text-2xl font-bold">Cadastro recebido</h1>
-          {resultado.status === 'criado' ? (
+          {resultado.status === 'em_andamento' ? (
+            <p className="text-muted-foreground">
+              Recebemos tudo. Estamos criando o grupo <strong>Pipeelo &amp; {form.nome_fantasia || session?.empresa_nome}</strong> no
+              WhatsApp com você como administrador — leva alguns minutos e você será adicionado automaticamente.
+            </p>
+          ) : resultado.status === 'criado' ? (
             <>
               <p className="text-muted-foreground">Criamos o grupo <strong>Pipeelo &amp; {form.nome_fantasia || session?.empresa_nome}</strong> no WhatsApp com você como administrador. O link do formulário de onboarding já está lá.</p>
               {resultado.invite_url && (

@@ -38,23 +38,49 @@ function msg(e: unknown): string {
 const esperar = (ms: number) => (process.env.VITEST ? Promise.resolve() : new Promise((r) => setTimeout(r, ms)));
 
 /**
- * Adiciona um número por vez, com pausa: o WhatsApp responde `rate-overlimit` quando
- * recebe vários de uma vez. Em rate limit espera e tenta mais uma vez. Devolve quem falhou.
+ * RITMO HUMANO (03/09/2026). O número Avisos foi deslogado pelo WhatsApp (401) depois
+ * de criar dois grupos e disparar dezenas de chamadas de participante em poucos
+ * segundos. Uma pessoa não faz isso: ela cria o grupo, olha a tela, adiciona um
+ * contato, espera, adiciona outro. Toda etapa daqui em diante tem pausa ALEATÓRIA —
+ * cadência fixa também tem cara de robô.
+ *
+ * O preço é o tempo: com a equipe cheia a criação passa de um minuto. Por isso o
+ * `cadastro-submit` não espera mais por ela (roda em background).
+ */
+const RITMO = {
+  aposCriarGrupo: [6_000, 14_000],
+  entreParticipantes: [8_000, 20_000],
+  antesDePromover: [4_000, 9_000],
+  antesDoConvite: [3_000, 7_000],
+  antesDasBoasVindas: [5_000, 12_000],
+  aposRateLimit: [25_000, 45_000],
+} as const;
+
+/** Pausa com jitter dentro da faixa. Em teste não espera nada. */
+export function sortearPausa([min, max]: readonly [number, number]): number {
+  return Math.round(min + Math.random() * (max - min));
+}
+
+const pausar = (faixa: readonly [number, number]) => esperar(sortearPausa(faixa));
+
+/**
+ * Adiciona um número por vez, com pausa longa e aleatória entre cada um. Em rate
+ * limit espera bem mais e tenta uma vez só. Devolve quem falhou.
  */
 export async function adicionarUmPorUm(groupJid: string, jids: string[]): Promise<string[]> {
   const falhas: string[] = [];
-  for (const jid of jids) {
+  for (const [i, jid] of jids.entries()) {
+    if (i > 0) await pausar(RITMO.entreParticipantes);
     try {
       await updateParticipants(groupJid, 'add', [jid]);
     } catch (e) {
       if (/rate-overlimit/i.test(msg(e))) {
-        await esperar(5000);
+        await pausar(RITMO.aposRateLimit);
         try { await updateParticipants(groupJid, 'add', [jid]); continue; } catch (e2) { falhas.push(`${jid}: ${msg(e2)}`); }
       } else {
         falhas.push(`${jid}: ${msg(e)}`);
       }
     }
-    await esperar(1500);
   }
   return falhas;
 }
@@ -153,7 +179,10 @@ export async function criarGrupoParaSessao(
   // 1. Criar (ou reaproveitar) o grupo
   try {
     if (groupJid) {
-      await updateParticipants(groupJid, 'add', todosJids);
+      // Um por um, mesmo aqui: adicionar o bloco inteiro de uma vez é o padrão que
+      // derrubou o número antes.
+      const falhas = await adicionarUmPorUm(groupJid, todosJids);
+      if (falhas.length) erros.push(`contatos do cliente: ${falhas.join('; ')}`);
     } else {
       const created = await createGroup(groupSubject(cadastro.nome_fantasia), todosJids);
       groupJid = created.groupJid;
@@ -161,6 +190,8 @@ export async function criarGrupoParaSessao(
       await patch(supabase, sessao.id, {
         grupo_jid: groupJid, grupo_invite_url: inviteUrl, grupo_criado_at: new Date().toISOString(), grupo_erro: null,
       });
+      // Grupo recém-criado: ninguém sai adicionando gente no mesmo segundo.
+      await pausar(RITMO.aposCriarGrupo);
     }
   } catch (e) {
     const motivo = msg(e);
@@ -192,6 +223,7 @@ export async function criarGrupoParaSessao(
   }
 
   // 2. Promover admin — pelo JID real do participante (o WhatsApp pode tirar o nono dígito)
+  await pausar(RITMO.antesDePromover);
   try {
     const atuais = await getParticipants(groupJid);
     await updateParticipants(groupJid, 'promote', [jidNoGrupo(atuais, adminJid) ?? adminJid]);
@@ -201,6 +233,7 @@ export async function criarGrupoParaSessao(
 
   // 3a. Buscar o link de convite (se ainda não temos), independente do resto
   if (!inviteUrl) {
+    await pausar(RITMO.antesDoConvite);
     try {
       inviteUrl = await getInviteUrl(groupJid);
       await patch(supabase, sessao.id, { grupo_invite_url: inviteUrl });
@@ -241,6 +274,8 @@ export async function criarGrupoParaSessao(
 
   // 4. Boas-vindas com link curto do onboarding (uma vez só)
   if (!sessao.notificacao_boas_vindas_enviada_at) {
+    // Escrever a mensagem leva tempo para uma pessoa.
+    await pausar(RITMO.antesDasBoasVindas);
     try {
       const modo = sessao.modo ?? 'completo';
       const { short_url } = await ensureShortLink(supabase, {

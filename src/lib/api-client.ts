@@ -153,6 +153,9 @@ export type ResultadoCobrancaDTO =
 
 export type ResultadoGrupoDTO =
   | { status: 'criado'; jid: string; invite_url: string | null; nao_adicionados: string[]; erros?: string[]; equipe_pipeelo?: { adicionados: number; total: number } }
+  // O grupo nasce em ritmo humano, em background: no envio do cadastro ele ainda
+  // não existe. Recarregar a página depois mostra o link.
+  | { status: 'em_andamento' }
   | { status: 'erro'; motivo: string };
 
 export const sessionApi = {
