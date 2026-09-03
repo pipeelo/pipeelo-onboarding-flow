@@ -114,8 +114,32 @@ export async function findGroupByName(name: string): Promise<EvolutionGroup | nu
   return null;
 }
 
-export async function sendText(jid: string, text: string): Promise<{ ok: true }> {
+/**
+ * JID individual → JID que o WhatsApp realmente conhece. Celular BR pode estar
+ * registrado SEM o nono dígito; o sendText com o 9 devolve 400 `exists:false`.
+ * Qualquer falha devolve o JID original.
+ */
+export async function resolveJid(jid: string): Promise<string> {
+  if (!jid.endsWith('@s.whatsapp.net')) return jid;
   const { baseUrl, instance, apiKey } = getConfig();
+  try {
+    const r = await fetch(`${baseUrl}/chat/whatsappNumbers/${encodeURIComponent(instance)}`, {
+      method: 'POST',
+      headers: { apikey: apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ numbers: [jid.replace(/@.*$/, '')] }),
+    });
+    if (!r.ok) return jid;
+    const lista = (await r.json().catch(() => null)) as Array<{ jid?: string; exists?: boolean }> | null;
+    const achado = Array.isArray(lista) ? lista.find((n) => n?.exists && n.jid) : null;
+    return achado?.jid ?? jid;
+  } catch {
+    return jid;
+  }
+}
+
+export async function sendText(jidPedido: string, text: string): Promise<{ ok: true }> {
+  const { baseUrl, instance, apiKey } = getConfig();
+  const jid = await resolveJid(jidPedido);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instance)}`;
   const r = await fetch(url, {
     method: 'POST',
