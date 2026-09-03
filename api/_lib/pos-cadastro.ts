@@ -74,7 +74,9 @@ export function mensagemStaffPosCadastro(
   if (cobranca.status === 'cobrado') {
     const partes = [
       'cliente criado',
-      comLink(`implantação ${moeda(sessao.valor_implantacao)} venc ${ddmm(sessao.implantacao_vencimento)}`, cobranca.implantacao_url),
+      cobranca.implantacao_url
+        ? comLink(`implantação ${moeda(sessao.valor_implantacao)} venc ${ddmm(sessao.implantacao_vencimento)}`, cobranca.implantacao_url)
+        : 'implantação isenta',
       comLink(`1ª mensalidade ${moeda(sessao.valor_mensal)} venc ${ddmm(sessao.primeira_mensalidade_em)}`, cobranca.mensalidade_url),
     ];
     if (cobranca.recorrente && sessao.dia_vencimento) partes.push(`recorrente dia ${sessao.dia_vencimento}`);

@@ -32,7 +32,7 @@ const Body = z.object({
   dia_vencimento: z.number().int().min(1).max(31).nullable().optional(),
   observacoes: z.string().max(4000).nullable().optional(),
   // Valores do fechamento — implantação + 1ª mensalidade (Design pós-cadastro, decisão 4)
-  valor_implantacao: z.number().positive().max(99999999.99).nullable().optional(),
+  valor_implantacao: z.number().nonnegative().max(99999999.99).nullable().optional(),
   implantacao_vencimento: nullableIsoDate.optional(),
   primeira_mensalidade_em: nullableIsoDate.optional(),
 });

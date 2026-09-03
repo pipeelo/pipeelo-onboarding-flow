@@ -126,6 +126,11 @@ function rg(e: Extracao['representante']): string {
   return [e.rg, orgao].filter(Boolean).join(' ').trim();
 }
 
+/** Implantação 0 = isenta (decisão do Felipe, 03/09/2026). */
+export function implantacaoIsenta(sessao: { valor_implantacao?: number | string | null }): boolean {
+  return numero(sessao.valor_implantacao) === 0;
+}
+
 export function montarCampos(
   sessao: SessaoContrato,
   cadastro: Cadastro,
@@ -157,8 +162,8 @@ export function montarCampos(
     ANEXO_VALOR_SESSAO: moeda(sessao.valor_sessao),
     ANEXO_SESSOES_INCLUIDAS: qtd === null ? '' : `${inteiro(qtd)} sessões/mês`,
     ANEXO_VALOR_MENSAL: moeda(sessao.valor_mensal),
-    ANEXO_TAXA_IMPLANTACAO: moeda(sessao.valor_implantacao),
-    ANEXO_DATA_VENCIMENTO_IMPL: dataCurta(sessao.implantacao_vencimento),
+    ANEXO_TAXA_IMPLANTACAO: implantacaoIsenta(sessao) ? 'Isenta' : moeda(sessao.valor_implantacao),
+    ANEXO_DATA_VENCIMENTO_IMPL: implantacaoIsenta(sessao) && !sessao.implantacao_vencimento ? 'Não se aplica' : dataCurta(sessao.implantacao_vencimento),
     ANEXO_SERVICOS: servicosContratados(Boolean(sessao.contratou_crm)),
     ANEXO_PRAZO_TESTES: PRAZO_TESTES_PADRAO,
     ANEXO_DIA_VENCIMENTO: sessao.dia_vencimento ? `dia ${sessao.dia_vencimento}` : '',

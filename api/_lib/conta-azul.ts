@@ -116,8 +116,17 @@ const OBRIGATORIOS: Array<[keyof SessaoCobranca, string]> = [
   ['dia_vencimento', 'dia de vencimento'],
 ];
 
+/** Implantação 0 = isenta: sem boleto de implantação e sem exigir o vencimento dela. */
+export function implantacaoIsenta(sessao: SessaoCobranca): boolean {
+  return numero(sessao.valor_implantacao) === 0;
+}
+
 export function faltamDadosDoFechamento(sessao: SessaoCobranca): string[] {
-  return OBRIGATORIOS.filter(([k]) => !presente(sessao[k])).map(([, rotulo]) => rotulo);
+  const isenta = implantacaoIsenta(sessao);
+  return OBRIGATORIOS
+    .filter(([k]) => !(isenta && k === 'implantacao_vencimento'))
+    .filter(([k]) => !presente(sessao[k]))
+    .map(([, rotulo]) => rotulo);
 }
 
 export async function cobrarContaAzul(
@@ -168,10 +177,10 @@ export async function cobrarContaAzul(
           ? { endereco: sessao.contrato_extracao.endereco_sede }
           : {}),
       },
-      implantacao: {
-        valor: valorImplantacao,
-        vencimento: sessao.implantacao_vencimento,
-      },
+      // Isenta → o site não cria venda nem boleto de implantação.
+      implantacao: valorImplantacao === 0
+        ? null
+        : { valor: valorImplantacao, vencimento: sessao.implantacao_vencimento },
       mensalidade: {
         valor: valorMensal,
         primeira_em: sessao.primeira_mensalidade_em,
