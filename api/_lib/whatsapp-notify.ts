@@ -12,6 +12,7 @@ import { findGroupByName, sendText, EvolutionConfigError } from './evolution';
 import { getServiceSupabase } from './supabase';
 import { buildIntegrationRequestMessage } from './integration-request';
 import { addTeamToGroup } from './equipe-grupo';
+import { notifyStaff } from './staff-notify';
 
 const TEMPLATE_COMPLETO = (empresa: string) => `✅ *Onboarding concluído!*
 
@@ -146,7 +147,14 @@ export async function maybeNotifyOnboardingComplete(
     // Evolution às vezes retorna 5xx com mensagem JÁ entregue. Preferimos
     // perder uma notificação a mandar duas. Admin pode disparar manualmente
     // se necessário via /api/admin/whatsapp-send-welcome.
+    // Sem avisar, o claim fica gasto e ninguém descobre que a mensagem não saiu —
+    // foi assim que a conclusão da VIBE precisou ser mandada à mão (04/09/2026).
     console.error('[whatsapp-notify] sendText falhou:', e);
+    const motivo = e instanceof Error ? e.message : String(e);
+    await notifyStaff(
+      `⚠️ ${data.empresa_nome} concluiu o onboarding, mas a mensagem de conclusão NÃO saiu no grupo: ${motivo.slice(0, 200)}\n`
+      + 'Mandem à mão e confiram o grupo.',
+    ).catch(() => undefined);
     return { skipped: true, reason: 'send_failed' };
   }
 }

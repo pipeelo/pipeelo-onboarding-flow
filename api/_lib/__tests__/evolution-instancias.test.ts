@@ -43,22 +43,65 @@ describe('getConfig', () => {
   });
 });
 
-describe('sendText escolhe a instância pelo destino', () => {
-  it('grupo sai pela Grupos; DM sai pelo Avisos', async () => {
+describe('sendText manda pelo número que ESTÁ no grupo', () => {
+  beforeEach(() => {
     process.env.EVOLUTION_GROUP_INSTANCE = 'Grupos';
     process.env.EVOLUTION_GROUP_API_KEY = 'chave-grupos';
-    const chamadas: Array<{ url: string; key: string }> = [];
+  });
+
+  type Chamada = { url: string; key: string };
+
+  function stubFetch(chamadas: Chamada[], participantesDaGrupos: unknown) {
     vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
       chamadas.push({ url, key: (init.headers as Record<string, string>).apikey });
+      if (url.includes('/group/participants/')) {
+        if (participantesDaGrupos === null) {
+          return { ok: false, status: 404, json: async () => ({}), text: async () => '' } as unknown as Response;
+        }
+        return { ok: true, status: 200, json: async () => participantesDaGrupos, text: async () => '' } as unknown as Response;
+      }
       return { ok: true, status: 200, json: async () => ([]), text: async () => '' } as unknown as Response;
     });
+  }
+
+  it('grupo da instância de grupos: sonda encontra participantes e manda por ela', async () => {
+    const chamadas: Chamada[] = [];
+    stubFetch(chamadas, { participants: [{ id: '1@lid' }] });
 
     await sendText('120363@g.us', 'oi grupo');
-    expect(chamadas.at(-1)).toEqual({ url: 'https://evo.teste/message/sendText/Grupos', key: 'chave-grupos' });
 
-    chamadas.length = 0;
+    expect(chamadas[0].url).toContain('/group/participants/Grupos');
+    expect(chamadas.at(-1)).toEqual({ url: 'https://evo.teste/message/sendText/Grupos', key: 'chave-grupos' });
+  });
+
+  it('grupo ANTIGO (a instância de grupos não participa): cai na principal', async () => {
+    // Regressão da VIBE em 04/09/2026: a mensagem de conclusão sumiu porque saía
+    // pela instância de grupos, que não está nos grupos criados antes dela.
+    const chamadas: Chamada[] = [];
+    stubFetch(chamadas, null);
+
+    await sendText('120363@g.us', 'oi grupo antigo');
+
+    expect(chamadas[0].url).toContain('/group/participants/Grupos');
+    expect(chamadas.at(-1)).toEqual({ url: 'https://evo.teste/message/sendText/Avisos', key: 'chave-avisos' });
+  });
+
+  it('lista de participantes vazia também cai na principal', async () => {
+    const chamadas: Chamada[] = [];
+    stubFetch(chamadas, { participants: [] });
+
+    await sendText('120363@g.us', 'oi');
+
+    expect(chamadas.at(-1)!.url).toBe('https://evo.teste/message/sendText/Avisos');
+  });
+
+  it('DM não sonda nada e sai sempre pela principal', async () => {
+    const chamadas: Chamada[] = [];
+    stubFetch(chamadas, { participants: [{ id: '1@lid' }] });
+
     await sendText('5543999998888@s.whatsapp.net', 'oi pessoa');
-    // 1ª chamada resolve o JID, 2ª manda — as duas na instância principal.
+
+    expect(chamadas.some((c) => c.url.includes('/group/participants/'))).toBe(false);
     expect(chamadas.every((c) => c.key === 'chave-avisos')).toBe(true);
     expect(chamadas.at(-1)!.url).toBe('https://evo.teste/message/sendText/Avisos');
   });

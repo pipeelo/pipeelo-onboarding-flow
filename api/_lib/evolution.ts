@@ -66,6 +66,40 @@ export function alvoDoJid(jid: string): AlvoEvolution {
   return ehGrupo(jid) ? 'group' : 'main';
 }
 
+/** true quando existe instância de grupo separada da principal. */
+function temInstanciaDeGrupo(): boolean {
+  const c = getConfig();
+  const g = getConfig('group');
+  return g.instance !== c.instance;
+}
+
+/**
+ * Qual instância está DENTRO deste grupo.
+ *
+ * Mensagem em grupo só sai de quem participa dele. Os grupos criados antes da
+ * instância dedicada (todos os clientes antigos) pertencem à principal, e mandar
+ * pela instância de grupos falha em silêncio — foi o que engoliu a mensagem de
+ * conclusão da VIBE em 04/09/2026.
+ *
+ * A sonda é uma LEITURA (`group/participants`), então não corre risco de mandar
+ * duas vezes. Falhou a leitura, assume a principal: é onde estão os grupos
+ * antigos e é o número que sempre funcionou.
+ */
+export async function instanciaDoGrupo(groupJid: string): Promise<AlvoEvolution> {
+  if (!ehGrupo(groupJid) || !temInstanciaDeGrupo()) return 'main';
+  try {
+    const { baseUrl, instance, apiKey } = getConfig('group');
+    const url = `${baseUrl}/group/participants/${encodeURIComponent(instance)}?groupJid=${encodeURIComponent(groupJid)}`;
+    const r = await fetch(url, { headers: { apikey: apiKey } });
+    if (!r.ok) return 'main';
+    const corpo = (await r.json().catch(() => null)) as { participants?: unknown[] } | unknown[] | null;
+    const lista = Array.isArray(corpo) ? corpo : corpo?.participants;
+    return Array.isArray(lista) && lista.length > 0 ? 'group' : 'main';
+  } catch {
+    return 'main';
+  }
+}
+
 export type EvolutionGroup = {
   id: string;
   subject: string;
@@ -171,9 +205,10 @@ export async function resolveJid(jid: string): Promise<string> {
 }
 
 export async function sendText(jidPedido: string, text: string): Promise<{ ok: true }> {
-  // Mensagem para grupo tem que sair de quem ESTÁ no grupo; DM sai do número
-  // que o cliente conhece.
-  const { baseUrl, instance, apiKey } = getConfig(alvoDoJid(jidPedido));
+  // Mensagem para grupo tem que sair de quem ESTÁ no grupo (sonda antes); DM sai
+  // do número que o cliente conhece.
+  const alvo = ehGrupo(jidPedido) ? await instanciaDoGrupo(jidPedido) : 'main';
+  const { baseUrl, instance, apiKey } = getConfig(alvo);
   const jid = await resolveJid(jidPedido);
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instance)}`;
   const r = await fetch(url, {
