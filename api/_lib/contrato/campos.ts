@@ -23,7 +23,7 @@ export type SessaoContrato = {
   dia_vencimento?: number | string | null;
   valor_implantacao?: number | string | null;
   implantacao_vencimento?: string | null;
-  primeira_mensalidade_em?: string | null;
+  go_live_em?: string | null;
   cadastro_enviado_at?: string | null;
 };
 

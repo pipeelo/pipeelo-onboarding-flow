@@ -34,6 +34,9 @@ const Body = z.object({
   // Valores do fechamento — implantação + 1ª mensalidade (Design pós-cadastro, decisão 4)
   valor_implantacao: z.number().nonnegative().max(99999999.99).nullable().optional(),
   implantacao_vencimento: nullableIsoDate.optional(),
+  // Início da operação — base da 1ª mensalidade proporcional.
+  go_live_em: nullableIsoDate.optional(),
+  /** @deprecated substituída por `go_live_em`; ainda aceita para não quebrar o CRM. */
   primeira_mensalidade_em: nullableIsoDate.optional(),
 });
 
@@ -70,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if ('valor_implantacao' in body) patch.valor_implantacao = body.valor_implantacao ?? null;
     if ('implantacao_vencimento' in body)
       patch.implantacao_vencimento = body.implantacao_vencimento ?? null;
+    if ('go_live_em' in body) patch.go_live_em = body.go_live_em ?? null;
     if ('primeira_mensalidade_em' in body)
       patch.primeira_mensalidade_em = body.primeira_mensalidade_em ?? null;
 

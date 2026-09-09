@@ -30,7 +30,7 @@ const sessao: SessaoCobranca = {
   valor_implantacao: 4000,
   implantacao_vencimento: '2026-09-15',
   valor_mensal: 2508,
-  primeira_mensalidade_em: '2026-10-10',
+  go_live_em: '2026-10-07',
   dia_vencimento: 10,
   contrato_extracao: { endereco_sede: 'Rua A, 100, Londrina/PR' },
 };
@@ -122,7 +122,9 @@ describe('cobrarContaAzul', () => {
   });
 
   it('lista todos os campos obrigatórios que faltam', () => {
-    expect(faltamDadosDoFechamento({ id: 's1' })).toHaveLength(5);
+    // go_live_em não é obrigatório: sem ele a cobrança sai só com a implantação.
+    expect(faltamDadosDoFechamento({ id: 's1' })).toHaveLength(4);
+    expect(faltamDadosDoFechamento({ ...sessao, go_live_em: null })).toEqual([]);
     expect(faltamDadosDoFechamento(sessao)).toEqual([]);
   });
 
@@ -144,6 +146,7 @@ describe('cobrarContaAzul', () => {
       implantacao_url: 'https://boleto/impl',
       mensalidade_url: 'https://boleto/mens',
       recorrente: true,
+      mensalidade: { valor: null, dias: null, vencimento: '2026-10-10' },
     });
 
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
@@ -159,7 +162,7 @@ describe('cobrarContaAzul', () => {
       endereco: 'Rua A, 100, Londrina/PR',
     });
     expect(body.implantacao).toEqual({ valor: 4000, vencimento: '2026-09-15' });
-    expect(body.mensalidade).toEqual({ valor: 2508, primeira_em: '2026-10-10', dia_vencimento: 10 });
+    expect(body.mensalidade).toEqual({ valor: 2508, go_live_em: '2026-10-07', dia_vencimento: 10 });
 
     expect(reservou(updates)).toBe(true);
     expect(ultimo(updates)).toMatchObject({
@@ -178,6 +181,28 @@ describe('cobrarContaAzul', () => {
     const body = JSON.parse(String((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body));
     expect(body.implantacao.valor).toBe(4000);
     expect(body.mensalidade.valor).toBe(2508.5);
+  });
+
+  it('sem go-live o payload vai sem mensalidade e o resultado fica aguardando', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      resposta(201, {
+        ok: true,
+        cliente_id: 'ca-123',
+        implantacao: { venda_id: 'v1', vencimento: '2026-09-15', url: 'https://boleto/impl' },
+        mensalidade: null,
+        recorrente: { contrato_id: null },
+        aguardando_go_live: true,
+      }),
+    );
+    const { supabase, updates } = sb();
+    const r = await cobrarContaAzul(supabase, { ...sessao, go_live_em: null }, cadastro);
+
+    const body = JSON.parse(String((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body));
+    expect(body.mensalidade).toBeUndefined();
+    expect(r).toEqual({ status: 'aguardando_go_live', implantacao_url: 'https://boleto/impl' });
+    // Sem data de cobrança: é ela que libera a cobrança da mensalidade depois.
+    expect(ultimo(updates).ca_cobrado_at).toBeUndefined();
+    expect(ultimo(updates).ca_implantacao_url).toBe('https://boleto/impl');
   });
 
   it('reserva perdida (outra execução em curso ou já cobrado) não chama a API', async () => {

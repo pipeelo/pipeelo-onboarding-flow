@@ -33,23 +33,28 @@ const cadastro = {
 const auth = { authorization: 'Bearer x' };
 
 function sb(row: unknown, signed?: { data: unknown; error: unknown }) {
+  const updates: Array<Record<string, unknown>> = [];
   const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     maybeSingle: vi.fn(async () => ({ data: row, error: null })),
+    update: vi.fn((patch: Record<string, unknown>) => {
+      updates.push(patch);
+      return { eq: vi.fn(async () => ({ error: null })) };
+    }),
   };
   const createSignedUrl = vi.fn(async () => signed ?? { data: { signedUrl: 'https://storage/assinado' }, error: null });
   (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue({
     from: () => chain,
     storage: { from: () => ({ createSignedUrl }) },
   });
-  return { createSignedUrl };
+  return { createSignedUrl, updates };
 }
 
 const sessaoOk = {
   id: 's1', slug: 'provedor-x', empresa_nome: 'X', erp: 'IXC', contratou_crm: false,
   valor_sessao: 0.95, qtd_sessoes: 2640, valor_mensal: 2508, dia_vencimento: 10,
-  valor_implantacao: 4000, implantacao_vencimento: '2026-09-15', primeira_mensalidade_em: '2026-10-10',
+  valor_implantacao: 4000, implantacao_vencimento: '2026-09-15', go_live_em: null,
   cadastro, cadastro_enviado_at: '2026-09-02T12:00:00.000Z',
 };
 
@@ -98,6 +103,27 @@ describe('POST /api/admin/cadastro-cobrar-conta-azul', () => {
     sb({ id: 's1', cadastro: null, cadastro_enviado_at: null });
     const r = await invokeHandler(cobrarHandler as never, { method: 'POST', body: { session_id: 's1' }, headers: auth });
     expect(r.statusCode).toBe(409);
+    expect(cobrarContaAzul).not.toHaveBeenCalled();
+  });
+
+  it('grava o go-live na sessão antes de cobrar', async () => {
+    const { updates } = sb(sessaoOk);
+    const r = await invokeHandler(cobrarHandler as never, {
+      method: 'POST', body: { session_id: 's1', go_live_em: '2026-09-20' }, headers: auth,
+    });
+    expect(r.statusCode).toBe(200);
+    expect(updates).toEqual([{ go_live_em: '2026-09-20' }]);
+    // A sessão passada para a cobrança já leva a data — é ela que libera a mensalidade.
+    const sessaoCobrada = (cobrarContaAzul as never as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(sessaoCobrada.go_live_em).toBe('2026-09-20');
+  });
+
+  it('400 quando o go-live vem em formato errado', async () => {
+    sb(sessaoOk);
+    const r = await invokeHandler(cobrarHandler as never, {
+      method: 'POST', body: { session_id: 's1', go_live_em: '20/09/2026' }, headers: auth,
+    });
+    expect(r.statusCode).toBe(400);
     expect(cobrarContaAzul).not.toHaveBeenCalled();
   });
 

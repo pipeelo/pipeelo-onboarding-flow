@@ -5,11 +5,20 @@ import { getServiceSupabase } from '../_lib/supabase';
 import { CadastroSchema } from '../_lib/schemas/cadastro';
 import { cobrarContaAzul, type SessaoCobranca } from '../_lib/conta-azul';
 
-const Body = z.object({ session_id: z.string().min(1), force: z.boolean().optional() });
+const Body = z.object({
+  session_id: z.string().min(1),
+  force: z.boolean().optional(),
+  /** Data do go-live. Grava na sessão antes de cobrar — é o que libera a 1ª mensalidade. */
+  go_live_em: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'use YYYY-MM-DD').optional(),
+});
 
 /**
  * POST /api/admin/cadastro-cobrar-conta-azul — cria o cliente e as cobranças no
  * Conta Azul com os valores do fechamento. Botão de reprocesso do `/admin`.
+ *
+ * Sem `go_live_em` (na sessão ou no corpo) cobra só a implantação e responde
+ * `aguardando_go_live`. Com a data, cobra a 1ª mensalidade PROPORCIONAL aos dias
+ * de operação do mês e cria o contrato recorrente cheio.
  *
  * Sessão já cobrada responde 409 `ja_cobrado`: cobrar de novo geraria boleto
  * duplicado. Com `force: true` no corpo, refaz mesmo assim.
@@ -20,11 +29,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     await assertAdminUser(req);
-    const { session_id, force } = Body.parse(req.body);
+    const { session_id, force, go_live_em } = Body.parse(req.body);
     const supabase = getServiceSupabase();
     const { data, error } = await supabase
       .from('onboarding_sessions')
-      .select('id, slug, valor_implantacao, implantacao_vencimento, valor_mensal, primeira_mensalidade_em, dia_vencimento, contrato_extracao, ca_cobrado_at, cadastro, cadastro_enviado_at')
+      .select('id, slug, valor_implantacao, implantacao_vencimento, valor_mensal, go_live_em, dia_vencimento, contrato_extracao, ca_cobrado_at, cadastro, cadastro_enviado_at')
       .eq('id', session_id)
       .maybeSingle();
     if (error) return res.status(500).json({ error: error.message });
@@ -32,6 +41,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!data.cadastro_enviado_at || !data.cadastro) return res.status(409).json({ error: 'cadastro_nao_enviado' });
     if (data.ca_cobrado_at && force !== true) {
       return res.status(409).json({ error: 'ja_cobrado', ca_cobrado_at: data.ca_cobrado_at });
+    }
+
+    // Go-live informado agora fica gravado: reprocesso e aviso do Staff leem daí.
+    if (go_live_em && go_live_em !== data.go_live_em) {
+      const { error: erroGoLive } = await supabase
+        .from('onboarding_sessions')
+        .update({ go_live_em })
+        .eq('id', session_id);
+      if (erroGoLive) return res.status(500).json({ error: erroGoLive.message });
+      data.go_live_em = go_live_em;
     }
 
     const cadastro = CadastroSchema.parse(data.cadastro);

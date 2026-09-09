@@ -71,16 +71,29 @@ export function mensagemStaffPosCadastro(
     }
   }
 
+  const implantacaoNoAviso = (url: string | null) =>
+    url
+      ? comLink(`implantação ${moeda(sessao.valor_implantacao)} venc ${ddmm(sessao.implantacao_vencimento)}`, url)
+      : 'implantação isenta';
+
   if (cobranca.status === 'cobrado') {
+    const m = cobranca.mensalidade;
+    const dias = m?.dias != null && m.dias < 30 ? ` (${m.dias} dias)` : '';
+    const rotulo = `1ª mensalidade${dias} ${moeda(m?.valor ?? sessao.valor_mensal)} venc ${ddmm(m?.vencimento)}`;
     const partes = [
       'cliente criado',
-      cobranca.implantacao_url
-        ? comLink(`implantação ${moeda(sessao.valor_implantacao)} venc ${ddmm(sessao.implantacao_vencimento)}`, cobranca.implantacao_url)
-        : 'implantação isenta',
-      comLink(`1ª mensalidade ${moeda(sessao.valor_mensal)} venc ${ddmm(sessao.primeira_mensalidade_em)}`, cobranca.mensalidade_url),
+      implantacaoNoAviso(cobranca.implantacao_url),
+      comLink(rotulo, cobranca.mensalidade_url),
     ];
-    if (cobranca.recorrente && sessao.dia_vencimento) partes.push(`recorrente dia ${sessao.dia_vencimento}`);
+    if (cobranca.recorrente && sessao.dia_vencimento) {
+      partes.push(`recorrente ${moeda(sessao.valor_mensal)} dia ${sessao.dia_vencimento}`);
+    }
     linhas.push(`💳 Conta Azul: ${partes.join(' · ')}`);
+  } else if (cobranca.status === 'aguardando_go_live') {
+    linhas.push(
+      `💳 Conta Azul: cliente criado · ${implantacaoNoAviso(cobranca.implantacao_url)} · ` +
+        '⏳ 1ª mensalidade proporcional espera a data de go-live — registrar no painel',
+    );
   } else {
     linhas.push(`💳 Conta Azul: ⚠️ pendente — ${cobranca.motivo}`);
   }
@@ -146,6 +159,7 @@ export async function processarPosCadastro(
       implantacao_url: sessao.ca_implantacao_url ?? null,
       mensalidade_url: sessao.ca_mensalidade_url ?? null,
       recorrente: Boolean(sessao.dia_vencimento),
+      mensalidade: null,
     };
   } else {
     try {

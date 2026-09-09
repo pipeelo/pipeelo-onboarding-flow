@@ -76,7 +76,7 @@ type ComercialPatch = {
   observacoes?: string | null;
   valor_implantacao?: number | null;
   implantacao_vencimento?: string | null;
-  primeira_mensalidade_em?: string | null;
+  go_live_em?: string | null;
 };
 
 const DIAS_VENCIMENTO = Array.from({ length: 31 }, (_, i) => String(i + 1));
@@ -303,7 +303,7 @@ function ComercialEditor({
   const [observacoes, setObservacoes] = useState('');
   const [valorImplantacao, setValorImplantacao] = useState('');
   const [implantacaoVencimento, setImplantacaoVencimento] = useState('');
-  const [primeiraMensalidadeEm, setPrimeiraMensalidadeEm] = useState('');
+  const [goLiveEm, setGoLiveEm] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -315,7 +315,7 @@ function ComercialEditor({
       setObservacoes(session.observacoes ?? '');
       setValorImplantacao(numToInput(session.valor_implantacao));
       setImplantacaoVencimento(session.implantacao_vencimento ?? '');
-      setPrimeiraMensalidadeEm(session.primeira_mensalidade_em ?? '');
+      setGoLiveEm(session.go_live_em ?? '');
     }
   }, [
     open,
@@ -326,7 +326,7 @@ function ComercialEditor({
     session.observacoes,
     session.valor_implantacao,
     session.implantacao_vencimento,
-    session.primeira_mensalidade_em,
+    session.go_live_em,
   ]);
 
   const hasComercial =
@@ -337,7 +337,7 @@ function ComercialEditor({
     Boolean(session.observacoes) ||
     session.valor_implantacao != null ||
     Boolean(session.implantacao_vencimento) ||
-    Boolean(session.primeira_mensalidade_em);
+    Boolean(session.go_live_em);
 
   const handleSave = async () => {
     setSaving(true);
@@ -350,7 +350,7 @@ function ComercialEditor({
         observacoes: observacoes.trim() || null,
         valor_implantacao: parseMoney(valorImplantacao),
         implantacao_vencimento: implantacaoVencimento || null,
-        primeira_mensalidade_em: primeiraMensalidadeEm || null,
+        go_live_em: goLiveEm || null,
       });
       setOpen(false);
     } finally {
@@ -381,8 +381,8 @@ function ComercialEditor({
           }`,
         }
       : null,
-    session.primeira_mensalidade_em
-      ? { label: '1ª mensalidade', value: formatDateBR(session.primeira_mensalidade_em) ?? '' }
+    session.go_live_em
+      ? { label: 'Go-live', value: formatDateBR(session.go_live_em) ?? '' }
       : null,
     session.observacoes
       ? {
@@ -498,13 +498,19 @@ function ComercialEditor({
             />
           </div>
           <div className="space-y-1 col-span-2">
-            <label className="text-xs text-muted-foreground">Data da 1ª mensalidade</label>
+            <label className="text-xs text-muted-foreground">
+              Go-live (início da operação)
+            </label>
             <Input
               type="date"
-              value={primeiraMensalidadeEm}
-              onChange={(e) => setPrimeiraMensalidadeEm(e.target.value)}
+              value={goLiveEm}
+              onChange={(e) => setGoLiveEm(e.target.value)}
               className="h-9"
             />
+            <p className="text-[11px] text-muted-foreground">
+              A 1ª mensalidade é proporcional aos dias de operação no mês e vence 3 dias
+              depois do go-live. Sem esta data, o Conta Azul cobra só a implantação.
+            </p>
           </div>
         </div>
         <div className="space-y-1">
@@ -866,8 +872,18 @@ const AdminOnboarding = () => {
       const authToken = await getAuthToken();
       if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
       const { cobranca } = await adminSessionApi.cobrarContaAzul(authToken, session.id);
-      if (cobranca.status === 'cobrado') toast.success('Cobranças criadas no Conta Azul');
-      else toast.error(`Cobrança pendente: ${cobranca.motivo}`);
+      if (cobranca.status === 'cobrado') {
+        const m = cobranca.mensalidade;
+        const proporcional =
+          m?.valor != null && m.dias != null
+            ? ` — 1ª mensalidade ${formatBRL(m.valor)} (${m.dias} dias)`
+            : '';
+        toast.success(`Cobranças criadas no Conta Azul${proporcional}`);
+      } else if (cobranca.status === 'aguardando_go_live') {
+        toast.success('Implantação cobrada. Informe o go-live no fechamento para cobrar a 1ª mensalidade.');
+      } else {
+        toast.error(`Cobrança pendente: ${cobranca.motivo}`);
+      }
       await fetchSessions();
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : 'Erro ao cobrar no Conta Azul');
@@ -1521,7 +1537,11 @@ const AdminOnboarding = () => {
                                   size="sm"
                                   disabled={cobrandoCa === session.id}
                                   onClick={() => cobrarContaAzul(session)}
-                                  title="Cria o cliente e as cobranças de implantação e 1ª mensalidade no Conta Azul"
+                                  title={
+                                    session.go_live_em
+                                      ? 'Cria o cliente, a implantação e a 1ª mensalidade proporcional no Conta Azul'
+                                      : 'Cria o cliente e a implantação. A 1ª mensalidade só sai depois do go-live'
+                                  }
                                 >
                                   {cobrandoCa === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CircleDollarSign className="w-4 h-4 mr-2" />}
                                   Cobrar no Conta Azul

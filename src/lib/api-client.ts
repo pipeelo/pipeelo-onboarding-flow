@@ -67,6 +67,9 @@ export type SessionDTO = {
   // Valores do fechamento — implantação + 1ª mensalidade (pós-cadastro)
   valor_implantacao?: number | string | null;
   implantacao_vencimento?: string | null;
+  /** Início da operação: base da 1ª mensalidade proporcional. */
+  go_live_em?: string | null;
+  /** @deprecated substituída por `go_live_em`. */
   primeira_mensalidade_em?: string | null;
   // Contrato automático + Conta Azul (pós-cadastro)
   contrato_path?: string | null;
@@ -148,7 +151,15 @@ export type AssinaturaDetalhesDTO = {
 };
 
 export type ResultadoCobrancaDTO =
-  | { status: 'cobrado'; implantacao_url: string | null; mensalidade_url: string | null; recorrente: boolean }
+  | {
+      status: 'cobrado';
+      implantacao_url: string | null;
+      mensalidade_url: string | null;
+      recorrente: boolean;
+      mensalidade: { valor: number | null; dias: number | null; vencimento: string | null } | null;
+    }
+  /** Implantação cobrada; a 1ª mensalidade proporcional espera a data de go-live. */
+  | { status: 'aguardando_go_live'; implantacao_url: string | null }
   | { status: 'pendente'; motivo: string };
 
 export type ResultadoGrupoDTO =
@@ -267,6 +278,8 @@ export type ComercialPatch = {
   observacoes?: string | null;
   valor_implantacao?: number | null;
   implantacao_vencimento?: string | null;
+  go_live_em?: string | null;
+  /** @deprecated substituída por `go_live_em`. */
   primeira_mensalidade_em?: string | null;
 };
 
@@ -297,7 +310,7 @@ export const adminSessionApi = {
       observacoes?: string;
       valor_implantacao?: number;
       implantacao_vencimento?: string;
-      primeira_mensalidade_em?: string;
+      go_live_em?: string;
     }
   ) =>
     adminApi<{ session: SessionDTO }>('/api/admin/sessions-create', authToken, {
@@ -356,10 +369,14 @@ export const adminSessionApi = {
       body: JSON.stringify({ session_id }),
     }),
 
-  cobrarContaAzul: (authToken: string, session_id: string) =>
+  /**
+   * Cobra no Conta Azul. Sem `go_live_em` (aqui ou já gravado na sessão) sai só a
+   * implantação e a resposta volta `aguardando_go_live`.
+   */
+  cobrarContaAzul: (authToken: string, session_id: string, go_live_em?: string | null) =>
     adminApi<{ ok: true; cobranca: ResultadoCobrancaDTO }>('/api/admin/cadastro-cobrar-conta-azul', authToken, {
       method: 'POST',
-      body: JSON.stringify({ session_id }),
+      body: JSON.stringify(go_live_em ? { session_id, go_live_em } : { session_id }),
     }),
 
   /** Link assinado (60 min) do contrato no bucket privado (`docx`, `pdf` ou `assinado`). */

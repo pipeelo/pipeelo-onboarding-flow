@@ -27,7 +27,7 @@ const cadastro: Cadastro = {
 const sessao: SessaoPosCadastro = {
   id: 's1', slug: 'provedor-x', erp: 'IXC', contratou_crm: false,
   valor_sessao: 0.95, qtd_sessoes: 2640, valor_mensal: 2508, dia_vencimento: 10,
-  valor_implantacao: 4000, implantacao_vencimento: '2026-09-15', primeira_mensalidade_em: '2026-10-10',
+  valor_implantacao: 4000, implantacao_vencimento: '2026-09-15', go_live_em: '2026-10-07',
   cadastro_enviado_at: '2026-09-02T12:00:00.000Z',
 };
 
@@ -37,7 +37,13 @@ const mockCobranca = cobrarContaAzul as unknown as ReturnType<typeof vi.fn>;
 const mockStaff = notifyStaff as unknown as ReturnType<typeof vi.fn>;
 
 const gerado = { status: 'gerado', path: 's1/Contrato.docx', representante: 'Ana Souza', avisos: [] as string[] };
-const cobrado = { status: 'cobrado', implantacao_url: 'https://boleto/impl', mensalidade_url: 'https://boleto/mens', recorrente: true };
+const cobrado = {
+  status: 'cobrado',
+  implantacao_url: 'https://boleto/impl',
+  mensalidade_url: 'https://boleto/mens',
+  recorrente: true,
+  mensalidade: { valor: 2006.4, dias: 24, vencimento: '2026-10-10' },
+};
 
 describe('processarPosCadastro', () => {
   beforeEach(() => {
@@ -115,8 +121,8 @@ describe('mensagemStaffPosCadastro', () => {
     );
     expect(texto).toContain('📄 Contrato de Provedor X: gerado — assina Ana Souza · baixar no painel');
     expect(texto).toContain('implantação R$ 4.000,00 venc 15/09 (https://boleto/impl)');
-    expect(texto).toContain('1ª mensalidade R$ 2.508,00 venc 10/10 (https://boleto/mens)');
-    expect(texto).toContain('recorrente dia 10');
+    expect(texto).toContain('1ª mensalidade (24 dias) R$ 2.006,40 venc 10/10 (https://boleto/mens)');
+    expect(texto).toContain('recorrente R$ 2.508,00 dia 10');
     expect(texto).toContain('Avisos: Cliente contratou CRM — revisar cláusula CRM');
   });
 

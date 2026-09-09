@@ -16,14 +16,24 @@ export type SessaoCobranca = {
   valor_implantacao?: number | string | null;
   implantacao_vencimento?: string | null;
   valor_mensal?: number | string | null;
-  primeira_mensalidade_em?: string | null;
+  /** Início da operação. Sem ela a mensalidade não é cobrada — só a implantação. */
+  go_live_em?: string | null;
   dia_vencimento?: number | string | null;
   /** Endereço da sede lido dos documentos (quando o contrato já foi gerado). */
   contrato_extracao?: { endereco_sede?: string | null } | null;
 };
 
 export type ResultadoCobranca =
-  | { status: 'cobrado'; implantacao_url: string | null; mensalidade_url: string | null; recorrente: boolean }
+  | {
+      status: 'cobrado';
+      implantacao_url: string | null;
+      mensalidade_url: string | null;
+      recorrente: boolean;
+      /** Valor e dias da proporcional, como o site calculou. */
+      mensalidade: { valor: number | null; dias: number | null; vencimento: string | null } | null;
+    }
+  /** Implantação cobrada; a mensalidade proporcional espera a data de go-live. */
+  | { status: 'aguardando_go_live'; implantacao_url: string | null }
   | { status: 'pendente'; motivo: string };
 
 type RespostaSite = {
@@ -32,8 +42,9 @@ type RespostaSite = {
   erro?: string;
   cliente_id?: string;
   implantacao?: { venda_id?: string; vencimento?: string; url?: string | null } | null;
-  mensalidade?: { venda_id?: string; vencimento?: string; url?: string | null } | null;
+  mensalidade?: { venda_id?: string; vencimento?: string; url?: string | null; valor?: number; dias?: number } | null;
   recorrente?: { contrato_id?: string } | null;
+  aguardando_go_live?: boolean;
 };
 
 /** Base do site de vendas. `pipeelo.com` é o domínio primário; `vendas.` só redireciona. */
@@ -107,12 +118,14 @@ async function reservar(supabase: SupabaseClient, id: string): Promise<boolean> 
   return Array.isArray(data) && data.length > 0;
 }
 
-/** Campos do fechamento sem os quais não dá para cobrar. */
+/**
+ * Campos do fechamento sem os quais não dá para cobrar. `go_live_em` NÃO entra:
+ * sem ele a cobrança sai só com a implantação e a mensalidade fica esperando.
+ */
 const OBRIGATORIOS: Array<[keyof SessaoCobranca, string]> = [
   ['valor_implantacao', 'valor da implantação'],
   ['implantacao_vencimento', 'vencimento da implantação'],
   ['valor_mensal', 'valor mensal'],
-  ['primeira_mensalidade_em', 'data da 1ª mensalidade'],
   ['dia_vencimento', 'dia de vencimento'],
 ];
 
@@ -181,11 +194,17 @@ export async function cobrarContaAzul(
       implantacao: valorImplantacao === 0
         ? null
         : { valor: valorImplantacao, vencimento: sessao.implantacao_vencimento },
-      mensalidade: {
-        valor: valorMensal,
-        primeira_em: sessao.primeira_mensalidade_em,
-        dia_vencimento: diaVencimento,
-      },
+      // Sem go-live o bloco não vai: o site cobra só a implantação e deixa a
+      // sessão em `implantacao_cobrada`, esperando a data para a proporcional.
+      ...(presente(sessao.go_live_em)
+        ? {
+            mensalidade: {
+              valor: valorMensal,
+              go_live_em: sessao.go_live_em,
+              dia_vencimento: diaVencimento,
+            },
+          }
+        : {}),
     };
 
     let resposta: Response;
@@ -225,6 +244,17 @@ export async function cobrarContaAzul(
     const implantacao_url = corpo.implantacao?.url ?? null;
     const mensalidade_url = corpo.mensalidade?.url ?? null;
 
+    // Só é "cobrado" quando a mensalidade saiu. Com a implantação sozinha,
+    // `ca_cobrado_at` fica nulo de propósito: é o que permite cobrar no go-live.
+    if (corpo.aguardando_go_live) {
+      await patch(supabase, sessao.id, {
+        ca_cliente_id: corpo.cliente_id ?? null,
+        ca_implantacao_url: implantacao_url,
+        ca_erro: null,
+      });
+      return { status: 'aguardando_go_live', implantacao_url };
+    }
+
     await patch(supabase, sessao.id, {
       ca_cliente_id: corpo.cliente_id ?? null,
       ca_implantacao_url: implantacao_url,
@@ -238,6 +268,13 @@ export async function cobrarContaAzul(
       implantacao_url,
       mensalidade_url,
       recorrente: Boolean(corpo.recorrente?.contrato_id),
+      mensalidade: corpo.mensalidade
+        ? {
+            valor: corpo.mensalidade.valor ?? null,
+            dias: corpo.mensalidade.dias ?? null,
+            vencimento: corpo.mensalidade.vencimento ?? null,
+          }
+        : null,
     };
   } catch (e) {
     // Rede de segurança: cobrarContaAzul nunca lança.
