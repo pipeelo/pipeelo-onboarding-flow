@@ -49,11 +49,17 @@ function cabecalhoERodape(doc: PDFKit.PDFDocument, f: Fontes): void {
       .moveTo(MARGEM.esq, 54).lineTo(A4.largura - MARGEM.dir, 54)
       .lineWidth(0.8).strokeColor(HEX(COR.verde)).stroke()
       .restore();
-    // Rodapé.
+    // Rodapé. O y fica ABAIXO da margem inferior — e o pdfkit, ao escrever fora da
+    // área útil, abre uma página nova sozinho. Era isso que enchia o contrato de
+    // páginas em branco (uma por página de conteúdo). Zerar a margem de baixo enquanto
+    // escreve o rodapé é o remédio documentado; `lineBreak: false` não segura.
+    const margemBase = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
     doc.font(f.normal).fontSize(TAM.rodape).fillColor(HEX(COR.cinza))
       .text('PIPEELO LTDA · CNPJ 44.279.528/0001-17 · pipeelo.com', MARGEM.esq, A4.altura - 40, {
         width: larguraUtil(), align: 'center', lineBreak: false,
       });
+    doc.page.margins.bottom = margemBase;
   }
 }
 
@@ -126,6 +132,24 @@ function blocoAssinatura(doc: PDFKit.PDFDocument, f: Fontes, a: Assinatura, valo
   }
 }
 
+/** Contrato com página em branco não vai para o cliente — falha alto e explica. */
+export class PdfComPaginasEmBranco extends Error {
+  constructor(public readonly emBranco: number, public readonly total: number) {
+    super(`PDF do contrato saiu com ${emBranco} página(s) em branco de ${total} — não enviar ao cliente.`);
+    this.name = 'PdfComPaginasEmBranco';
+  }
+}
+
+/**
+ * Confere no PDF já serializado quantas páginas passaram do esperado. Conta os
+ * objetos `/Type /Page` do arquivo (não `/Pages`, que é o nó da árvore) — é a
+ * checagem que sobra depois que o pdfkit fechou o documento.
+ */
+function paginasEmBranco(pdf: Buffer, esperado: number): number {
+  const total = (pdf.toString('latin1').match(/\/Type\s*\/Page(?![s])/g) || []).length;
+  return total > esperado ? total - esperado : 0;
+}
+
 export async function renderPdf(
   campos: Record<string, string>,
   opts: { crm: boolean },
@@ -172,7 +196,23 @@ export async function renderPdf(
     throw new CamposFaltando([...faltando].sort());
   }
 
+  // Página em branco em contrato que vai para o cliente gera desconfiança — e o jeito
+  // de aparecer é sempre o mesmo: alguém escreve fora da área útil e o pdfkit abre
+  // página. Desenhar cabeçalho e rodapé NÃO pode criar página nenhuma; se criar, o
+  // PDF não sai.
+  const paginasComConteudo = doc.bufferedPageRange().count;
   cabecalhoERodape(doc, f);
+  const paginasDepois = doc.bufferedPageRange().count;
+  if (paginasDepois !== paginasComConteudo) {
+    doc.end();
+    await pronto.catch(() => undefined);
+    throw new PdfComPaginasEmBranco(paginasDepois - paginasComConteudo, paginasDepois);
+  }
+
   doc.end();
-  return pronto;
+  const buffer = await pronto;
+
+  const emBranco = paginasEmBranco(buffer, paginasComConteudo);
+  if (emBranco > 0) throw new PdfComPaginasEmBranco(emBranco, paginasComConteudo + emBranco);
+  return buffer;
 }

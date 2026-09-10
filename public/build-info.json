@@ -1,1 +1,1 @@
-{"commit":"contrato-crm-governanca-uf","feature":"Contrato do onboarding ganha Cláusula 19 (CRM Funil Inteligente) e 20 (Governança de IA), e a UF do fecho deixa de ser fixa em PR"}
+{"commit":"pdf-sem-pagina-em-branco","feature":"Rodapé do PDF parou de abrir página nova no pdfkit (contrato saía com metade das páginas em branco) + trava que impede gerar PDF com página em branco"}
