@@ -167,6 +167,9 @@ export type ResultadoGrupoDTO =
   // O grupo nasce em ritmo humano, em background: no envio do cadastro ele ainda
   // não existe. Recarregar a página depois mostra o link.
   | { status: 'em_andamento' }
+  // Criação manual (10/09/2026): o time cria o grupo à mão a partir do roteiro que
+  // cai no Staff. Do lado do cliente não há nada para esperar na tela.
+  | { status: 'manual' }
   | { status: 'erro'; motivo: string };
 
 export const sessionApi = {

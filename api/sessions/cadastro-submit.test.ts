@@ -6,14 +6,14 @@ vi.mock('../_lib/auth-session', async () => {
   return { ...actual, assertSessionAccess: vi.fn() };
 });
 vi.mock('../_lib/supabase', () => ({ getServiceSupabase: vi.fn() }));
-vi.mock('../_lib/cadastro-grupo', () => ({ criarGrupoParaSessao: vi.fn() }));
+vi.mock('../_lib/grupo-instrucoes', () => ({ enviarInstrucoesGrupo: vi.fn() }));
 vi.mock('../_lib/pos-cadastro', () => ({ processarPosCadastro: vi.fn(async () => ({})) }));
 const limitMock = vi.fn(async () => ({ success: true }));
 vi.mock('../_lib/ratelimit', () => ({ createSessionLimiter: () => ({ limit: limitMock }) }));
 
 import { assertSessionAccess } from '../_lib/auth-session';
 import { getServiceSupabase } from '../_lib/supabase';
-import { criarGrupoParaSessao } from '../_lib/cadastro-grupo';
+import { enviarInstrucoesGrupo } from '../_lib/grupo-instrucoes';
 import { processarPosCadastro } from '../_lib/pos-cadastro';
 import handler from './_cadastro-submit';
 
@@ -49,21 +49,21 @@ function makeSupabase(
 describe('POST /api/sessions/cadastro-submit', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('200: salva o cadastro e responde em_andamento sem esperar o grupo', async () => {
+  it('200: salva o cadastro e responde manual sem esperar o roteiro do grupo', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
     const sb = makeSupabase();
     (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
     // O grupo nasce em ritmo humano e demora: o handler não pode ficar preso nele.
     let liberarGrupo: () => void = () => {};
-    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockImplementation(
+    (enviarInstrucoesGrupo as never as ReturnType<typeof vi.fn>).mockImplementation(
       () => new Promise((resolve) => { liberarGrupo = () => resolve({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] }); })
     );
 
     const r = await invokeHandler(handler as never, { method: 'POST', body, headers: { host: 'onboarding.pipeelo.com' } });
 
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
-    expect(criarGrupoParaSessao).toHaveBeenCalledTimes(1);
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'manual' } });
+    expect(enviarInstrucoesGrupo).toHaveBeenCalledTimes(1);
 
     const saved = (sb.update.mock.calls[0] as unknown as [Record<string, unknown>])[0];
     expect(saved.cadastro).toMatchObject({ cnpj: '11222333000181', responsavel_whatsapp: '43996661541' });
@@ -78,7 +78,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
 
     // O pós-cadastro só pode rodar depois que o grupo resolveu.
     let grupoResolvido = false;
-    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+    (enviarInstrucoesGrupo as never as ReturnType<typeof vi.fn>).mockImplementation(async () => {
       grupoResolvido = true;
       return { status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] };
     });
@@ -92,7 +92,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
 
     // A resposta não espera nem o grupo nem o pós-cadastro.
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'manual' } });
 
     await vi.waitFor(() => expect(processarPosCadastro).toHaveBeenCalledTimes(1));
     expect(grupoJaTinhaResolvido).toBe(true);
@@ -107,7 +107,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
     const sb = makeSupabase();
     (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
-    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] });
+    (enviarInstrucoesGrupo as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'enviado', short_url: 'https://onboarding.pipeelo.com/s/abc123' });
     (processarPosCadastro as never as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('boom'));
 
     const r = await invokeHandler(handler as never, { method: 'POST', body });
@@ -119,7 +119,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(200);
     expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '1@g.us', invite_url: 'https://chat.whatsapp.com/x', nao_adicionados: [] } });
-    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(enviarInstrucoesGrupo).not.toHaveBeenCalled();
     expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
@@ -131,8 +131,8 @@ describe('POST /api/sessions/cadastro-submit', () => {
     const r = await invokeHandler(handler as never, { method: 'POST', body });
 
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'erro', motivo: 'grupo_nao_criado' } });
-    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'manual' } });
+    expect(enviarInstrucoesGrupo).not.toHaveBeenCalled();
     expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
@@ -148,7 +148,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
 
     expect(r.statusCode).toBe(200);
     expect(r.body).toEqual({ ok: true, grupo: { status: 'criado', jid: '9@g.us', invite_url: 'https://chat.whatsapp.com/y', nao_adicionados: [] } });
-    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(enviarInstrucoesGrupo).not.toHaveBeenCalled();
     expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
@@ -165,7 +165,7 @@ describe('POST /api/sessions/cadastro-submit', () => {
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(500);
     expect(r.body).toEqual({ error: 'internal' });
-    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(enviarInstrucoesGrupo).not.toHaveBeenCalled();
     expect(processarPosCadastro).not.toHaveBeenCalled();
   });
 
@@ -174,24 +174,24 @@ describe('POST /api/sessions/cadastro-submit', () => {
     limitMock.mockRejectedValueOnce(new Error('upstash indisponível'));
     const sb = makeSupabase();
     (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
-    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'criado', jid: '1@g.us', invite_url: null, nao_adicionados: [] });
+    (enviarInstrucoesGrupo as never as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'enviado', short_url: 'https://onboarding.pipeelo.com/s/abc123' });
 
     const r = await invokeHandler(handler as never, { method: 'POST', body });
 
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'manual' } });
   });
 
   it('grupo que falha não derruba a resposta e o pós-cadastro roda mesmo assim', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
     const sb = makeSupabase();
     (getServiceSupabase as never as ReturnType<typeof vi.fn>).mockReturnValue(sb.client);
-    (criarGrupoParaSessao as never as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('evolution fora'));
+    (enviarInstrucoesGrupo as never as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('evolution fora'));
 
     const r = await invokeHandler(handler as never, { method: 'POST', body });
 
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ ok: true, grupo: { status: 'em_andamento' } });
+    expect(r.body).toEqual({ ok: true, grupo: { status: 'manual' } });
     await vi.waitFor(() => expect(processarPosCadastro).toHaveBeenCalledTimes(1));
   });
 
@@ -201,6 +201,6 @@ describe('POST /api/sessions/cadastro-submit', () => {
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(429);
     expect(r.body).toEqual({ error: 'rate_limited' });
-    expect(criarGrupoParaSessao).not.toHaveBeenCalled();
+    expect(enviarInstrucoesGrupo).not.toHaveBeenCalled();
   });
 });

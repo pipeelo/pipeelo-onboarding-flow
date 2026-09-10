@@ -130,7 +130,7 @@ async function patch(supabase: SupabaseClient, id: string, data: Record<string, 
   if (error) console.error('[cadastro-grupo] update falhou:', error.message);
 }
 
-function fmtTelefone(d: string): string {
+export function fmtTelefone(d: string): string {
   const n = d.replace(/\D/g, '');
   if (n.length === 11) return `(${n.slice(0, 2)}) ${n.slice(2, 7)}-${n.slice(7)}`;
   if (n.length === 10) return `(${n.slice(0, 2)}) ${n.slice(2, 6)}-${n.slice(6)}`;

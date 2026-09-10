@@ -3,7 +3,8 @@ import { CadastroSubmitSchema } from '../_lib/schemas/cadastro';
 import { assertSessionAccess, HttpError } from '../_lib/auth-session';
 import { getServiceSupabase } from '../_lib/supabase';
 import { createSessionLimiter } from '../_lib/ratelimit';
-import { criarGrupoParaSessao, type SessaoGrupo } from '../_lib/cadastro-grupo';
+import type { SessaoGrupo } from '../_lib/cadastro-grupo';
+import { enviarInstrucoesGrupo } from '../_lib/grupo-instrucoes';
 import { processarPosCadastro, type SessaoPosCadastro } from '../_lib/pos-cadastro';
 
 type Row = SessaoGrupo & SessaoPosCadastro & {
@@ -15,9 +16,11 @@ type Row = SessaoGrupo & SessaoPosCadastro & {
 function estadoAtual(session: Row) {
   return {
     ok: true as const,
+    // Sem grupo_jid não é erro do cliente: o grupo é criado à mão pelo time a partir
+    // do roteiro que foi para o Staff.
     grupo: session.grupo_jid
       ? { status: 'criado' as const, jid: session.grupo_jid, invite_url: session.grupo_invite_url ?? null, nao_adicionados: [] }
-      : { status: 'erro' as const, motivo: session.grupo_erro ?? 'grupo_nao_criado' },
+      : { status: 'manual' as const },
   };
 }
 
@@ -81,19 +84,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(estadoAtual(atual));
     }
 
-    // O grupo agora nasce em RITMO HUMANO (pausas longas entre cada participante),
-    // o que leva mais de um minuto. O cliente não fica esperando: grupo e
-    // pós-cadastro rodam em background, NESSA ORDEM — o link de assinatura vai
-    // para o grupo, então o grupo precisa existir antes.
-    void criarGrupoParaSessao(supabase, session, body.cadastro, {
+    // O grupo NÃO é mais criado pela API (10/09/2026): a instância de grupos levou
+    // bloqueio 403 do WhatsApp no meio de um cadastro. Em vez disso, o Lucas recebe o
+    // roteiro no Staff e cria o grupo à mão. O pós-cadastro segue em background — o
+    // link de assinatura vai por DM para o responsável, não depende do grupo.
+    void enviarInstrucoesGrupo(supabase, session, body.cadastro, {
       host: req.headers.host,
       proto: req.headers['x-forwarded-proto'] as string | undefined,
     })
-      .catch((e) => { console.error('[cadastro-submit] grupo:', e); })
+      .catch((e) => { console.error('[cadastro-submit] instruções de grupo:', e); })
       .then(() => processarPosCadastro(supabase, { ...session, cadastro_enviado_at: enviadoEm }, body.cadastro))
       .catch(console.error);
 
-    return res.status(200).json({ ok: true, grupo: { status: 'em_andamento' as const } });
+    return res.status(200).json({ ok: true, grupo: { status: 'manual' as const } });
   } catch (e: unknown) {
     if (e instanceof HttpError) return res.status(e.status).json({ error: e.message });
     const err = e as { name?: string; flatten?: () => unknown };

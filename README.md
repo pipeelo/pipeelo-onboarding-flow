@@ -52,14 +52,34 @@ npm run dev
 
 ## Variáveis de ambiente (EasyPanel, serviço onboarding-pipeelo)
 
-O cadastro com criação de grupo WhatsApp (`/cadastro/:slug`) depende destas variáveis, configuradas manualmente no EasyPanel (ver `.env.production.example`):
+O cadastro (`/cadastro/:slug`) depende destas variáveis, configuradas manualmente no EasyPanel (ver `.env.production.example`):
 
 - `EVOLUTION_API_BASE_URL`: URL base da instância Evolution que cria o grupo do cliente.
 - `EVOLUTION_API_INSTANCE`: nome da instância Evolution (`Avisos`).
 - `EVOLUTION_API_KEY`: chave de autenticação da instância Evolution.
 - `STAFF_GROUP_JID`: JID do grupo interno do Staff que recebe o aviso de novo cadastro.
-- `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto de convite ao grupo.
+- `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto do formulário.
 - `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`: rate limit e cache de CNPJ; obrigatórias para `/api/sessions/create` e `/api/sessions/cadastro-submit`.
+
+## Criação do grupo do cliente: MANUAL (desde 10/09/2026)
+
+O onboarding **não cria mais o grupo do WhatsApp pela API**. Em 10/09/2026 a instância
+`Grupos` (551152414872) levou bloqueio 403 do WhatsApp no instante em que tentou criar o
+grupo da GOLDFIBRA — doze segundos depois do cadastro entrar, com a conta ociosa e antes
+de adicionar qualquer participante. Foi o segundo grupo do dia; o primeiro nasceu normal.
+Ritmo humano não resolve bloqueio de conta.
+
+No lugar disso, `enviarInstrucoesGrupo` (`api/_lib/grupo-instrucoes.ts`) gera o link curto
+do formulário e manda o roteiro no grupo Staff: nome exato do grupo, contatos a adicionar
+com telefone formatado, quem vira admin e a mensagem de boas-vindas pronta para colar.
+O Lucas cria o grupo à mão a partir dele. A sessão é carimbada em
+`grupo_instrucoes_enviadas_at`; falha em avisar o Staff cai em `grupo_erro`.
+
+O aviso sai pela instância que estiver no grupo Staff — `sendText` sonda antes de mandar,
+então continua funcionando com a `Grupos` fora do ar.
+
+A automação **não foi removida**: `criarGrupoParaSessao` segue disponível no botão
+"Recriar grupo" do `/admin`, para quando a instância voltar a ser confiável.
 
 Depois do cadastro o serviço gera o contrato e cobra no Conta Azul (ver
 `docs/superpowers/specs/2026-09-02-pos-cadastro-contrato-conta-azul-design.md`). Essas etapas dependem de:
