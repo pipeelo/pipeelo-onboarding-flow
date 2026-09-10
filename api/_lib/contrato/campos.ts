@@ -24,6 +24,7 @@ export type SessaoContrato = {
   valor_implantacao?: number | string | null;
   implantacao_vencimento?: string | null;
   go_live_em?: string | null;
+  primeira_mensalidade_em?: string | null;
   cadastro_enviado_at?: string | null;
 };
 
@@ -131,6 +132,28 @@ export function implantacaoIsenta(sessao: { valor_implantacao?: number | string 
   return numero(sessao.valor_implantacao) === 0;
 }
 
+/**
+ * Item 8 do Anexo I — quando o primeiro pagamento vence.
+ *
+ * O padrão é a 1ª mensalidade PROPORCIONAL aos dias de operação, vencendo três dias
+ * depois do go-live. Mas o fechamento comercial às vezes combina outra coisa (a Trixnet
+ * fechou 30 dias depois do go-live, integral). Quando o painel preenche
+ * `primeira_mensalidade_em`, é essa data que o cliente vai receber para pagar — então é
+ * ela que precisa estar escrita no contrato, não a regra genérica.
+ */
+export function primeiroPagamento(sessao: SessaoContrato): string {
+  const dia = sessao.dia_vencimento ? `no dia ${sessao.dia_vencimento}` : 'na data acordada no item 7';
+  const combinada = dataCurta(sessao.primeira_mensalidade_em);
+  if (!combinada) {
+    return 'O primeiro pagamento será proporcional aos dias de operação no mês de ativação, com vencimento em 3 (três) dias após o início da prestação dos serviços. '
+      + `Nos meses subsequentes, o vencimento será sempre ${dia}.`;
+  }
+  const goLive = dataCurta(sessao.go_live_em);
+  const apos = goLive ? `, referente ao primeiro mês de operação contado do go-live previsto para ${goLive}` : '';
+  return `O primeiro pagamento vencerá em ${combinada}${apos}, no valor integral da mensalidade prevista no item 2, conforme condição negociada entre as partes. `
+    + `Nos meses subsequentes, o vencimento será sempre ${dia}.`;
+}
+
 export function montarCampos(
   sessao: SessaoContrato,
   cadastro: Cadastro,
@@ -167,6 +190,7 @@ export function montarCampos(
     ANEXO_SERVICOS: servicosContratados(Boolean(sessao.contratou_crm)),
     ANEXO_PRAZO_TESTES: PRAZO_TESTES_PADRAO,
     ANEXO_DIA_VENCIMENTO: sessao.dia_vencimento ? `dia ${sessao.dia_vencimento}` : '',
+    ANEXO_PRIMEIRO_PAGAMENTO: primeiroPagamento(sessao),
   };
 
   const faltando = Object.entries(campos)

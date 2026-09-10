@@ -327,7 +327,7 @@ Sistema de gestão (ERP): {{ANEXO_ERP}}
 
 7. Data de vencimento das parcelas recorrentes: {{ANEXO_DIA_VENCIMENTO}}
 
-8. O primeiro pagamento será proporcional aos dias de operação no mês de ativação, com vencimento em 3 (três) dias após o início da prestação dos serviços. Nos meses subsequentes, o vencimento será sempre no {{ANEXO_DIA_VENCIMENTO}}.
+8. {{ANEXO_PRIMEIRO_PAGAMENTO}}
 
 
 __________________________________________________

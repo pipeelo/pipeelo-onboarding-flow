@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const supabase = getServiceSupabase();
     const { data, error } = await supabase
       .from('onboarding_sessions')
-      .select('id, slug, empresa_nome, erp, contratou_crm, valor_sessao, qtd_sessoes, valor_mensal, dia_vencimento, valor_implantacao, implantacao_vencimento, primeira_mensalidade_em, cadastro, cadastro_enviado_at')
+      .select('id, slug, empresa_nome, erp, contratou_crm, valor_sessao, qtd_sessoes, valor_mensal, dia_vencimento, valor_implantacao, implantacao_vencimento, go_live_em, primeira_mensalidade_em, cadastro, cadastro_enviado_at')
       .eq('id', session_id)
       .maybeSingle();
     if (error) return res.status(500).json({ error: error.message });

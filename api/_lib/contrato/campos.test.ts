@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { dataAssinatura, dataCurta, dataPorExtenso, formatarCnpj, inteiro, moeda, montarCampos, type SessaoContrato } from './campos';
+import { dataAssinatura, dataCurta, dataPorExtenso, formatarCnpj, inteiro, moeda, montarCampos, primeiroPagamento, type SessaoContrato } from './campos';
 import type { Extracao } from './extracao';
 import type { Cadastro } from '../schemas/cadastro';
 import { placeholdersDoTemplate } from './template';
@@ -190,5 +190,37 @@ describe('montarCampos', () => {
       'ANEXO_VALOR_MENSAL',
       'ANEXO_VALOR_SESSAO',
     ]);
+  });
+});
+
+describe('primeiroPagamento (item 8 do Anexo)', () => {
+  it('sem data combinada: mantém a 1ª mensalidade proporcional com vencimento go-live + 3', () => {
+    const t = primeiroPagamento({ id: 's1', dia_vencimento: 10 });
+    expect(t).toContain('proporcional aos dias de operação');
+    expect(t).toContain('3 (três) dias após o início da prestação');
+    expect(t).toContain('sempre no dia 10');
+  });
+
+  it('com data combinada: escreve a data, o valor integral e o go-live de referência', () => {
+    const t = primeiroPagamento({
+      id: 's1', dia_vencimento: 10, go_live_em: '2026-10-10', primeira_mensalidade_em: '2026-11-10',
+    });
+    expect(t).toContain('vencerá em 10/11/2026');
+    expect(t).toContain('go-live previsto para 10/10/2026');
+    expect(t).toContain('valor integral da mensalidade');
+    expect(t).not.toContain('proporcional');
+    expect(t).toContain('sempre no dia 10');
+  });
+
+  it('data combinada sem go-live: não inventa a referência', () => {
+    const t = primeiroPagamento({ id: 's1', dia_vencimento: 5, primeira_mensalidade_em: '2026-11-10' });
+    expect(t).toContain('vencerá em 10/11/2026');
+    expect(t).not.toContain('go-live');
+  });
+
+  it('sem dia de vencimento: aponta para o item 7 em vez de escrever "no dia null"', () => {
+    const t = primeiroPagamento({ id: 's1' });
+    expect(t).toContain('na data acordada no item 7');
+    expect(t).not.toContain('null');
   });
 });
