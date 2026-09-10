@@ -126,6 +126,7 @@ describe('montarCampos', () => {
     expect(campos.CONTRATANTE_REPRESENTANTE).toBe('Ana Souza');
     expect(campos.CONTRATANTE_RG).toBe('12.345.678-9 SSP/PR');
     expect(campos.CONTRATANTE_CIDADE_ASSINATURA).toBe('LONDRINA');
+    expect(campos.CONTRATANTE_UF_ASSINATURA).toBe('PR');
     // Sem `cadastro_enviado_at` na sessão, a data de assinatura cai para hoje.
     expect(campos.DATA_ASSINATURA).toBe('2 de setembro de 2026');
     // Com o carimbo do envio, é o dia em que o cliente mandou o cadastro.
@@ -167,6 +168,7 @@ describe('montarCampos', () => {
       'CONTRATANTE_PROFISSAO',
       'CONTRATANTE_REPRESENTANTE',
       'CONTRATANTE_RG',
+      'CONTRATANTE_UF_ASSINATURA',
     ]);
   });
 

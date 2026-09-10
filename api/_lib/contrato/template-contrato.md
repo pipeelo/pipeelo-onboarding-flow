@@ -288,9 +288,43 @@ Fica eleito o foro do domicílio do AUTOR da ação para dirimir quaisquer contr
 
 Parágrafo Único: Caso seja aplicável o Código de Defesa do Consumidor, prevalece o disposto no art. 101, inciso I, da Lei nº 8.078/90, assegurando ao consumidor o direito de propor a ação no foro de seu domicílio.
 
+CLÁUSULA DÉCIMA NONA – DO MÓDULO CRM FUNIL INTELIGENTE
+
+19.1. Quando indicado como contratado no item 5 do Anexo I, a CONTRATADA disponibilizará ao CONTRATANTE o módulo denominado "CRM Funil Inteligente", integrado ao ecossistema Pipeelo. O módulo contempla as seguintes funcionalidades: (i) funil de vendas inteligente para gestão e acompanhamento de oportunidades comerciais; (ii) qualificação automática de leads com base em critérios definidos pelo CONTRATANTE; (iii) integração com plataformas de anúncios digitais (Meta Ads e Google Ads) via API de Conversão, permitindo rastreabilidade de origem, ROI e CPL por campanha; (iv) reativação automática de leads inativos conforme regras configuráveis; (v) painel MGM (Member Get Member) para acompanhamento de indicações; e (vi) histórico completo do vendedor com registro de interações e desempenho.
+
+19.2. O módulo CRM Funil Inteligente está incluído no valor mensal previsto no item 2 do Anexo I, sem cobrança adicional por usuário ativo e sem limite de usuários, salvo condição comercial diversa expressamente registrada no Anexo I.
+
+19.3. A implantação do módulo CRM Funil Inteligente está incluída no processo de implantação da plataforma Pipeelo, sem custo adicional para o CONTRATANTE.
+
+19.4. Para o funcionamento das integrações com plataformas de anúncios digitais, o CONTRATANTE é responsável por fornecer as credenciais de acesso às respectivas contas de anúncios (Meta Business Manager, Google Ads, entre outras), bem como manter as permissões necessárias ativas durante a vigência do contrato.
+
+19.5. A CONTRATADA não se responsabiliza pelo desempenho das campanhas de tráfego pago do CONTRATANTE, limitando-se a fornecer as ferramentas de rastreabilidade, análise e gestão de leads gerados por tais campanhas.
+
+19.6. Os dados armazenados e processados pelo módulo CRM Funil Inteligente estão sujeitos às mesmas políticas de armazenamento, retenção e proteção de dados estabelecidas na Cláusula Sexta deste Contrato.
+
+19.7. O suporte técnico ao módulo CRM segue os mesmos níveis de SLA estabelecidos na Cláusula 5.3, sem distinção de prioridade em relação aos demais serviços contratados.
+
+CLÁUSULA VIGÉSIMA – DA GOVERNANÇA DE INTELIGÊNCIA ARTIFICIAL
+
+20.1. A CONTRATADA adota práticas de governança de inteligência artificial alinhadas às melhores práticas e padrões internacionais de gestão de IA, empregando seus melhores esforços para o desenvolvimento, a configuração e a operação responsável do Agente de IA. As disposições desta Cláusula refletem práticas de governança e não ampliam os limites de responsabilidade estabelecidos na Cláusula 9.3.
+
+20.2. Supervisão humana e revisão: O Agente de IA opera sob supervisão humana e não possui autonomia para a prática de atos juridicamente vinculantes, conforme a Cláusula 2.2. O CONTRATANTE poderá, a qualquer tempo, solicitar a revisão humana de comportamentos ou decisões automatizadas que repute inadequados, sendo certo que toda demanda não resolvida pelo Agente de IA é encaminhada a atendente humano do CONTRATANTE.
+
+20.3. Transparência: Quando aplicável e conforme parametrização definida pelo CONTRATANTE, o Agente de IA se identificará como atendimento automatizado por inteligência artificial perante o cliente final, em consonância com o art. 20 da Lei nº 13.709/2018 (LGPD).
+
+20.4. Monitoramento contínuo: A CONTRATADA monitora de forma contínua o desempenho do Agente de IA e eventuais desvios de comportamento (drift), por meio de sua plataforma de monitoramento e análise de atendimentos, promovendo os ajustes e otimizações iterativos necessários à manutenção da qualidade do serviço.
+
+20.5. Gestão de incidentes de IA: A CONTRATADA mantém processo para identificar, registrar, analisar e responder a incidentes relacionados ao Agente de IA — incluindo saídas inadequadas e indícios de viés —, por meio de seu sistema de reportes de atendimento, sem prejuízo das comunicações de incidente de segurança previstas na Cláusula 8.5.
+
+20.6. Rastreabilidade e registros: A CONTRATADA mantém registros (logs) das interações e atendimentos realizados pelo Agente de IA, em medida suficiente para permitir a auditoria retrospectiva de um atendimento específico, observadas as regras de titularidade, retenção e descarte de dados da Cláusula Sexta.
+
+20.7. Explicabilidade: Mediante solicitação do CONTRATANTE, a CONTRATADA prestará, por meio de seus canais de suporte e em nível apropriado, esclarecimento sobre os fatores que conduziram a determinado comportamento do Agente de IA — tais como ambiguidades ou instruções de configuração (prompt) —, bem como sobre as medidas adotadas para correção.
+
+20.8. Sub-operadores: Os subcontratados e sub-processadores de inteligência artificial eventualmente utilizados pela CONTRATADA ficam sujeitos a obrigações equivalentes de governança e de proteção de dados, na forma da Cláusula 8.6.
+
 E ASSIM, por estarem as partes justas e contratadas, firmam o presente instrumento em 2 (duas) vias de igual teor.
 
-{{CONTRATANTE_CIDADE_ASSINATURA}} – PR, {{DATA_ASSINATURA}}
+{{CONTRATANTE_CIDADE_ASSINATURA}} – {{CONTRATANTE_UF_ASSINATURA}}, {{DATA_ASSINATURA}}
 
 
 __________________________________________________

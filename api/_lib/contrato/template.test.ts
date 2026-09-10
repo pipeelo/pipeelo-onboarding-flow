@@ -14,7 +14,8 @@ describe('parseTemplate', () => {
     const d = parseTemplate();
 
     expect(d.titulo[0]).toBe('CONTRATO DE PRESTAÇÃO DE SERVIÇOS');
-    expect(d.clausulas).toHaveLength(18);
+    // 18 cláusulas do contrato + CRM Funil Inteligente (19ª) + Governança de IA (20ª).
+    expect(d.clausulas).toHaveLength(20);
     expect(d.clausulas[0].titulo).toBe('CLÁUSULA PRIMEIRA – DAS PARTES');
     expect(d.clausulas[0].linhas).toHaveLength(2);
 
@@ -82,7 +83,11 @@ describe('renderDocx', () => {
 
     expect(textoDoDocx(comCrm)).toContain('Serviços contratados: Agente de IA de atendimento + CRM Funil Inteligente');
     expect(textoDoDocx(semCrm)).toContain('Serviços contratados: Agente de IA de atendimento');
-    expect(textoDoDocx(semCrm)).not.toContain('CRM Funil Inteligente');
+    // A Cláusula Décima Nona está sempre no contrato — ela mesma se condiciona ao
+    // item 5 do Anexo —, então `crm=false` muda só o texto daquele item.
+    expect(textoDoDocx(semCrm)).not.toContain('Serviços contratados: Agente de IA de atendimento + CRM');
+    expect(textoDoDocx(semCrm)).toContain('CLÁUSULA DÉCIMA NONA – DO MÓDULO CRM FUNIL INTELIGENTE');
+    expect(textoDoDocx(semCrm)).toContain('Quando indicado como contratado no item 5 do Anexo I');
   });
 
   it('servicosContratados devolve o texto canônico dos dois pacotes', () => {

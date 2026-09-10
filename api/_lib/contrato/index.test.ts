@@ -155,7 +155,8 @@ describe('gerarContratoParaSessao', () => {
     expect(r.avisos.join(' | ')).toMatch(/CNPJ do documento \(99888777000166\)/);
     expect(r.avisos.join(' | ')).toMatch(/Razão social do documento/);
     expect(r.avisos.join(' | ')).toMatch(/Confiança da leitura: media/);
-    expect(r.avisos.join(' | ')).toMatch(/revisar cláusula CRM/);
+    // A cláusula do CRM entrou no template em 10/09/2026 — o aviso de conferir à mão saiu.
+    expect(r.avisos.join(' | ')).not.toMatch(/revisar cláusula CRM/);
   });
 
   it('representante ambíguo → pendente com o motivo da IA, sem gerar arquivo', async () => {
@@ -226,7 +227,7 @@ describe('gerarContratoParaSessao', () => {
 
     expect(r.status).toBe('pendente');
     if (r.status !== 'pendente') return;
-    expect(r.faltando).toEqual(['CONTRATANTE_CIDADE_ASSINATURA']);
+    expect(r.faltando).toEqual(['CONTRATANTE_CIDADE_ASSINATURA', 'CONTRATANTE_UF_ASSINATURA']);
   });
 
   it('falha no upload → pendente com o motivo do storage', async () => {

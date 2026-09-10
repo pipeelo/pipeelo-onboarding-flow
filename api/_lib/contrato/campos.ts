@@ -175,6 +175,9 @@ export function montarCampos(
     CONTRATANTE_CPF: rep?.cpf || '',
     CONTRATANTE_END_REP: rep?.endereco || '',
     CONTRATANTE_CIDADE_ASSINATURA: endereco?.municipio || '',
+    // A UF vinha fixa em "PR" no template — contrato de cliente de fora saía com a
+    // cidade certa e o estado errado (a Trixnet, de Ubatuba, virou "UBATUBA – PR").
+    CONTRATANTE_UF_ASSINATURA: endereco?.uf || '',
     DATA_ASSINATURA: dataAssinatura(sessao.cadastro_enviado_at),
 
     // Anexo I — cadastro e fechamento comercial prevalecem.

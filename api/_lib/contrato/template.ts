@@ -315,10 +315,11 @@ function rodape(): Footer {
 /**
  * Renderiza o contrato preenchido.
  *
- * TODO: o contrato v5-CRM FINAL tem uma cláusula extra sobre o CRM Funil
- * Inteligente que ainda não está no `template-contrato.md`. Enquanto ela não
- * entra, `opts.crm === true` só muda o item 5 do Anexo I — por isso o
- * `index.ts` devolve o aviso "revisar cláusula CRM" e o Staff confere à mão.
+ * A cláusula do CRM Funil Inteligente (Décima Nona) e a de Governança de IA
+ * (Vigésima) entraram no `template-contrato.md` em 10/09/2026, alinhando o
+ * contrato do onboarding ao v5-CRM FINAL. A cláusula do CRM vale por si — ela
+ * mesma se condiciona ao item 5 do Anexo I —, então `opts.crm` continua
+ * decidindo só o texto daquele item, sem mexer na numeração das cláusulas.
  */
 export async function renderDocx(
   campos: Record<string, string>,

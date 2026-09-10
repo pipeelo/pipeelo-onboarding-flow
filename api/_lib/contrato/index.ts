@@ -147,7 +147,6 @@ export async function gerarContratoParaSessao(
     const avisos = divergencias(extracao, cadastro);
     if (erros.length) avisos.push(`Documentos não lidos: ${erros.join('; ')}`);
     if (extracao.confianca !== 'alta') avisos.push(`Confiança da leitura: ${extracao.confianca} — conferir os dados do representante.`);
-    if (sessao.contratou_crm) avisos.push('Cliente contratou CRM — revisar cláusula CRM (ainda não está no template).');
 
     // 3. Representante indefinido → não gera, pergunta no Staff (decisão 2).
     if (!extracao.representante) {
