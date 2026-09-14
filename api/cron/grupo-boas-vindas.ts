@@ -17,12 +17,48 @@ import { notifyStaff } from '../_lib/staff-notify';
  * grupo pelo nome na lista do Avisos, grava o `grupo_jid` e, na mesma rodada, as
  * boas-vindas saem. O Lucas só cria o grupo.
  *
+ * Roda como WATCHER no `server/index.ts` (a cada `GRUPO_WATCHER_SEGUNDOS`, padrão
+ * 20 s): o Felipe quer a mensagem na sequência da criação do grupo. Para não ler a
+ * lista de grupos do Avisos a cada 20 s à toa, a rodada só vai à Evolution quando
+ * existe sessão esperando grupo ou esperando boas-vindas — duas contagens no banco.
+ *
  * Auth: Authorization Bearer ${CRON_SECRET}.
  */
-export type ResultadoBoasVindas = { verificadas: number; vinculados: string[]; enviadas: number; erros: string[] };
+export type ResultadoBoasVindas = {
+  verificadas: number;
+  vinculados: string[];
+  enviadas: number;
+  erros: string[];
+  /** true quando não havia nada esperando e a Evolution nem foi consultada. */
+  ocioso?: boolean;
+};
+
+/** Há sessão com cadastro esperando o Lucas criar o grupo ou esperando as boas-vindas? */
+export async function existePendenciaDeGrupo(supabase: ReturnType<typeof getServiceSupabase>): Promise<boolean> {
+  const semGrupo = await supabase
+    .from('onboarding_sessions')
+    .select('id', { count: 'exact', head: true })
+    .is('grupo_jid', null)
+    .not('cadastro', 'is', null)
+    .not('grupo_instrucoes_enviadas_at', 'is', null);
+  if (semGrupo.error) throw new Error(`contar sessões sem grupo: ${semGrupo.error.message}`);
+  if ((semGrupo.count ?? 0) > 0) return true;
+
+  const semBoasVindas = await supabase
+    .from('onboarding_sessions')
+    .select('id', { count: 'exact', head: true })
+    .not('grupo_jid', 'is', null)
+    .not('cadastro', 'is', null)
+    .is('notificacao_boas_vindas_enviada_at', null);
+  if (semBoasVindas.error) throw new Error(`contar sessões sem boas-vindas: ${semBoasVindas.error.message}`);
+  return (semBoasVindas.count ?? 0) > 0;
+}
 
 export async function enviarBoasVindasPendentes(): Promise<ResultadoBoasVindas> {
   const supabase = getServiceSupabase();
+  if (!(await existePendenciaDeGrupo(supabase))) {
+    return { verificadas: 0, vinculados: [], enviadas: 0, erros: [], ocioso: true };
+  }
   const erros: string[] = [];
 
   // Uma leitura da lista de grupos serve para vincular e para saber quem está dentro.

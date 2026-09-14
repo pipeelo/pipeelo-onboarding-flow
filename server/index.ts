@@ -116,11 +116,16 @@ if (Number.isFinite(pollMinutos) && pollMinutos > 0) {
   console.log(`[server] polling da assinatura a cada ${pollMinutos} min`);
 }
 
-// Boas-vindas seguradas: manda assim que o cliente entra no grupo (ele entra pelo
-// convite, porque a API muitas vezes não consegue adicionar). Intervalo curto —
-// é a mensagem que abre o onboarding e o cliente está esperando por ela.
-const boasVindasMinutos = Number(process.env.BOAS_VINDAS_POLL_MINUTOS ?? 3);
-if (Number.isFinite(boasVindasMinutos) && boasVindasMinutos > 0) {
+// Watcher do grupo criado pelo Lucas (14/09/2026): acha o grupo "Pipeelo & {empresa}"
+// no Avisos, vincula à sessão e manda as boas-vindas na sequência. Também cobre a
+// boas-vindas segurada até o cliente entrar. Rodada ociosa não chama a Evolution.
+// `BOAS_VINDAS_POLL_MINUTOS` (antigo) só vale se o novo não estiver definido.
+const watcherSegundos = process.env.GRUPO_WATCHER_SEGUNDOS
+  ? Number(process.env.GRUPO_WATCHER_SEGUNDOS)
+  : process.env.BOAS_VINDAS_POLL_MINUTOS && process.env.BOAS_VINDAS_POLL_MINUTOS !== '3'
+    ? Number(process.env.BOAS_VINDAS_POLL_MINUTOS) * 60
+    : 20;
+if (Number.isFinite(watcherSegundos) && watcherSegundos > 0) {
   let rodando = false;
   const tick = async () => {
     if (rodando) return;
@@ -128,14 +133,14 @@ if (Number.isFinite(boasVindasMinutos) && boasVindasMinutos > 0) {
     try {
       const mod = await import('../api/cron/grupo-boas-vindas.ts');
       const r = await mod.enviarBoasVindasPendentes();
-      if (r.enviadas || r.vinculados.length || r.erros.length) console.log('[grupo-boas-vindas]', JSON.stringify(r));
+      if (r.enviadas || r.vinculados.length || r.erros.length) console.log('[grupo-watcher]', JSON.stringify(r));
     } catch (e) {
-      console.error('[grupo-boas-vindas] falhou:', e instanceof Error ? e.message : e);
+      console.error('[grupo-watcher] falhou:', e instanceof Error ? e.message : e);
     } finally {
       rodando = false;
     }
   };
-  setTimeout(tick, 45_000);
-  setInterval(tick, boasVindasMinutos * 60_000);
-  console.log(`[server] boas-vindas pendentes a cada ${boasVindasMinutos} min`);
+  setTimeout(tick, 15_000);
+  setInterval(tick, watcherSegundos * 1000);
+  console.log(`[server] watcher de grupo a cada ${watcherSegundos} s`);
 }
