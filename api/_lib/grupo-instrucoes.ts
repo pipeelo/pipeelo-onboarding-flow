@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { groupSubject } from './evolution';
 import { fmtTelefone, type SessaoGrupo } from './cadastro-grupo';
 import { ensureShortLink, onboardingTargetUrl } from './short-links';
-import { WELCOME_TEMPLATE } from './welcome-template';
 import { notifyStaff } from './staff-notify';
 import type { Cadastro } from './schemas/cadastro';
 
@@ -18,6 +17,10 @@ import type { Cadastro } from './schemas/cadastro';
  *
  * O aviso sai pela instância que estiver no grupo Staff (`sendText` sonda antes), então
  * continua funcionando com a `Grupos` fora do ar.
+ *
+ * 14/09/2026 (Felipe): o trabalho do Lucas é SÓ criar o grupo. As boas-vindas não
+ * vão mais no roteiro para colar — o cron `grupo-boas-vindas` acha o grupo pelo nome,
+ * vincula à sessão e manda pelo Avisos. Por isso o Avisos precisa estar no grupo.
  */
 
 const PAINEL = () => (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
@@ -36,6 +39,9 @@ function contatosDoCadastro(c: Cadastro): Contato[] {
  * admin e a mensagem pronta para colar. Tudo numerado — quem lê não precisa decidir
  * nada nem abrir o painel para completar a tarefa.
  */
+/** Número Avisos, que manda as boas-vindas: sem ele no grupo nada sai. */
+const NUMERO_AVISOS = '(44) 3170-1331';
+
 export function mensagemInstrucoesGrupo(cadastro: Cadastro, shortUrl: string): string {
   const contatos = contatosDoCadastro(cadastro);
   const docs = cadastro.doc_contrato_social.length + cadastro.doc_responsaveis.length;
@@ -51,13 +57,11 @@ export function mensagemInstrucoesGrupo(cadastro: Cadastro, shortUrl: string): s
     '*2) Adicionar os contatos do cliente:*',
     ...contatos.map((p) => `• ${p.nome} — ${fmtTelefone(p.whatsapp)}${p.admin ? ' — *deixar como admin*' : ''}`),
     '',
-    '*3) Adicionar a equipe Pipeelo* — a mesma turma que está aqui no Staff.',
+    `*3) Adicionar a equipe Pipeelo* — a mesma turma que está aqui no Staff, incluindo o número Avisos ${NUMERO_AVISOS}.`,
     '',
-    '*4) Mandar esta mensagem no grupo:*',
-    '- - - - - - - - - -',
-    WELCOME_TEMPLATE(shortUrl),
-    '- - - - - - - - - -',
+    'Só isso. Com o grupo criado nesse nome, o sistema encontra o grupo e manda as boas-vindas com o link do formulário sozinho — não precisa mandar mensagem.',
     '',
+    `🔗 Formulário (só para consulta): ${shortUrl}`,
     `📎 ${docs} documento${docs === 1 ? '' : 's'} · contrato → ${cadastro.contrato_email} · vencimento dia ${cadastro.dia_vencimento}`,
     `Painel: ${PAINEL()}/admin`,
   ];

@@ -258,6 +258,36 @@ export function groupSubject(nomeFantasia: string): string {
   return `Pipeelo & ${nomeFantasia.trim().replace(/\s+/g, ' ')}`;
 }
 
+export type GrupoDaPrincipal = {
+  id: string;
+  subject: string;
+  /** Epoch em segundos, como a Evolution devolve. */
+  creation: number | null;
+  /** Telefones (`55…@s.whatsapp.net`) quando a Evolution traz; senão o `@lid`. */
+  participantes: string[];
+};
+
+/**
+ * Todos os grupos em que a instância PRINCIPAL (Avisos) participa, já com os
+ * participantes. É uma leitura só, por isso não passa pela instância de grupos:
+ * desde 10/09/2026 o grupo é criado à mão pelo Lucas com o Avisos dentro, e a
+ * instância `Grupos` foi banida.
+ */
+export async function listarGruposDaPrincipal(): Promise<GrupoDaPrincipal[]> {
+  const { baseUrl, instance, apiKey } = getConfig('main');
+  const url = `${baseUrl}/group/fetchAllGroups/${encodeURIComponent(instance)}?getParticipants=true`;
+  const r = await fetch(url, { headers: { apikey: apiKey } });
+  if (!r.ok) throw new EvolutionApiError(r.status, await r.text());
+  type P = { id: string; phoneNumber?: string | null };
+  const lista = (await r.json()) as Array<{ id: string; subject?: string; creation?: number; participants?: P[] }>;
+  return lista.map((g) => ({
+    id: g.id,
+    subject: g.subject ?? '',
+    creation: typeof g.creation === 'number' ? g.creation : null,
+    participantes: (g.participants ?? []).map((p) => p.phoneNumber || p.id),
+  }));
+}
+
 /** Toda operação de grupo passa por aqui — e por isso vai na instância de grupos. */
 async function evoRequest<T>(path: string, init: RequestInit & { query?: Record<string, string> } = {}): Promise<T> {
   const { baseUrl, instance, apiKey } = getConfig('group');

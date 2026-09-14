@@ -53,10 +53,13 @@ describe('mensagemInstrucoesGrupo', () => {
     expect(m.match(/deixar como admin/g)).toHaveLength(1);
   });
 
-  it('inclui a mensagem pronta com o link do formulário', () => {
+  it('Lucas só cria o grupo: sem mensagem para colar, com o Avisos na lista', () => {
     const m = mensagemInstrucoesGrupo(cadastro, 'https://onboarding.pipeelo.com/s/abc123');
-    expect(m).toContain('Link do formulário:* https://onboarding.pipeelo.com/s/abc123');
-    expect(m).toContain('Parabéns pela decisão');
+    expect(m).not.toContain('Parabéns pela decisão');
+    expect(m).not.toContain('Mandar esta mensagem');
+    expect(m).toContain('(44) 3170-1331');
+    expect(m).toContain('manda as boas-vindas com o link do formulário sozinho');
+    expect(m).toContain('https://onboarding.pipeelo.com/s/abc123');
   });
 
   it('resume documentos, e-mail do contrato e vencimento', () => {

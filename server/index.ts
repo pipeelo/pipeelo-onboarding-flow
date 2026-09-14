@@ -128,7 +128,7 @@ if (Number.isFinite(boasVindasMinutos) && boasVindasMinutos > 0) {
     try {
       const mod = await import('../api/cron/grupo-boas-vindas.ts');
       const r = await mod.enviarBoasVindasPendentes();
-      if (r.enviadas || r.erros.length) console.log('[grupo-boas-vindas]', JSON.stringify(r));
+      if (r.enviadas || r.vinculados.length || r.erros.length) console.log('[grupo-boas-vindas]', JSON.stringify(r));
     } catch (e) {
       console.error('[grupo-boas-vindas] falhou:', e instanceof Error ? e.message : e);
     } finally {
