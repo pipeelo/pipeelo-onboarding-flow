@@ -69,7 +69,7 @@ describe('processarPosCadastro', () => {
     expect(texto).toContain('Painel: https://onboarding.pipeelo.com/admin');
     expect(texto).not.toContain('✍️ Assinatura');
     expect(mockSocios).toHaveBeenCalledTimes(1);
-    expect(String(mockSocios.mock.calls[0][0])).toContain('✍️ Assinatura de Provedor X: link enviado (WhatsApp do responsável + grupo) · https://x/l');
+    expect(String(mockSocios.mock.calls[0][0])).toContain('✍️ Assinatura de Provedor X: não enviada (sem PDF)');
   });
 
   it('falha no contrato não impede a cobrança nem o aviso', async () => {
