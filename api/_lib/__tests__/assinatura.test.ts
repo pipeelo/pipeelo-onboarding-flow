@@ -16,13 +16,13 @@ vi.mock('../evolution', () => ({
   sendText: vi.fn(async () => ({ ok: true })),
   toJid: (d: string) => `55${d}@s.whatsapp.net`,
 }));
-vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })) }));
+vi.mock('../staff-notify', () => ({ notifySocios: vi.fn(async () => ({ sent: true })) }));
 
 import {
   anexarPdf, baixarArquivo, consultarSolicitacao, criarSolicitacao, documentosAssinados, obterLinkInicial, validarSolicitacao,
 } from '../assinapdf';
 import { sendText } from '../evolution';
-import { notifyStaff } from '../staff-notify';
+import { notifySocios } from '../staff-notify';
 import {
   aprovarAssinatura, consultarAssinatura, enviarParaAssinatura, mensagemLinkResponsavel, type SessaoAssinatura,
 } from '../assinatura';
@@ -72,7 +72,7 @@ const m = {
   baixar: baixarArquivo as unknown as ReturnType<typeof vi.fn>,
   validar: validarSolicitacao as unknown as ReturnType<typeof vi.fn>,
   send: sendText as unknown as ReturnType<typeof vi.fn>,
-  staff: notifyStaff as unknown as ReturnType<typeof vi.fn>,
+  staff: notifySocios as unknown as ReturnType<typeof vi.fn>,
 };
 
 beforeEach(() => {

@@ -7,7 +7,7 @@ import {
   pedirCorrecao as pedirCorrecaoApi, validarSolicitacao, type AssinaPdfConfig, type PedidoCorrecao, type SignerDocs,
 } from './assinapdf';
 import { sendText, toJid } from './evolution';
-import { notifyStaff } from './staff-notify';
+import { notifySocios } from './staff-notify';
 
 /**
  * Assinatura do contrato pela AssinaPDF (design 2026-09-02-assinatura-assinapdf).
@@ -249,7 +249,7 @@ export async function consultarAssinatura(
       assinatura_erro: erro,
     });
     if (opts.avisarStaff !== false) {
-      await notifyStaff(
+      await notifySocios(
         `✅ Contrato de ${empresa} assinado e finalizado na AssinaPDF.` +
         (assinadoPath ? ` PDF assinado disponível no painel: ${base}/admin` : ` ⚠️ ${erro}`),
       );
@@ -266,7 +266,7 @@ export async function consultarAssinatura(
       assinatura_erro: null,
     });
     if (opts.avisarStaff !== false) {
-      await notifyStaff(
+      await notifySocios(
         `✍️ ${empresa} assinou o contrato. Falta conferir selfie e documento e aprovar: ${base}/admin`,
       );
     }
