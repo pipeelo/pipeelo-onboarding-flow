@@ -4,13 +4,15 @@ import { gerarContratoParaSessao, type ResultadoContrato } from './contrato';
 import type { SessaoContrato } from './contrato/campos';
 import { dataCurta, moeda } from './contrato/campos';
 import { cobrarContaAzul, type ResultadoCobranca, type SessaoCobranca } from './conta-azul';
-import { notifyStaff } from './staff-notify';
+import { notifyStaff, notifySocios } from './staff-notify';
 import { enviarParaAssinatura, type ResultadoAssinatura, type SessaoAssinatura } from './assinatura';
 
 /**
  * Etapas que rodam depois do grupo de WhatsApp: contrato e cobrança no Conta
  * Azul, nessa ordem, e um único aviso no Staff com os dois blocos (decisão 6 do
- * design). Cada etapa é isolada — falha em uma não impede a outra nem o aviso.
+ * design). A assinatura do contrato é assunto dos sócios: sai em aviso próprio no
+ * grupo deles, nunca no Staff. Cada etapa é isolada — falha em uma não impede a
+ * outra nem o aviso.
  *
  * Reexecutável: contrato já gerado sem erro é pulado; cobrança já feita também.
  */
@@ -47,7 +49,6 @@ export function mensagemStaffPosCadastro(
   sessao: SessaoPosCadastro,
   contrato: ResultadoContrato,
   cobranca: ResultadoCobranca,
-  assinatura: ResultadoAssinatura | null = null,
 ): string {
   const base = (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
   const linhas: string[] = [];
@@ -58,17 +59,6 @@ export function mensagemStaffPosCadastro(
   } else {
     const faltam = contrato.faltando.length ? `; faltam: ${contrato.faltando.join(', ')}` : '';
     linhas.push(`📄 Contrato de ${nomeFantasia}: ⚠️ pendente — ${contrato.motivo}${faltam}`);
-  }
-
-  if (contrato.status === 'gerado') {
-    if (!assinatura) {
-      linhas.push('✍️ Assinatura: não enviada (sem PDF) · enviar pelo painel');
-    } else if (assinatura.status === 'enviado') {
-      const por = [assinatura.dm ? 'WhatsApp do responsável' : null, assinatura.grupo ? 'grupo' : null].filter(Boolean).join(' + ');
-      linhas.push(`✍️ Assinatura: link enviado${por ? ` (${por})` : ''} · ${assinatura.link}`);
-    } else {
-      linhas.push(`✍️ Assinatura: ⚠️ pendente — ${assinatura.motivo}`);
-    }
   }
 
   const implantacaoNoAviso = (url: string | null) =>
@@ -103,6 +93,22 @@ export function mensagemStaffPosCadastro(
   linhas.push(`Painel: ${base}/admin`);
 
   return linhas.join('\n');
+}
+
+/** Aviso de assinatura para o grupo dos sócios; `null` quando não há contrato gerado. */
+export function mensagemSociosAssinatura(
+  nomeFantasia: string,
+  contrato: ResultadoContrato,
+  assinatura: ResultadoAssinatura | null,
+): string | null {
+  if (contrato.status !== 'gerado') return null;
+  const base = (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
+  if (!assinatura) return `✍️ Assinatura de ${nomeFantasia}: não enviada (sem PDF) · enviar pelo painel ${base}/admin`;
+  if (assinatura.status === 'enviado') {
+    const por = [assinatura.dm ? 'WhatsApp do responsável' : null, assinatura.grupo ? 'grupo' : null].filter(Boolean).join(' + ');
+    return `✍️ Assinatura de ${nomeFantasia}: link enviado${por ? ` (${por})` : ''} · ${assinatura.link}`;
+  }
+  return `✍️ Assinatura de ${nomeFantasia}: ⚠️ pendente — ${assinatura.motivo} · ${base}/admin`;
 }
 
 export async function processarPosCadastro(
@@ -170,12 +176,20 @@ export async function processarPosCadastro(
     }
   }
 
-  // 3. Um aviso só, com os dois blocos.
+  // 3. Um aviso no Staff com contrato e cobrança; a assinatura vai só aos sócios.
   if (opts.avisarStaff !== false) {
     try {
-      await notifyStaff(mensagemStaffPosCadastro(cadastro.nome_fantasia, sessao, contrato, cobranca, assinatura));
+      await notifyStaff(mensagemStaffPosCadastro(cadastro.nome_fantasia, sessao, contrato, cobranca));
     } catch (e) {
       console.error('[pos-cadastro] aviso no Staff falhou:', e);
+    }
+    const avisoSocios = mensagemSociosAssinatura(cadastro.nome_fantasia, contrato, assinatura);
+    if (avisoSocios) {
+      try {
+        await notifySocios(avisoSocios);
+      } catch (e) {
+        console.error('[pos-cadastro] aviso aos sócios falhou:', e);
+      }
     }
   }
 

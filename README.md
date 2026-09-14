@@ -58,6 +58,7 @@ O cadastro (`/cadastro/:slug`) depende destas variáveis, configuradas manualmen
 - `EVOLUTION_API_INSTANCE`: nome da instância Evolution (`Avisos`).
 - `EVOLUTION_API_KEY`: chave de autenticação da instância Evolution.
 - `STAFF_GROUP_JID`: JID do grupo interno do Staff que recebe o aviso de novo cadastro.
+- `SOCIOS_GROUP_JID`: JID do grupo dos sócios. Recebe só os avisos de assinatura do contrato (envio do link, cliente assinou, contrato finalizado).
 - `PUBLIC_BASE_URL`: URL pública do serviço, usada para montar o link curto do formulário.
 - `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`: rate limit e cache de CNPJ; obrigatórias para `/api/sessions/create` e `/api/sessions/cadastro-submit`.
 

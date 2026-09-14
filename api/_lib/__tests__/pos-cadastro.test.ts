@@ -6,13 +6,13 @@ vi.mock('../contrato', () => ({
   gerarContratoParaSessao: vi.fn(),
 }));
 vi.mock('../conta-azul', () => ({ cobrarContaAzul: vi.fn() }));
-vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })) }));
+vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })), notifySocios: vi.fn(async () => ({ sent: true })) }));
 vi.mock('../assinatura', () => ({ enviarParaAssinatura: vi.fn(async () => ({ status: 'enviado', solicitacao_id: 66, link: 'https://x/l', dm: true, grupo: true, reenvio: false })) }));
 
 import { gerarContratoParaSessao } from '../contrato';
 import { cobrarContaAzul } from '../conta-azul';
-import { notifyStaff } from '../staff-notify';
-import { processarPosCadastro, mensagemStaffPosCadastro, type SessaoPosCadastro } from '../pos-cadastro';
+import { notifyStaff, notifySocios } from '../staff-notify';
+import { processarPosCadastro, mensagemStaffPosCadastro, mensagemSociosAssinatura, type SessaoPosCadastro } from '../pos-cadastro';
 import type { Cadastro } from '../schemas/cadastro';
 
 const upload = { path: 'p', nome_original: 'a.pdf', tamanho: 1 };
@@ -35,6 +35,7 @@ const supabase = {} as never;
 const mockContrato = gerarContratoParaSessao as unknown as ReturnType<typeof vi.fn>;
 const mockCobranca = cobrarContaAzul as unknown as ReturnType<typeof vi.fn>;
 const mockStaff = notifyStaff as unknown as ReturnType<typeof vi.fn>;
+const mockSocios = notifySocios as unknown as ReturnType<typeof vi.fn>;
 
 const gerado = { status: 'gerado', path: 's1/Contrato.docx', representante: 'Ana Souza', avisos: [] as string[] };
 const cobrado = {
@@ -66,6 +67,9 @@ describe('processarPosCadastro', () => {
     expect(texto).toContain('📄 Contrato de Provedor X: gerado — assina Ana Souza');
     expect(texto).toContain('💳 Conta Azul: cliente criado');
     expect(texto).toContain('Painel: https://onboarding.pipeelo.com/admin');
+    expect(texto).not.toContain('✍️ Assinatura');
+    expect(mockSocios).toHaveBeenCalledTimes(1);
+    expect(String(mockSocios.mock.calls[0][0])).toContain('✍️ Assinatura de Provedor X: link enviado (WhatsApp do responsável + grupo) · https://x/l');
   });
 
   it('falha no contrato não impede a cobrança nem o aviso', async () => {
@@ -77,6 +81,7 @@ describe('processarPosCadastro', () => {
     expect(r.contrato.status).toBe('pendente');
     expect(r.cobranca.status).toBe('cobrado');
     expect(mockStaff).toHaveBeenCalledTimes(1);
+    expect(mockSocios).not.toHaveBeenCalled();
   });
 
   it('contrato já gerado sem erro é pulado', async () => {
@@ -135,5 +140,22 @@ describe('mensagemStaffPosCadastro', () => {
     );
     expect(texto).toContain('📄 Contrato de Provedor X: ⚠️ pendente — Representante indefinido; faltam: CONTRATANTE_REPRESENTANTE');
     expect(texto).toContain('💳 Conta Azul: ⚠️ pendente — faltam dados do fechamento: valor mensal');
+  });
+});
+
+describe('mensagemSociosAssinatura', () => {
+  beforeEach(() => { process.env.PUBLIC_BASE_URL = 'https://onboarding.pipeelo.com'; });
+
+  it('sem contrato gerado não há aviso', () => {
+    expect(mensagemSociosAssinatura('Provedor X', { status: 'pendente', motivo: 'x', faltando: [] }, null)).toBeNull();
+  });
+
+  it('assinatura pendente traz o motivo e o painel', () => {
+    const texto = mensagemSociosAssinatura('Provedor X', gerado as never, { status: 'pendente', motivo: 'Contrato sem representante identificado (nome e CPF)' });
+    expect(texto).toBe('✍️ Assinatura de Provedor X: ⚠️ pendente — Contrato sem representante identificado (nome e CPF) · https://onboarding.pipeelo.com/admin');
+  });
+
+  it('contrato sem PDF pede envio pelo painel', () => {
+    expect(mensagemSociosAssinatura('Provedor X', gerado as never, null)).toContain('não enviada (sem PDF)');
   });
 });
