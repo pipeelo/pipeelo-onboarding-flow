@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cobrarContaAzul, EM_ANDAMENTO, faltamDadosDoFechamento, numero, type SessaoCobranca } from '../conta-azul';
+import { criarClienteContaAzul, EM_ANDAMENTO, numero, type SessaoCobranca } from '../conta-azul';
 import type { Cadastro } from '../schemas/cadastro';
 
 const upload = { path: 'p', nome_original: 'a.pdf', tamanho: 1 };
@@ -27,11 +27,6 @@ const cadastro: Cadastro = {
 const sessao: SessaoCobranca = {
   id: 's1',
   slug: 'provedor-x',
-  valor_implantacao: 4000,
-  implantacao_vencimento: '2026-09-15',
-  valor_mensal: 2508,
-  go_live_em: '2026-10-07',
-  dia_vencimento: 10,
   contrato_extracao: { endereco_sede: 'Rua A, 100, Londrina/PR' },
 };
 
@@ -89,7 +84,7 @@ describe('numero', () => {
   });
 });
 
-describe('cobrarContaAzul', () => {
+describe('criarClienteContaAzul', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     process.env.CA_INTERNAL_SECRET = 'segredo';
@@ -99,55 +94,14 @@ describe('cobrarContaAzul', () => {
     delete process.env.CA_INTERNAL_SECRET;
   });
 
-  it('não chama a API quando falta dado do fechamento e grava o motivo', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, { ...sessao, valor_implantacao: null, dia_vencimento: null }, cadastro);
-    expect(r).toEqual({
-      status: 'pendente',
-      motivo: 'faltam dados do fechamento: valor da implantação, dia de vencimento',
-    });
-    expect(fetchSpy).not.toHaveBeenCalled();
-    expect(reservou(updates)).toBe(false);
-    expect(updates).toEqual([{ ca_erro: 'faltam dados do fechamento: valor da implantação, dia de vencimento' }]);
-  });
-
-  it('valor impossível de interpretar vira pendente antes da rede', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, { ...sessao, valor_mensal: 'combinar' }, cadastro);
-    expect(r).toEqual({ status: 'pendente', motivo: 'valores inválidos no fechamento: valor mensal' });
-    expect(fetchSpy).not.toHaveBeenCalled();
-    expect(reservou(updates)).toBe(false);
-  });
-
-  it('lista todos os campos obrigatórios que faltam', () => {
-    // go_live_em não é obrigatório: sem ele a cobrança sai só com a implantação.
-    expect(faltamDadosDoFechamento({ id: 's1' })).toHaveLength(4);
-    expect(faltamDadosDoFechamento({ ...sessao, go_live_em: null })).toEqual([]);
-    expect(faltamDadosDoFechamento(sessao)).toEqual([]);
-  });
-
-  it('201 grava cliente, links e data da cobrança', async () => {
+  it('201 cria só o cliente: payload sem implantação nem mensalidade', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      resposta(201, {
-        ok: true,
-        cliente_id: 'ca-123',
-        implantacao: { venda_id: 'v1', vencimento: '2026-09-15', url: 'https://boleto/impl' },
-        mensalidade: { venda_id: 'v2', vencimento: '2026-10-10', url: 'https://boleto/mens' },
-        recorrente: { contrato_id: 'c1' },
-      }),
+      resposta(201, { ok: true, cliente_id: 'ca-123', implantacao: null, mensalidade: null, recorrente: { contrato_id: null }, aguardando_go_live: true }),
     );
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
 
-    expect(r).toEqual({
-      status: 'cobrado',
-      implantacao_url: 'https://boleto/impl',
-      mensalidade_url: 'https://boleto/mens',
-      recorrente: true,
-      mensalidade: { valor: null, dias: null, vencimento: '2026-10-10' },
-    });
+    expect(r).toEqual({ status: 'cliente_criado', cliente_id: 'ca-123' });
 
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://pipeelo.com/api/conta-azul?action=cadastro');
@@ -161,62 +115,44 @@ describe('cobrarContaAzul', () => {
       telefone: '4333221100',
       endereco: 'Rua A, 100, Londrina/PR',
     });
-    expect(body.implantacao).toEqual({ valor: 4000, vencimento: '2026-09-15' });
-    expect(body.mensalidade).toEqual({ valor: 2508, go_live_em: '2026-10-07', dia_vencimento: 10 });
+    // Sem cobrança: nem implantação, nem mensalidade, nem recorrente.
+    expect(body.implantacao).toBeNull();
+    expect(body).not.toHaveProperty('mensalidade');
 
     expect(reservou(updates)).toBe(true);
-    expect(ultimo(updates)).toMatchObject({
-      ca_cliente_id: 'ca-123',
-      ca_implantacao_url: 'https://boleto/impl',
-      ca_mensalidade_url: 'https://boleto/mens',
-      ca_erro: null,
-    });
-    expect(ultimo(updates).ca_cobrado_at).toBeTruthy();
+    expect(ultimo(updates)).toEqual({ ca_cliente_id: 'ca-123', ca_erro: null });
   });
 
-  it('valores com máscara chegam como número no payload', async () => {
+  it('não manda cobrança mesmo com valores e go-live preenchidos na sessão', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(201, { ok: true, cliente_id: 'x' }));
     const { supabase } = sb();
-    await cobrarContaAzul(supabase, { ...sessao, valor_implantacao: '4.000,00', valor_mensal: '2.508,50' }, cadastro);
+    const cheia = { ...sessao, valor_implantacao: 4000, implantacao_vencimento: '2026-09-15', valor_mensal: 2508, go_live_em: '2026-10-07', dia_vencimento: 10 };
+    await criarClienteContaAzul(supabase, cheia as SessaoCobranca, cadastro);
     const body = JSON.parse(String((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body));
-    expect(body.implantacao.valor).toBe(4000);
-    expect(body.mensalidade.valor).toBe(2508.5);
+    expect(body.implantacao).toBeNull();
+    expect(body).not.toHaveProperty('mensalidade');
   });
 
-  it('sem go-live o payload vai sem mensalidade e o resultado fica aguardando', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      resposta(201, {
-        ok: true,
-        cliente_id: 'ca-123',
-        implantacao: { venda_id: 'v1', vencimento: '2026-09-15', url: 'https://boleto/impl' },
-        mensalidade: null,
-        recorrente: { contrato_id: null },
-        aguardando_go_live: true,
-      }),
-    );
+  it('201 sem cliente_id vira pendente', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(201, { ok: true }));
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, { ...sessao, go_live_em: null }, cadastro);
-
-    const body = JSON.parse(String((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body));
-    expect(body.mensalidade).toBeUndefined();
-    expect(r).toEqual({ status: 'aguardando_go_live', implantacao_url: 'https://boleto/impl' });
-    // Sem data de cobrança: é ela que libera a cobrança da mensalidade depois.
-    expect(ultimo(updates).ca_cobrado_at).toBeUndefined();
-    expect(ultimo(updates).ca_implantacao_url).toBe('https://boleto/impl');
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
+    expect(r).toEqual({ status: 'pendente', motivo: 'Resposta inesperada do Conta Azul (HTTP 201)' });
+    expect(ultimo(updates)).toEqual({ ca_erro: 'Resposta inesperada do Conta Azul (HTTP 201)' });
   });
 
-  it('reserva perdida (outra execução em curso ou já cobrado) não chama a API', async () => {
+  it('reserva perdida (outra execução em curso ou cliente já criado) não chama a API', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { supabase } = sb({ data: [], error: null });
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
-    expect(r).toEqual({ status: 'pendente', motivo: 'cobrança em andamento ou já feita' });
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
+    expect(r).toEqual({ status: 'pendente', motivo: 'criação em andamento ou cliente já criado' });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('erro ao reservar também não cobra', async () => {
+  it('erro ao reservar também não chama a API', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { supabase } = sb({ data: null, error: { message: 'db down' } });
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
     expect(r.status).toBe('pendente');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -225,24 +161,22 @@ describe('cobrarContaAzul', () => {
     process.env.VENDAS_API_URL = 'https://staging.pipeelo.com/';
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(201, { ok: true, cliente_id: 'x' }));
     const { supabase } = sb();
-    await cobrarContaAzul(supabase, sessao, cadastro);
+    await criarClienteContaAzul(supabase, sessao, cadastro);
     expect(fetchSpy.mock.calls[0][0]).toBe('https://staging.pipeelo.com/api/conta-azul?action=cadastro');
   });
 
   it('200 com ok:false vira pendente e grava ca_erro', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      resposta(200, { ok: false, etapa: 'venda_implantacao', erro: 'token expirado' }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(200, { ok: false, etapa: 'pessoa', erro: 'token expirado' }));
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
-    expect(r).toMatchObject({ status: 'pendente', motivo: 'Conta Azul falhou em "venda_implantacao": token expirado' });
-    expect(ultimo(updates)).toEqual({ ca_erro: 'Conta Azul falhou em "venda_implantacao": token expirado' });
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
+    expect(r).toMatchObject({ status: 'pendente', motivo: 'Conta Azul falhou em "pessoa": token expirado' });
+    expect(ultimo(updates)).toEqual({ ca_erro: 'Conta Azul falhou em "pessoa": token expirado' });
   });
 
   it('409 é "em andamento": pendente e libera a marca de processando', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(409, { ok: false, erro: 'em_andamento' }));
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
     expect(r.status).toBe('pendente');
     expect(reservou(updates)).toBe(true);
     expect(ultimo(updates)).toEqual({ ca_erro: null });
@@ -251,7 +185,7 @@ describe('cobrarContaAzul', () => {
   it('401 vira pendente com o motivo gravado', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(401, { erro: 'secret inválido' }));
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
     expect(r).toEqual({ status: 'pendente', motivo: 'Conta Azul recusou o pedido: secret inválido' });
     expect(ultimo(updates)).toEqual({ ca_erro: 'Conta Azul recusou o pedido: secret inválido' });
   });
@@ -260,7 +194,7 @@ describe('cobrarContaAzul', () => {
     delete process.env.CA_INTERNAL_SECRET;
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
     expect(r).toEqual({ status: 'pendente', motivo: 'CA_INTERNAL_SECRET não configurado' });
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(reservou(updates)).toBe(false);
@@ -270,7 +204,7 @@ describe('cobrarContaAzul', () => {
   it('falha de rede não lança', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'));
     const { supabase, updates } = sb();
-    const r = await cobrarContaAzul(supabase, sessao, cadastro);
+    const r = await criarClienteContaAzul(supabase, sessao, cadastro);
     expect(r.status).toBe('pendente');
     expect(String(ultimo(updates).ca_erro)).toContain('ECONNREFUSED');
   });

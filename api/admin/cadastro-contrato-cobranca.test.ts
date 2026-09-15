@@ -11,12 +11,12 @@ vi.mock('../_lib/contrato', () => ({
   gerarContratoParaSessao: vi.fn(async () => ({ status: 'gerado', path: 's1/c.docx', representante: 'Ana', avisos: [] })),
 }));
 vi.mock('../_lib/conta-azul', () => ({
-  cobrarContaAzul: vi.fn(async () => ({ status: 'cobrado', implantacao_url: 'u1', mensalidade_url: 'u2', recorrente: true })),
+  criarClienteContaAzul: vi.fn(async () => ({ status: 'cliente_criado', cliente_id: 'ca-1' })),
 }));
 
 import { getServiceSupabase } from '../_lib/supabase';
 import { gerarContratoParaSessao } from '../_lib/contrato';
-import { cobrarContaAzul } from '../_lib/conta-azul';
+import { criarClienteContaAzul } from '../_lib/conta-azul';
 import gerarContratoHandler from './_cadastro-gerar-contrato';
 import cobrarHandler from './_cadastro-cobrar-conta-azul';
 import downloadHandler from './_contrato-download';
@@ -91,30 +91,29 @@ describe('POST /api/admin/cadastro-gerar-contrato', () => {
 describe('POST /api/admin/cadastro-cobrar-conta-azul', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('200 devolve o resultado da cobrança', async () => {
+  it('200 devolve o cliente criado', async () => {
     sb(sessaoOk);
     const r = await invokeHandler(cobrarHandler as never, { method: 'POST', body: { session_id: 's1' }, headers: auth });
     expect(r.statusCode).toBe(200);
-    expect(cobrarContaAzul).toHaveBeenCalled();
-    expect(r.body).toMatchObject({ ok: true, cobranca: { status: 'cobrado', implantacao_url: 'u1' } });
+    expect(criarClienteContaAzul).toHaveBeenCalled();
+    expect(r.body).toMatchObject({ ok: true, cobranca: { status: 'cliente_criado', cliente_id: 'ca-1' } });
   });
 
   it('409 sem cadastro enviado', async () => {
     sb({ id: 's1', cadastro: null, cadastro_enviado_at: null });
     const r = await invokeHandler(cobrarHandler as never, { method: 'POST', body: { session_id: 's1' }, headers: auth });
     expect(r.statusCode).toBe(409);
-    expect(cobrarContaAzul).not.toHaveBeenCalled();
+    expect(criarClienteContaAzul).not.toHaveBeenCalled();
   });
 
-  it('grava o go-live na sessão antes de cobrar', async () => {
+  it('grava o go-live na sessão (para o contrato)', async () => {
     const { updates } = sb(sessaoOk);
     const r = await invokeHandler(cobrarHandler as never, {
       method: 'POST', body: { session_id: 's1', go_live_em: '2026-09-20' }, headers: auth,
     });
     expect(r.statusCode).toBe(200);
     expect(updates).toEqual([{ go_live_em: '2026-09-20' }]);
-    // A sessão passada para a cobrança já leva a data — é ela que libera a mensalidade.
-    const sessaoCobrada = (cobrarContaAzul as never as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    const sessaoCobrada = (criarClienteContaAzul as never as ReturnType<typeof vi.fn>).mock.calls[0][1];
     expect(sessaoCobrada.go_live_em).toBe('2026-09-20');
   });
 
@@ -124,7 +123,7 @@ describe('POST /api/admin/cadastro-cobrar-conta-azul', () => {
       method: 'POST', body: { session_id: 's1', go_live_em: '20/09/2026' }, headers: auth,
     });
     expect(r.statusCode).toBe(400);
-    expect(cobrarContaAzul).not.toHaveBeenCalled();
+    expect(criarClienteContaAzul).not.toHaveBeenCalled();
   });
 
   it('400 sem session_id', async () => {
@@ -133,21 +132,22 @@ describe('POST /api/admin/cadastro-cobrar-conta-azul', () => {
     expect(r.statusCode).toBe(400);
   });
 
-  it('409 ja_cobrado quando a sessão já tem ca_cobrado_at', async () => {
-    sb({ ...sessaoOk, ca_cobrado_at: '2026-09-02T13:00:00.000Z' });
+  it('409 ja_criado quando a sessão já tem ca_cliente_id', async () => {
+    sb({ ...sessaoOk, ca_cliente_id: 'ca-9' });
     const r = await invokeHandler(cobrarHandler as never, { method: 'POST', body: { session_id: 's1' }, headers: auth });
     expect(r.statusCode).toBe(409);
-    expect(r.body).toEqual({ error: 'ja_cobrado', ca_cobrado_at: '2026-09-02T13:00:00.000Z' });
-    expect(cobrarContaAzul).not.toHaveBeenCalled();
+    expect(r.body).toEqual({ error: 'ja_criado', ca_cliente_id: 'ca-9' });
+    expect(criarClienteContaAzul).not.toHaveBeenCalled();
   });
 
-  it('force: true refaz mesmo já cobrado', async () => {
-    sb({ ...sessaoOk, ca_cobrado_at: '2026-09-02T13:00:00.000Z' });
+  it('force: true libera a trava e refaz mesmo com cliente criado', async () => {
+    const { updates } = sb({ ...sessaoOk, ca_cliente_id: 'ca-9' });
     const r = await invokeHandler(cobrarHandler as never, {
       method: 'POST', body: { session_id: 's1', force: true }, headers: auth,
     });
     expect(r.statusCode).toBe(200);
-    expect(cobrarContaAzul).toHaveBeenCalled();
+    expect(updates).toEqual([{ ca_cliente_id: null }]);
+    expect(criarClienteContaAzul).toHaveBeenCalled();
   });
 });
 

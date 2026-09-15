@@ -5,12 +5,12 @@ vi.mock('../contrato', () => ({
   CONTRATO_BUCKET: 'onboarding-contratos',
   gerarContratoParaSessao: vi.fn(),
 }));
-vi.mock('../conta-azul', () => ({ cobrarContaAzul: vi.fn() }));
+vi.mock('../conta-azul', () => ({ criarClienteContaAzul: vi.fn() }));
 vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })), notifySocios: vi.fn(async () => ({ sent: true })) }));
 vi.mock('../assinatura', () => ({ enviarParaAssinatura: vi.fn(async () => ({ status: 'enviado', solicitacao_id: 66, link: 'https://x/l', dm: true, grupo: true, reenvio: false })) }));
 
 import { gerarContratoParaSessao } from '../contrato';
-import { cobrarContaAzul } from '../conta-azul';
+import { criarClienteContaAzul } from '../conta-azul';
 import { notifyStaff, notifySocios } from '../staff-notify';
 import { processarPosCadastro, mensagemStaffPosCadastro, mensagemSociosAssinatura, type SessaoPosCadastro } from '../pos-cadastro';
 import type { Cadastro } from '../schemas/cadastro';
@@ -33,18 +33,12 @@ const sessao: SessaoPosCadastro = {
 
 const supabase = {} as never;
 const mockContrato = gerarContratoParaSessao as unknown as ReturnType<typeof vi.fn>;
-const mockCobranca = cobrarContaAzul as unknown as ReturnType<typeof vi.fn>;
+const mockCobranca = criarClienteContaAzul as unknown as ReturnType<typeof vi.fn>;
 const mockStaff = notifyStaff as unknown as ReturnType<typeof vi.fn>;
 const mockSocios = notifySocios as unknown as ReturnType<typeof vi.fn>;
 
 const gerado = { status: 'gerado', path: 's1/Contrato.docx', representante: 'Ana Souza', avisos: [] as string[] };
-const cobrado = {
-  status: 'cobrado',
-  implantacao_url: 'https://boleto/impl',
-  mensalidade_url: 'https://boleto/mens',
-  recorrente: true,
-  mensalidade: { valor: 2006.4, dias: 24, vencimento: '2026-10-10' },
-};
+const cobrado = { status: 'cliente_criado', cliente_id: 'ca-123' };
 
 describe('processarPosCadastro', () => {
   beforeEach(() => {
@@ -79,7 +73,7 @@ describe('processarPosCadastro', () => {
     const r = await processarPosCadastro(supabase, sessao, cadastro);
 
     expect(r.contrato.status).toBe('pendente');
-    expect(r.cobranca.status).toBe('cobrado');
+    expect(r.cobranca.status).toBe('cliente_criado');
     expect(mockStaff).toHaveBeenCalledTimes(1);
     expect(mockSocios).not.toHaveBeenCalled();
   });
@@ -102,22 +96,18 @@ describe('processarPosCadastro', () => {
     expect(mockContrato).toHaveBeenCalledTimes(1);
   });
 
-  it('cobrança já feita é pulada', async () => {
+  it('cliente já criado no Conta Azul é pulado', async () => {
     mockContrato.mockResolvedValue(gerado);
-    const r = await processarPosCadastro(
-      supabase,
-      { ...sessao, ca_cobrado_at: '2026-09-02T13:00:00.000Z', ca_implantacao_url: 'https://boleto/impl', ca_mensalidade_url: null },
-      cadastro,
-    );
+    const r = await processarPosCadastro(supabase, { ...sessao, ca_cliente_id: 'ca-999' }, cadastro);
     expect(mockCobranca).not.toHaveBeenCalled();
-    expect(r.cobranca).toMatchObject({ status: 'cobrado', implantacao_url: 'https://boleto/impl', mensalidade_url: null });
+    expect(r.cobranca).toEqual({ status: 'cliente_criado', cliente_id: 'ca-999' });
   });
 });
 
 describe('mensagemStaffPosCadastro', () => {
   beforeEach(() => { process.env.PUBLIC_BASE_URL = 'https://onboarding.pipeelo.com'; });
 
-  it('bloco de sucesso traz valores, vencimentos, links e avisos', () => {
+  it('bloco de sucesso diz que só o cliente foi criado, sem cobrança', () => {
     const texto = mensagemStaffPosCadastro(
       'Provedor X',
       sessao,
@@ -125,9 +115,8 @@ describe('mensagemStaffPosCadastro', () => {
       cobrado as never,
     );
     expect(texto).toContain('📄 Contrato de Provedor X: gerado — assina Ana Souza · baixar no painel');
-    expect(texto).toContain('implantação R$ 4.000,00 venc 15/09 (https://boleto/impl)');
-    expect(texto).toContain('1ª mensalidade (24 dias) R$ 2.006,40 venc 10/10 (https://boleto/mens)');
-    expect(texto).toContain('recorrente R$ 2.508,00 dia 10');
+    expect(texto).toContain('💳 Conta Azul: cliente criado · cobranças (implantação e 1ª mensalidade proporcional ao go-live) lançar à mão');
+    expect(texto).not.toContain('boleto');
     expect(texto).toContain('Avisos: Cliente contratou CRM — revisar cláusula CRM');
   });
 
@@ -136,10 +125,10 @@ describe('mensagemStaffPosCadastro', () => {
       'Provedor X',
       sessao,
       { status: 'pendente', motivo: 'Representante indefinido', faltando: ['CONTRATANTE_REPRESENTANTE'] },
-      { status: 'pendente', motivo: 'faltam dados do fechamento: valor mensal' },
+      { status: 'pendente', motivo: 'CA_INTERNAL_SECRET não configurado' },
     );
     expect(texto).toContain('📄 Contrato de Provedor X: ⚠️ pendente — Representante indefinido; faltam: CONTRATANTE_REPRESENTANTE');
-    expect(texto).toContain('💳 Conta Azul: ⚠️ pendente — faltam dados do fechamento: valor mensal');
+    expect(texto).toContain('💳 Conta Azul: ⚠️ pendente — CA_INTERNAL_SECRET não configurado');
   });
 });
 

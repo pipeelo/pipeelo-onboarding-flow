@@ -150,16 +150,9 @@ export type AssinaturaDetalhesDTO = {
   signers: AssinaturaSignerDTO[];
 };
 
+/** O onboarding só cria o cliente no Conta Azul; as cobranças são lançadas à mão. */
 export type ResultadoCobrancaDTO =
-  | {
-      status: 'cobrado';
-      implantacao_url: string | null;
-      mensalidade_url: string | null;
-      recorrente: boolean;
-      mensalidade: { valor: number | null; dias: number | null; vencimento: string | null } | null;
-    }
-  /** Implantação cobrada; a 1ª mensalidade proporcional espera a data de go-live. */
-  | { status: 'aguardando_go_live'; implantacao_url: string | null }
+  | { status: 'cliente_criado'; cliente_id: string | null }
   | { status: 'pendente'; motivo: string };
 
 export type ResultadoGrupoDTO =
@@ -372,11 +365,8 @@ export const adminSessionApi = {
       body: JSON.stringify({ session_id }),
     }),
 
-  /**
-   * Cobra no Conta Azul. Sem `go_live_em` (aqui ou já gravado na sessão) sai só a
-   * implantação e a resposta volta `aguardando_go_live`.
-   */
-  cobrarContaAzul: (authToken: string, session_id: string, go_live_em?: string | null) =>
+  /** Cria só o cliente no Conta Azul (sem implantação, mensalidade nem recorrente). */
+  criarClienteContaAzul: (authToken: string, session_id: string, go_live_em?: string | null) =>
     adminApi<{ ok: true; cobranca: ResultadoCobrancaDTO }>('/api/admin/cadastro-cobrar-conta-azul', authToken, {
       method: 'POST',
       body: JSON.stringify(go_live_em ? { session_id, go_live_em } : { session_id }),

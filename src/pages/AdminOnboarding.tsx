@@ -509,7 +509,7 @@ function ComercialEditor({
             />
             <p className="text-[11px] text-muted-foreground">
               A 1ª mensalidade é proporcional aos dias de operação no mês e vence 3 dias
-              depois do go-live. Sem esta data, o Conta Azul cobra só a implantação.
+              depois do go-live (vai no contrato; a cobrança é lançada à mão no Conta Azul).
             </p>
           </div>
         </div>
@@ -866,27 +866,20 @@ const AdminOnboarding = () => {
   };
 
   const [cobrandoCa, setCobrandoCa] = useState<string | null>(null);
-  const cobrarContaAzul = async (session: OnboardingSession) => {
+  const criarClienteContaAzul = async (session: OnboardingSession) => {
     setCobrandoCa(session.id);
     try {
       const authToken = await getAuthToken();
       if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
-      const { cobranca } = await adminSessionApi.cobrarContaAzul(authToken, session.id);
-      if (cobranca.status === 'cobrado') {
-        const m = cobranca.mensalidade;
-        const proporcional =
-          m?.valor != null && m.dias != null
-            ? ` — 1ª mensalidade ${formatBRL(m.valor)} (${m.dias} dias)`
-            : '';
-        toast.success(`Cobranças criadas no Conta Azul${proporcional}`);
-      } else if (cobranca.status === 'aguardando_go_live') {
-        toast.success('Implantação cobrada. Informe o go-live no fechamento para cobrar a 1ª mensalidade.');
+      const { cobranca } = await adminSessionApi.criarClienteContaAzul(authToken, session.id);
+      if (cobranca.status === 'cliente_criado') {
+        toast.success('Cliente criado no Conta Azul. Lance as cobranças à mão.');
       } else {
-        toast.error(`Cobrança pendente: ${cobranca.motivo}`);
+        toast.error(`Conta Azul pendente: ${cobranca.motivo}`);
       }
       await fetchSessions();
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : 'Erro ao cobrar no Conta Azul');
+      toast.error(e instanceof ApiError ? e.message : 'Erro ao criar o cliente no Conta Azul');
     } finally {
       setCobrandoCa(null);
     }
@@ -1422,11 +1415,11 @@ const AdminOnboarding = () => {
                                 </Badge>
                               )}
                               {session.contrato_path && badgeAssinatura(session)}
-                              {session.ca_cobrado_at ? (
-                                <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Cobrança OK</Badge>
+                              {session.ca_cliente_id ? (
+                                <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Cliente no Conta Azul</Badge>
                               ) : (
                                 <Badge className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
-                                  Cobrança pendente{session.ca_erro ? `: ${session.ca_erro}` : ''}
+                                  Conta Azul pendente{session.ca_erro ? `: ${session.ca_erro}` : ''}
                                 </Badge>
                               )}
                             </>
@@ -1531,20 +1524,16 @@ const AdminOnboarding = () => {
                                   Gerar contrato
                                 </Button>
                               )}
-                              {session.cadastro_enviado_at && !session.ca_cobrado_at && (
+                              {session.cadastro_enviado_at && !session.ca_cliente_id && (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   disabled={cobrandoCa === session.id}
-                                  onClick={() => cobrarContaAzul(session)}
-                                  title={
-                                    session.go_live_em
-                                      ? 'Cria o cliente, a implantação e a 1ª mensalidade proporcional no Conta Azul'
-                                      : 'Cria o cliente e a implantação. A 1ª mensalidade só sai depois do go-live'
-                                  }
+                                  onClick={() => criarClienteContaAzul(session)}
+                                  title="Cria só o cliente no Conta Azul. As cobranças são lançadas à mão."
                                 >
                                   {cobrandoCa === session.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CircleDollarSign className="w-4 h-4 mr-2" />}
-                                  Cobrar no Conta Azul
+                                  Criar cliente no Conta Azul
                                 </Button>
                               )}
                               {session.ca_implantacao_url && (

@@ -13,27 +13,18 @@ import type { Cadastro } from './schemas/cadastro';
 export type SessaoCobranca = {
   id: string;
   slug?: string | null;
-  valor_implantacao?: number | string | null;
-  implantacao_vencimento?: string | null;
-  valor_mensal?: number | string | null;
-  /** Início da operação. Sem ela a mensalidade não é cobrada — só a implantação. */
-  go_live_em?: string | null;
-  dia_vencimento?: number | string | null;
   /** Endereço da sede lido dos documentos (quando o contrato já foi gerado). */
   contrato_extracao?: { endereco_sede?: string | null } | null;
 };
 
+/**
+ * Desde 15/09/2026 o onboarding só CRIA O CLIENTE no Conta Azul. Implantação,
+ * 1ª mensalidade (proporcional ao go-live) e contrato recorrente são lançados à
+ * mão pelo financeiro — acertar a data do go-live automaticamente complicava mais
+ * do que ajudava.
+ */
 export type ResultadoCobranca =
-  | {
-      status: 'cobrado';
-      implantacao_url: string | null;
-      mensalidade_url: string | null;
-      recorrente: boolean;
-      /** Valor e dias da proporcional, como o site calculou. */
-      mensalidade: { valor: number | null; dias: number | null; vencimento: string | null } | null;
-    }
-  /** Implantação cobrada; a mensalidade proporcional espera a data de go-live. */
-  | { status: 'aguardando_go_live'; implantacao_url: string | null }
+  | { status: 'cliente_criado'; cliente_id: string | null }
   | { status: 'pendente'; motivo: string };
 
 type RespostaSite = {
@@ -41,10 +32,6 @@ type RespostaSite = {
   etapa?: string;
   erro?: string;
   cliente_id?: string;
-  implantacao?: { venda_id?: string; vencimento?: string; url?: string | null } | null;
-  mensalidade?: { venda_id?: string; vencimento?: string; url?: string | null; valor?: number; dias?: number } | null;
-  recorrente?: { contrato_id?: string } | null;
-  aguardando_go_live?: boolean;
 };
 
 /** Base do site de vendas. `pipeelo.com` é o domínio primário; `vendas.` só redireciona. */
@@ -95,9 +82,9 @@ async function patch(supabase: SupabaseClient, id: string, data: Record<string, 
 }
 
 /**
- * Marca em `ca_erro` que a cobrança está em curso. É a trava contra cobrança
- * dupla: só quem consegue trocar a marca segue para o site. A condição
- * `ca_cobrado_at is null` cobre a sessão já cobrada; a condição sobre `ca_erro`
+ * Marca em `ca_erro` que a criação está em curso. É a trava contra cliente
+ * duplicado: só quem consegue trocar a marca segue para o site. A condição
+ * `ca_cliente_id is null` cobre a sessão já criada; a condição sobre `ca_erro`
  * cobre duas execuções simultâneas (background do cadastro + botão do admin).
  */
 export const EM_ANDAMENTO = 'processando';
@@ -107,42 +94,18 @@ async function reservar(supabase: SupabaseClient, id: string): Promise<boolean> 
     .from('onboarding_sessions')
     .update({ ca_erro: EM_ANDAMENTO })
     .eq('id', id)
-    .is('ca_cobrado_at', null)
+    .is('ca_cliente_id', null)
     .or(`ca_erro.is.null,ca_erro.neq.${EM_ANDAMENTO}`)
     .select('id');
   if (error) {
-    // Sem conseguir reservar, não cobra: repetir é pior do que atrasar.
+    // Sem conseguir reservar, não segue: repetir é pior do que atrasar.
     console.error('[conta-azul] reserva falhou:', error.message);
     return false;
   }
   return Array.isArray(data) && data.length > 0;
 }
 
-/**
- * Campos do fechamento sem os quais não dá para cobrar. `go_live_em` NÃO entra:
- * sem ele a cobrança sai só com a implantação e a mensalidade fica esperando.
- */
-const OBRIGATORIOS: Array<[keyof SessaoCobranca, string]> = [
-  ['valor_implantacao', 'valor da implantação'],
-  ['implantacao_vencimento', 'vencimento da implantação'],
-  ['valor_mensal', 'valor mensal'],
-  ['dia_vencimento', 'dia de vencimento'],
-];
-
-/** Implantação 0 = isenta: sem boleto de implantação e sem exigir o vencimento dela. */
-export function implantacaoIsenta(sessao: SessaoCobranca): boolean {
-  return numero(sessao.valor_implantacao) === 0;
-}
-
-export function faltamDadosDoFechamento(sessao: SessaoCobranca): string[] {
-  const isenta = implantacaoIsenta(sessao);
-  return OBRIGATORIOS
-    .filter(([k]) => !(isenta && k === 'implantacao_vencimento'))
-    .filter(([k]) => !presente(sessao[k]))
-    .map(([, rotulo]) => rotulo);
-}
-
-export async function cobrarContaAzul(
+export async function criarClienteContaAzul(
   supabase: SupabaseClient,
   sessao: SessaoCobranca,
   cadastro: Cadastro,
@@ -153,31 +116,16 @@ export async function cobrarContaAzul(
   };
 
   try {
-    const faltando = faltamDadosDoFechamento(sessao);
-    if (faltando.length) {
-      return pendente(`faltam dados do fechamento: ${faltando.join(', ')}`, true);
-    }
-
-    const valorImplantacao = numero(sessao.valor_implantacao);
-    const valorMensal = numero(sessao.valor_mensal);
-    const diaVencimento = numero(sessao.dia_vencimento);
-    const invalidos = [
-      valorImplantacao === null ? 'valor da implantação' : '',
-      valorMensal === null ? 'valor mensal' : '',
-      diaVencimento === null ? 'dia de vencimento' : '',
-    ].filter(Boolean);
-    if (invalidos.length) {
-      return pendente(`valores inválidos no fechamento: ${invalidos.join(', ')}`, true);
-    }
-
     const secret = process.env.CA_INTERNAL_SECRET;
     if (!secret) return pendente('CA_INTERNAL_SECRET não configurado', true);
 
-    // Trava contra cobrança dupla — depois das validações locais, antes da rede.
+    // Trava contra cliente duplicado — antes da rede.
     if (!(await reservar(supabase, sessao.id))) {
-      return { status: 'pendente', motivo: 'cobrança em andamento ou já feita' };
+      return { status: 'pendente', motivo: 'criação em andamento ou cliente já criado' };
     }
 
+    // Sem `implantacao` e sem `mensalidade`: o site cria só a pessoa, sem venda,
+    // boleto nem contrato recorrente.
     const payload = {
       secret,
       sessao_slug: sessao.slug ?? null,
@@ -190,21 +138,7 @@ export async function cobrarContaAzul(
           ? { endereco: sessao.contrato_extracao.endereco_sede }
           : {}),
       },
-      // Isenta → o site não cria venda nem boleto de implantação.
-      implantacao: valorImplantacao === 0
-        ? null
-        : { valor: valorImplantacao, vencimento: sessao.implantacao_vencimento },
-      // Sem go-live o bloco não vai: o site cobra só a implantação e deixa a
-      // sessão em `implantacao_cobrada`, esperando a data para a proporcional.
-      ...(presente(sessao.go_live_em)
-        ? {
-            mensalidade: {
-              valor: valorMensal,
-              go_live_em: sessao.go_live_em,
-              dia_vencimento: diaVencimento,
-            },
-          }
-        : {}),
+      implantacao: null,
     };
 
     let resposta: Response;
@@ -220,11 +154,11 @@ export async function cobrarContaAzul(
 
     const corpo = (await resposta.json().catch(() => ({}))) as RespostaSite;
 
-    // 409: outra execução já está criando as cobranças. Não é erro — só esperar.
+    // 409: outra execução já está criando o cliente. Não é erro — só esperar.
     // Libera a marca de "processando" para o próximo reprocesso poder tentar.
     if (resposta.status === 409) {
       await patch(supabase, sessao.id, { ca_erro: null });
-      return { status: 'pendente', motivo: 'cobrança já em andamento no Conta Azul; tentar de novo em instantes' };
+      return { status: 'pendente', motivo: 'criação já em andamento no Conta Azul; tentar de novo em instantes' };
     }
     if (resposta.status === 400 || resposta.status === 401) {
       const detalhe = corpo.erro || `HTTP ${resposta.status}`;
@@ -237,48 +171,15 @@ export async function cobrarContaAzul(
       return pendente(motivo, true);
     }
 
-    if (resposta.status !== 201 || !corpo.ok) {
+    if (resposta.status !== 201 || !corpo.ok || !corpo.cliente_id) {
       return pendente(`Resposta inesperada do Conta Azul (HTTP ${resposta.status})`, true);
     }
 
-    const implantacao_url = corpo.implantacao?.url ?? null;
-    const mensalidade_url = corpo.mensalidade?.url ?? null;
-
-    // Só é "cobrado" quando a mensalidade saiu. Com a implantação sozinha,
-    // `ca_cobrado_at` fica nulo de propósito: é o que permite cobrar no go-live.
-    if (corpo.aguardando_go_live) {
-      await patch(supabase, sessao.id, {
-        ca_cliente_id: corpo.cliente_id ?? null,
-        ca_implantacao_url: implantacao_url,
-        ca_erro: null,
-      });
-      return { status: 'aguardando_go_live', implantacao_url };
-    }
-
-    await patch(supabase, sessao.id, {
-      ca_cliente_id: corpo.cliente_id ?? null,
-      ca_implantacao_url: implantacao_url,
-      ca_mensalidade_url: mensalidade_url,
-      ca_cobrado_at: new Date().toISOString(),
-      ca_erro: null,
-    });
-
-    return {
-      status: 'cobrado',
-      implantacao_url,
-      mensalidade_url,
-      recorrente: Boolean(corpo.recorrente?.contrato_id),
-      mensalidade: corpo.mensalidade
-        ? {
-            valor: corpo.mensalidade.valor ?? null,
-            dias: corpo.mensalidade.dias ?? null,
-            vencimento: corpo.mensalidade.vencimento ?? null,
-          }
-        : null,
-    };
+    await patch(supabase, sessao.id, { ca_cliente_id: corpo.cliente_id, ca_erro: null });
+    return { status: 'cliente_criado', cliente_id: corpo.cliente_id };
   } catch (e) {
-    // Rede de segurança: cobrarContaAzul nunca lança.
-    const motivo = `Erro inesperado ao cobrar no Conta Azul: ${msg(e)}`;
+    // Rede de segurança: criarClienteContaAzul nunca lança.
+    const motivo = `Erro inesperado ao criar o cliente no Conta Azul: ${msg(e)}`;
     console.error('[conta-azul]', motivo);
     try {
       await patch(supabase, sessao.id, { ca_erro: motivo });

@@ -2,19 +2,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Cadastro } from './schemas/cadastro';
 import { gerarContratoParaSessao, type ResultadoContrato } from './contrato';
 import type { SessaoContrato } from './contrato/campos';
-import { dataCurta, moeda } from './contrato/campos';
-import { cobrarContaAzul, type ResultadoCobranca, type SessaoCobranca } from './conta-azul';
+import { criarClienteContaAzul, type ResultadoCobranca, type SessaoCobranca } from './conta-azul';
 import { notifyStaff, notifySocios } from './staff-notify';
 import { enviarParaAssinatura, type ResultadoAssinatura, type SessaoAssinatura } from './assinatura';
 
 /**
- * Etapas que rodam depois do grupo de WhatsApp: contrato e cobrança no Conta
- * Azul, nessa ordem, e um único aviso no Staff com os dois blocos (decisão 6 do
+ * Etapas que rodam depois do grupo de WhatsApp: contrato e cliente no Conta
+ * Azul (sem cobrança — decisão de 15/09/2026), nessa ordem, e um único aviso no Staff com os dois blocos (decisão 6 do
  * design). A assinatura do contrato é assunto dos sócios: sai em aviso próprio no
  * grupo deles, nunca no Staff. Cada etapa é isolada — falha em uma não impede a
  * outra nem o aviso.
  *
- * Reexecutável: contrato já gerado sem erro é pulado; cobrança já feita também.
+ * Reexecutável: contrato já gerado sem erro é pulado; cliente já criado também.
  */
 
 export type SessaoPosCadastro = SessaoContrato &
@@ -35,15 +34,6 @@ function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-/** `2026-09-15` → `15/09`. */
-function ddmm(v: unknown): string {
-  return dataCurta(v).slice(0, 5);
-}
-
-function comLink(texto: string, url: string | null | undefined): string {
-  return url ? `${texto} (${url})` : texto;
-}
-
 export function mensagemStaffPosCadastro(
   nomeFantasia: string,
   sessao: SessaoPosCadastro,
@@ -61,29 +51,8 @@ export function mensagemStaffPosCadastro(
     linhas.push(`📄 Contrato de ${nomeFantasia}: ⚠️ pendente — ${contrato.motivo}${faltam}`);
   }
 
-  const implantacaoNoAviso = (url: string | null) =>
-    url
-      ? comLink(`implantação ${moeda(sessao.valor_implantacao)} venc ${ddmm(sessao.implantacao_vencimento)}`, url)
-      : 'implantação isenta';
-
-  if (cobranca.status === 'cobrado') {
-    const m = cobranca.mensalidade;
-    const dias = m?.dias != null && m.dias < 30 ? ` (${m.dias} dias)` : '';
-    const rotulo = `1ª mensalidade${dias} ${moeda(m?.valor ?? sessao.valor_mensal)} venc ${ddmm(m?.vencimento)}`;
-    const partes = [
-      'cliente criado',
-      implantacaoNoAviso(cobranca.implantacao_url),
-      comLink(rotulo, cobranca.mensalidade_url),
-    ];
-    if (cobranca.recorrente && sessao.dia_vencimento) {
-      partes.push(`recorrente ${moeda(sessao.valor_mensal)} dia ${sessao.dia_vencimento}`);
-    }
-    linhas.push(`💳 Conta Azul: ${partes.join(' · ')}`);
-  } else if (cobranca.status === 'aguardando_go_live') {
-    linhas.push(
-      `💳 Conta Azul: cliente criado · ${implantacaoNoAviso(cobranca.implantacao_url)} · ` +
-        '⏳ 1ª mensalidade proporcional espera a data de go-live — registrar no painel',
-    );
+  if (cobranca.status === 'cliente_criado') {
+    linhas.push('💳 Conta Azul: cliente criado · cobranças (implantação e 1ª mensalidade proporcional ao go-live) lançar à mão');
   } else {
     linhas.push(`💳 Conta Azul: ⚠️ pendente — ${cobranca.motivo}`);
   }
@@ -157,26 +126,20 @@ export async function processarPosCadastro(
     }
   }
 
-  // 2. Conta Azul — pula quando já cobrado.
+  // 2. Conta Azul — só o cliente, sem cobrança; pula quando já criado.
   let cobranca: ResultadoCobranca;
-  if (sessao.ca_cobrado_at) {
-    cobranca = {
-      status: 'cobrado',
-      implantacao_url: sessao.ca_implantacao_url ?? null,
-      mensalidade_url: sessao.ca_mensalidade_url ?? null,
-      recorrente: Boolean(sessao.dia_vencimento),
-      mensalidade: null,
-    };
+  if (sessao.ca_cliente_id) {
+    cobranca = { status: 'cliente_criado', cliente_id: sessao.ca_cliente_id };
   } else {
     try {
-      cobranca = await cobrarContaAzul(supabase, sessao, cadastro);
+      cobranca = await criarClienteContaAzul(supabase, sessao, cadastro);
     } catch (e) {
-      cobranca = { status: 'pendente', motivo: `Erro inesperado ao cobrar no Conta Azul: ${msg(e)}` };
+      cobranca = { status: 'pendente', motivo: `Erro inesperado ao criar o cliente no Conta Azul: ${msg(e)}` };
       console.error('[pos-cadastro] conta azul:', e);
     }
   }
 
-  // 3. Um aviso no Staff com contrato e cobrança; a assinatura vai só aos sócios.
+  // 3. Um aviso no Staff com contrato e Conta Azul; a assinatura vai só aos sócios.
   if (opts.avisarStaff !== false) {
     try {
       await notifyStaff(mensagemStaffPosCadastro(cadastro.nome_fantasia, sessao, contrato, cobranca));
