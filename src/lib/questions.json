@@ -4,7 +4,7 @@
     "ordem_sugerida": ["identificacao", "sac_geral", "financeiro", "suporte", "vendas"],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v3.0 - 5 departamentos, primeiro (identificacao) é bloqueante e cria o tenant no admin-pipeelo",
-    "versao": "3.6.0",
+    "versao": "3.7.0",
     "total_perguntas": 140
   },
 
@@ -888,28 +888,23 @@
           "perguntas": [
             {
               "id": "gateway_pagamento",
-              "pergunta": "Qual gateway de pagamento vocês usam?",
+              "pergunta": "O gateway de pagamento já está configurado no ERP ou é um sistema fora dele?",
               "tipo": "select",
               "obrigatoria": true,
+              "hint": "Se o boleto e o PIX já saem pelo ERP, escolha a primeira opção. Se usam um gateway à parte, escolha qual.",
               "opcoes": [
-                {"value": "asaas", "label": "Asaas"},
-                {"value": "pjbank", "label": "PJBank"},
-                {"value": "gerencianet", "label": "Gerencianet / Efí"},
-                {"value": "7az", "label": "7AZ"},
-                {"value": "mercado_pago", "label": "Mercado Pago"},
-                {"value": "iugu", "label": "Iugu"},
-                {"value": "boleto_proprio", "label": "Boleto próprio (banco)"},
-                {"value": "integrado_erp", "label": "Integrado ao ERP"},
-                {"value": "outro", "label": "Outro"}
+                {"value": "integrado_erp", "label": "Já está configurado no ERP"},
+                {"value": "7az", "label": "Fora do ERP: 7AZ (Bemobi)"},
+                {"value": "outro", "label": "Fora do ERP: outro gateway"}
               ]
             },
             {
               "id": "gateway_outro",
-              "pergunta": "Qual gateway?",
+              "pergunta": "Qual é o gateway?",
               "tipo": "text",
               "obrigatoria": true,
               "condicional": "gateway_pagamento == 'outro'",
-              "placeholder": "Nome do gateway"
+              "placeholder": "Ex: Asaas, Efí, Iugu, Mercado Pago"
             },
             {
               "id": "vencimentos_disponiveis",

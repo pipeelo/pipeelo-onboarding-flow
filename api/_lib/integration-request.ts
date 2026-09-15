@@ -289,6 +289,7 @@ export async function buildIntegrationRequestMessage(
     // Nome real do gateway: campo dedicado da seção de integração, senão o
     // gateway escolhido no Financeiro (gateway_pagamento), senão genérico.
     const GATEWAY_VALUE_TO_LABEL: Record<string, string> = {
+      '7az': '7AZ',
       asaas: 'Asaas',
       pjbank: 'PJBank',
       gerencianet: 'Gerencianet / Efí',
