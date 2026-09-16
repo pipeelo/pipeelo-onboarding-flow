@@ -1,7 +1,11 @@
-import { Button, Text, Heading } from '@react-email/components';
+import { Button, Text, Heading, Link } from '@react-email/components';
 import * as React from 'react';
 import { Layout } from './_shared/Layout';
 import { EMAIL_COLORS } from './_shared/tokens';
+import { GUIA_ONBOARDING_URL } from '../../api/_lib/welcome-template';
+
+const TEXTO_GUIA =
+  'Travou em alguma pergunta? O guia mostra o que responder em cada etapa e o formato certo dos dados de integração.';
 
 export interface ReminderStalledProps {
   ceoNome: string;
@@ -80,6 +84,21 @@ export function ReminderStalled({
       >
         Continuar de onde parei
       </Button>
+
+      <Text
+        style={{
+          color: EMAIL_COLORS.ink,
+          fontSize: '14px',
+          lineHeight: '22px',
+          margin: '24px 0 0',
+        }}
+      >
+        {TEXTO_GUIA}{' '}
+        <Link href={GUIA_ONBOARDING_URL} style={{ color: EMAIL_COLORS.mint, fontWeight: 700 }}>
+          Abrir o guia de preenchimento
+        </Link>
+        . Ficou dúvida? Chame o time Pipeelo no grupo de WhatsApp.
+      </Text>
 
       <Text
         style={{
