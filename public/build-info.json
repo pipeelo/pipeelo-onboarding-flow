@@ -1,1 +1,1 @@
-{"commit":"pdf-sem-pagina-em-branco","feature":"Rodapé do PDF parou de abrir página nova no pdfkit (contrato saía com metade das páginas em branco) + trava que impede gerar PDF com página em branco"}
+{"commit":"guia-onboarding-nas-mensagens","feature":"Boas-vindas (WhatsApp e e-mail) e lembrete apontam para treinamentos.pipeelo.com/onboarding"}
