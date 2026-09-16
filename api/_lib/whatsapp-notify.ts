@@ -11,7 +11,7 @@
 import { findGroupByName, sendText, EvolutionConfigError } from './evolution';
 import { getServiceSupabase } from './supabase';
 import { buildIntegrationRequestMessage } from './integration-request';
-import { addTeamToGroup } from './equipe-grupo';
+import { pedirEquipeNoGrupo } from './equipe-grupo';
 import { notifyStaff } from './staff-notify';
 
 const TEMPLATE_COMPLETO = (empresa: string) => `✅ *Onboarding concluído!*
@@ -128,10 +128,11 @@ export async function maybeNotifyOnboardingComplete(
       console.error('[whatsapp-notify] pedido de integração falhou:', e);
     }
 
-    // Equipe da seção "Equipe e Acessos" entra no grupo. Falha aqui não desfaz o claim.
+    // Equipe da seção "Equipe e Acessos": a lista vai para o Lucas adicionar à mão
+    // (16/09 — o sistema não adiciona mais participante em grupo). Não desfaz o claim.
     const nomeFantasia = ((data as { cadastro?: { nome_fantasia?: string } | null }).cadastro?.nome_fantasia) || data.empresa_nome;
-    void addTeamToGroup(supabase, sessionId, group.id, nomeFantasia).catch((e) =>
-      console.error('[whatsapp-notify] addTeamToGroup falhou:', e)
+    void pedirEquipeNoGrupo(supabase, sessionId, nomeFantasia).catch((e) =>
+      console.error('[whatsapp-notify] pedirEquipeNoGrupo falhou:', e)
     );
 
     return { sent: true, group: { id: group.id, name: group.subject } };

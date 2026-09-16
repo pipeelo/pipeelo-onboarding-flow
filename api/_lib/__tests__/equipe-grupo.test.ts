@@ -1,59 +1,59 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../evolution', () => ({
-  toJid: (phoneDigits: string) => {
-    let d = phoneDigits.replace(/\D/g, '');
-    if ((d.length === 12 || d.length === 13) && d.startsWith('55')) d = d.slice(2);
-    if (d.length !== 10 && d.length !== 11) throw new Error('telefone_invalido');
-    return `55${d}@s.whatsapp.net`;
-  },
-  updateParticipants: vi.fn(async () => undefined),
-  getParticipants: vi.fn(),
-  getInviteUrl: vi.fn(async () => 'https://chat.whatsapp.com/abc'),
   groupSubject: (n: string) => `Pipeelo & ${n}`,
+  updateParticipants: vi.fn(),
+  getParticipants: vi.fn(),
+  getInviteUrl: vi.fn(),
 }));
 vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })) }));
-vi.mock('../email-sender', () => ({ sendTransactionalEmail: vi.fn(async () => ({ skipped: false })) }));
-import { updateParticipants, getParticipants } from '../evolution';
+import { updateParticipants, getParticipants, getInviteUrl } from '../evolution';
 import { notifyStaff } from '../staff-notify';
-import { sendTransactionalEmail } from '../email-sender';
-import { addTeamToGroup } from '../equipe-grupo';
+import { pedirEquipeNoGrupo, mensagemEquipeNoGrupo } from '../equipe-grupo';
 
 const pessoas = [
-  { nome: 'Ana', email: 'ana@x.com', whatsapp: '(43) 99666-1541', adicionar_grupo: 'sim' },
-  { nome: 'Bia', email: 'bia@x.com', whatsapp: '(43) 99111-2233', adicionar_grupo: 'sim' },
+  { nome: 'Ana', email: 'ana@x.com', whatsapp: '(43) 99666-1541', adicionar_grupo: 'sim', papel: 'gestor', departamentos: 'Comercial' },
+  { nome: 'Bia', email: 'bia@x.com', whatsapp: '+55 43 99111-2233', adicionar_grupo: 'sim' },
   { nome: 'Caio', email: 'caio@x.com', whatsapp: '', adicionar_grupo: 'sim' },
   { nome: 'Dani', email: 'dani@x.com', whatsapp: '(43) 99000-0000', adicionar_grupo: 'nao' },
+  {},
 ];
 function sb(respostas: Array<{ pergunta_id: string; valor: unknown }>) {
   const chain = { select: vi.fn(() => chain), eq: vi.fn(() => chain), in: vi.fn(async () => ({ data: respostas, error: null })) };
   return { from: vi.fn(() => chain) } as never;
 }
 
-describe('addTeamToGroup', () => {
+describe('pedirEquipeNoGrupo', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('adiciona quem tem whatsapp e marcou sim; relata quem não entrou', async () => {
-    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
-    const r = await addTeamToGroup(sb([{ pergunta_id: 'equipe_pessoas', valor: pessoas }]), 's1', '1@g.us', 'Provedor X');
-    expect(updateParticipants).toHaveBeenCalledWith('1@g.us', 'add', ['5543996661541@s.whatsapp.net', '5543991112233@s.whatsapp.net']);
-    expect(r).toEqual({ adicionados: 1, total: 2, nao_adicionados: ['Bia'] });
-    expect(sendTransactionalEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'bia@x.com', template: 'ConviteGrupo' }));
-    expect(notifyStaff).toHaveBeenCalledWith(expect.stringContaining('1 de 2'));
-  });
-  it('sem equipe cadastrada não chama a Evolution', async () => {
-    const r = await addTeamToGroup(sb([]), 's1', '1@g.us', 'Provedor X');
-    expect(r).toEqual({ adicionados: 0, total: 0, nao_adicionados: [] });
+  it('manda no Staff só quem marcou sim e tem whatsapp, sem tocar no grupo', async () => {
+    const r = await pedirEquipeNoGrupo(sb([{ pergunta_id: 'equipe_pessoas', valor: pessoas }]), 's1', 'Provedor X');
+    expect(r).toEqual({ total: 2, enviado: true });
+    const texto = (notifyStaff as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(texto).toContain('*Lucas*');
+    expect(texto).toContain('Pipeelo & Provedor X');
+    expect(texto).toContain('• Ana (gestor(a), Comercial) — (43) 99666-1541');
+    expect(texto).toContain('• Bia — (43) 99111-2233');
+    expect(texto).not.toContain('Caio');
+    expect(texto).not.toContain('Dani');
     expect(updateParticipants).not.toHaveBeenCalled();
+    expect(getParticipants).not.toHaveBeenCalled();
+    expect(getInviteUrl).not.toHaveBeenCalled();
   });
-  it('ignora número inválido sem derrubar os outros', async () => {
-    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
-    const r = await addTeamToGroup(sb([{ pergunta_id: 'equipe_pessoas', valor: [pessoas[0], { nome: 'Zé', email: 'z@x.com', whatsapp: '123', adicionar_grupo: 'sim' }] }]), 's1', '1@g.us', 'X');
-    expect(r.total).toBe(1);
+
+  it('sem ninguém para entrar, não manda nada', async () => {
+    const r = await pedirEquipeNoGrupo(sb([]), 's1', 'Provedor X');
+    expect(r).toEqual({ total: 0, enviado: false });
+    expect(notifyStaff).not.toHaveBeenCalled();
   });
-  it('adiciona quem digitou o whatsapp com +55 na frente', async () => {
-    (getParticipants as never as ReturnType<typeof vi.fn>).mockResolvedValue(['5543996661541@s.whatsapp.net']);
-    const r = await addTeamToGroup(sb([{ pergunta_id: 'equipe_pessoas', valor: [{ nome: 'Ana', email: 'ana@x.com', whatsapp: '+55 43 99666-1541', adicionar_grupo: 'sim' }] }]), 's1', '1@g.us', 'X');
-    expect(updateParticipants).toHaveBeenCalledWith('1@g.us', 'add', ['5543996661541@s.whatsapp.net']);
-    expect(r).toEqual({ adicionados: 1, total: 1, nao_adicionados: [] });
+
+  it('erro de banco vira aviso no Staff e não lança', async () => {
+    const chain = { select: vi.fn(() => chain), eq: vi.fn(() => chain), in: vi.fn(async () => ({ data: null, error: new Error('db fora') })) };
+    const r = await pedirEquipeNoGrupo({ from: vi.fn(() => chain) } as never, 's1', 'X');
+    expect(r).toEqual({ total: 0, enviado: false });
+    expect((notifyStaff as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain('db fora');
+  });
+
+  it('telefone fora do padrão sai como foi digitado', () => {
+    expect(mensagemEquipeNoGrupo('X', [{ nome: 'Zé', whatsapp: '123' }])).toContain('• Zé — 123');
   });
 });
