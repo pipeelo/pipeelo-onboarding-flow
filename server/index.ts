@@ -79,6 +79,13 @@ app.get('/s/:code', async (req, res) => {
 });
 
 const distDir = path.resolve(__dirname, '..', 'dist');
+
+// Página estática do plano de cobrança com negociação da Direct (fora do SPA)
+app.get(['/cobrancadirect', '/cobrancadirect/'], (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(distDir, 'cobrancadirect.html'));
+});
+
 app.use(express.static(distDir, { index: false, maxAge: '1y' }));
 
 app.use((req, res) => {

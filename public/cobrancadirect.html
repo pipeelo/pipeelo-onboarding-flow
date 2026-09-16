@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.png">
+<title>Régua de Negociação Direct</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#F5F8F7; --surface:#FFFFFF; --ink:#111827; --muted:#56616E; --line:#DDE5E2;
+  --mint:#00D2A0; --mint-ink:#007A5E; --mint-soft:#E5FAF5; --mint-line:#B8EEDF;
+  --amber:#B45309; --amber-soft:#FEF3C7; --direct:#1D4ED8; --direct-soft:#E6EDFD;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1311; --surface:#121D1A; --ink:#E7EFEC; --muted:#9AAAA5; --line:#24332F;
+    --mint:#00D2A0; --mint-ink:#3FE3BB; --mint-soft:#0F2A23; --mint-line:#1D4A3E;
+    --amber:#FBBF24; --amber-soft:#2E2410; --direct:#8AB0FF; --direct-soft:#16223D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1311; --surface:#121D1A; --ink:#E7EFEC; --muted:#9AAAA5; --line:#24332F;
+  --mint:#00D2A0; --mint-ink:#3FE3BB; --mint-soft:#0F2A23; --mint-line:#1D4A3E;
+  --amber:#FBBF24; --amber-soft:#2E2410; --direct:#8AB0FF; --direct-soft:#16223D;
+}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0}
+.logo{height:28px;width:auto;align-self:flex-start}
+img{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;padding:40px 16px 64px}
+.wrap{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(30px,5vw,42px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:24px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:17px;font-weight:700}
+p{margin:0;max-width:65ch}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mint-ink)}
+.lede{font-size:18px;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:16px;padding-bottom:32px;border-bottom:1px solid var(--line)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+section{display:flex;flex-direction:column;gap:20px}
+.sechead{display:flex;flex-direction:column;gap:6px}
+
+/* resumo */
+.summary{background:var(--mint-soft);border:1px solid var(--mint-line);border-radius:16px;padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.summary div{display:flex;flex-direction:column;gap:4px}
+.summary .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mint-ink)}
+.summary .v{font-weight:600}
+
+/* fluxo */
+.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;list-style:none;margin:0;padding:0}
+.flow li{flex:1 1 130px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px;position:relative}
+.flow .src{font-family:var(--mono);font-size:11px;color:var(--mint-ink);text-transform:uppercase;letter-spacing:.06em}
+.flow .t{font-weight:600;font-size:15px;line-height:1.35}
+.note{font-size:14px;color:var(--muted)}
+
+/* fases */
+.phases{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.phase{display:grid;grid-template-columns:56px 1fr;gap:16px;padding-bottom:28px;position:relative}
+.phase::before{content:"";position:absolute;left:19px;top:40px;bottom:0;width:2px;background:var(--line)}
+.phase:last-child::before{display:none}
+.num{width:40px;height:40px;border-radius:50%;background:var(--surface);border:2px solid var(--mint);display:grid;place-items:center;font-weight:800;font-variant-numeric:tabular-nums;color:var(--mint-ink)}
+.pbody{display:flex;flex-direction:column;gap:10px;padding-top:6px}
+.ptop{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.chip{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.chip.p{background:var(--mint-soft);color:var(--mint-ink)}
+.chip.d{background:var(--direct-soft);color:var(--direct)}
+.chip.t{background:transparent;border:1px solid var(--line);color:var(--muted);font-variant-numeric:tabular-nums}
+.pbody ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+.pbody li::marker{color:var(--mint)}
+.done{font-size:14px;color:var(--muted)}
+.done b{color:var(--ink)}
+
+/* pedido */
+.ask{background:var(--surface);border:2px solid var(--mint);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.ask .first{background:var(--amber-soft);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.ask .first .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.checks li{display:grid;grid-template-columns:22px 1fr;gap:10px}
+.box{width:18px;height:18px;border:2px solid var(--mint-ink);border-radius:5px;margin-top:4px}
+.checks b{font-weight:600}
+
+/* tabela */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600}
+
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:6px}
+footer{border-top:1px solid var(--line);padding-top:24px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <img src="/pipeelo-logo.png" alt="Pipeelo" class="logo">
+    <span class="eyebrow">Pipeelo × Direct Internet · Plano de projeto</span>
+    <h1>Régua de cobrança com negociação pelo WhatsApp</h1>
+    <p class="lede">A cada rodada, identificamos no Hubsoft quem está com fatura em atraso e conferimos no portal de negociação (Bemobi) quem pode negociar com desconto. Esses clientes recebem uma mensagem no WhatsApp da Direct. Quando o cliente responde, a IA do Financeiro envia o link do acordo.</p>
+    <div class="meta">
+      <span>Versão <b>v0.1 · 16/09/2026</b></span>
+      <span>Prazo até o piloto <b>≈ 2 semanas</b></span>
+      <span>Piloto <b>1 semana, 50 a 100 clientes</b></span>
+    </div>
+  </header>
+
+  <section>
+    <div class="summary">
+      <div><span class="k">De onde vem a lista</span><span class="v">Faturas em aberto no Hubsoft</span></div>
+      <div><span class="k">Quem pode negociar</span><span class="v">Quem tem desconto disponível no portal Bemobi</span></div>
+      <div><span class="k">Onde o acordo é fechado</span><span class="v">Pelo cliente, no link do portal, que vale 24 h</span></div>
+      <div><span class="k">Como medimos</span><span class="v">Acordos registrados no Hubsoft e valor recuperado</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Do atraso ao acordo</h2>
+    </div>
+    <ol class="flow">
+      <li><span class="src">Hubsoft</span><span class="t">Lista de faturas em aberto</span></li>
+      <li><span class="src">Filtro</span><span class="t">Só contratos ativos, sem acordo em andamento</span></li>
+      <li><span class="src">Bemobi</span><span class="t">Tem desconto para negociar?</span></li>
+      <li><span class="src">WhatsApp</span><span class="t">Mensagem com botão “Quero negociar”</span></li>
+      <li><span class="src">IA Financeiro</span><span class="t">Envia o link do acordo</span></li>
+      <li><span class="src">Hubsoft</span><span class="t">Acordo registrado e medido</span></li>
+    </ol>
+    <p class="note">Tudo o que o fluxo precisa já está acessível: a leitura de faturas e renegociações no Hubsoft e a consulta de negociação na Bemobi foram testadas em 16/09 com as credenciais da Direct. A IA do Financeiro já envia o link do portal quando o cliente pede um acordo.</p>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Etapas</span>
+      <h2>Plano de execução</h2>
+    </div>
+    <ol class="phases">
+      <li class="phase">
+        <span class="num">1</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Alinhamento de regras</h3><span class="chip d">Direct</span><span class="chip p">Pipeelo</span><span class="chip t">1 dia</span></div>
+          <ul>
+            <li>Quais faixas de atraso entram (por exemplo, a partir de 31 dias) e se contratos cancelados entram.</li>
+            <li>Valor mínimo da dívida para receber a mensagem.</li>
+            <li>Frequência por cliente (por exemplo, no máximo 1 mensagem a cada 15 dias), dias e horários de envio.</li>
+            <li>Aprovação do texto da mensagem.</li>
+          </ul>
+          <p class="done"><b>Pronto quando:</b> as regras estiverem registradas e aprovadas pela Direct.</p>
+        </div>
+      </li>
+      <li class="phase">
+        <span class="num">2</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Lista diária de clientes aptos</h3><span class="chip p">Pipeelo</span><span class="chip t">3 a 4 dias</span></div>
+          <ul>
+            <li>Rotina noturna lê as faturas em aberto no Hubsoft e agrupa por cliente.</li>
+            <li>Remove faturas inativas, contratos fora da regra e clientes com acordo em andamento.</li>
+            <li>Consulta cada cliente no portal Bemobi e mantém só quem tem desconto disponível.</li>
+            <li>Guarda por cliente o nome, o telefone, o valor em atraso, o desconto e a data do último envio.</li>
+          </ul>
+          <p class="done"><b>Pronto quando:</b> 20 clientes da lista forem conferidos um a um no Hubsoft, sem divergência.</p>
+        </div>
+      </li>
+      <li class="phase">
+        <span class="num">3</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Mensagem de WhatsApp</h3><span class="chip p">Pipeelo</span><span class="chip d">Direct</span><span class="chip t">1 a 3 dias</span></div>
+          <ul>
+            <li>Criação do modelo de mensagem na conta oficial da Direct, com nome, valor e o botão “Quero negociar”.</li>
+            <li>O texto informa sem constranger e não expõe a dívida a terceiros, conforme o art. 42 do CDC.</li>
+            <li>Inclui uma opção para o cliente pedir para não receber mais mensagens.</li>
+            <li>A Meta leva de 1 a 3 dias para aprovar o modelo.</li>
+          </ul>
+          <p class="done"><b>Pronto quando:</b> o modelo estiver aprovado pela Meta.</p>
+        </div>
+      </li>
+      <li class="phase">
+        <span class="num">4</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Ajuste da IA e testes</h3><span class="chip p">Pipeelo</span><span class="chip t">2 dias</span></div>
+          <ul>
+            <li>Garantir que a resposta à mensagem chegue direto ao Financeiro.</li>
+            <li>Testar 3 situações com o CPF de teste: o cliente aceita negociar, o cliente recusa e o cliente diz que já pagou.</li>
+            <li>Conferir que o link enviado abre a negociação correta.</li>
+          </ul>
+          <p class="done"><b>Pronto quando:</b> as 3 situações passarem com o CPF de teste da Direct.</p>
+        </div>
+      </li>
+      <li class="phase">
+        <span class="num">5</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Envio controlado</h3><span class="chip p">Pipeelo</span><span class="chip t">2 dias</span></div>
+          <ul>
+            <li>Envio em lotes pequenos, só nos horários combinados.</li>
+            <li>Antes de cada envio, conferir de novo se o cliente já pagou, se recebeu mensagem recentemente ou se pediu para não receber.</li>
+            <li>O primeiro envio vai para o número de teste.</li>
+          </ul>
+          <p class="done"><b>Pronto quando:</b> a mensagem de teste chegar e a conversa seguir o fluxo completo.</p>
+        </div>
+      </li>
+      <li class="phase">
+        <span class="num">6</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Piloto</h3><span class="chip d">Direct</span><span class="chip p">Pipeelo</span><span class="chip t">1 semana</span></div>
+          <ul>
+            <li>50 a 100 clientes com 31 a 90 dias de atraso.</li>
+            <li>Acompanhamento diário das respostas e de eventuais reclamações.</li>
+          </ul>
+          <p class="done"><b>Pronto quando:</b> houver um relatório do piloto com os indicadores abaixo e a decisão de ampliar.</p>
+        </div>
+      </li>
+      <li class="phase">
+        <span class="num">7</span>
+        <div class="pbody">
+          <div class="ptop"><h3>Ampliação</h3><span class="chip d">Direct</span><span class="chip p">Pipeelo</span><span class="chip t">contínuo</span></div>
+          <ul>
+            <li>Ampliação gradual por faixa de atraso, com mensagem própria para cada faixa.</li>
+            <li>Relatório semanal: mensagens enviadas, acordos fechados, valor recuperado e acordos que venceram sem pagamento.</li>
+          </ul>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Para começar</span>
+      <h2>O que precisamos da Direct</h2>
+    </div>
+    <div class="ask">
+      <div class="first">
+        <span class="k">Pedido imediato</span>
+        <h3>Um CPF para testes</h3>
+        <p>De preferência, um colaborador ou um cliente que autorize o uso, com <b>fatura vencida há mais de 30 dias</b> e com <b>desconto disponível no portal de negociação</b>. Precisamos também de um telefone de WhatsApp para receber a mensagem de teste. Se possível, envie também um segundo CPF sem nenhuma fatura em aberto, para testarmos o caso “não há o que negociar”.</p>
+      </div>
+      <ul class="checks">
+        <li><span class="box" aria-hidden="true"></span><span><b>Regras do público:</b> faixas de atraso, valor mínimo e se contratos cancelados entram.</span></li>
+        <li><span class="box" aria-hidden="true"></span><span><b>Frequência e horários</b> de envio que a Direct aceita.</span></li>
+        <li><span class="box" aria-hidden="true"></span><span><b>Aprovação do texto</b> da mensagem, que enviaremos para revisão na etapa 3.</span></li>
+        <li><span class="box" aria-hidden="true"></span><span><b>Confirmação da política de desconto</b> hoje configurada no portal Bemobi.</span></li>
+        <li><span class="box" aria-hidden="true"></span><span><b>Um responsável na Direct</b> para acompanhar o piloto e as reclamações.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Resultado</span>
+      <h2>Como vamos medir</h2>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Indicador</th><th>Como é medido</th></tr></thead>
+        <tbody>
+          <tr><td>Taxa de resposta</td><td>Clientes que responderam ÷ mensagens entregues</td></tr>
+          <tr><td>Links enviados</td><td>Clientes que receberam o link do acordo</td></tr>
+          <tr><td>Acordos fechados</td><td>Renegociações registradas no Hubsoft após a mensagem</td></tr>
+          <tr><td>Valor recuperado</td><td>Valor pago nos acordos gerados pela régua</td></tr>
+          <tr><td>Acordos que venceram sem pagamento</td><td>Acordos que venceram sem pagamento, conforme o Hubsoft</td></tr>
+          <tr><td>Saúde do número</td><td>Pedidos para não receber, denúncias e qualidade do número na Meta</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Cuidados</span>
+      <h2>Riscos e como tratamos</h2>
+    </div>
+    <div class="two">
+      <div class="card"><h3>Bloqueio do número</h3><p class="note">Envio gradual, opção para o cliente sair e acompanhamento diário da qualidade do número.</p></div>
+      <div class="card"><h3>Lista com registros antigos</h3><p class="note">Nos últimos 12 meses há cerca de 63 mil faturas em aberto no Hubsoft. Esse total inclui faturas inativas e contratos cancelados, por isso o filtro vem antes de qualquer envio.</p></div>
+      <div class="card"><h3>Cliente que já pagou</h3><p class="note">A situação é conferida de novo antes de cada envio, não só quando a lista é gerada.</p></div>
+      <div class="card"><h3>Cobrança repetida</h3><p class="note">Clientes com acordo em andamento ficam de fora, e cada cliente tem um intervalo mínimo entre mensagens.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <span><b>Pipeelo</b> · Plano v0.1 · 16/09/2026</span>
+    <span>Próximo passo: com o CPF de teste e as regras em mãos, iniciamos as etapas 2 e 3 em paralelo.</span>
+  </footer>
+</main>
+</body>
+</html>
