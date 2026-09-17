@@ -77,6 +77,26 @@ describe('renderDocx', () => {
     expect(erro?.faltando).toEqual(['DATA_ASSINATURA']);
   });
 
+  it('todo título de cláusula sai com keepNext, para não ficar órfão no pé da página', async () => {
+    const buf = await renderDocx(preenchidos(), { crm: true });
+    const { default: JSZip } = await import('jszip');
+    const xml = await (await JSZip.loadAsync(buf)).file('word/document.xml')!.async('string');
+
+    // Cada <w:p> que contém "CLÁUSULA " ou "ANEXO I" como título precisa declarar
+    // w:keepNext — é o que empurra o título para a página seguinte junto com o
+    // primeiro parágrafo, em vez de deixá-lo sozinho no rodapé.
+    const paragrafos = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) ?? [];
+    const titulos = paragrafos.filter((p) => {
+      const texto = (p.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) ?? [])
+        .map((t) => t.replace(/<[^>]+>/g, ''))
+        .join('');
+      return /^(CLÁUSULA |ANEXO I)/.test(texto.trim());
+    });
+
+    expect(titulos.length).toBeGreaterThanOrEqual(20);
+    expect(titulos.filter((p) => !p.includes('<w:keepNext'))).toEqual([]);
+  });
+
   it('escreve o serviço com CRM no item 5 do Anexo quando crm=true', async () => {
     const comCrm = await renderDocx(preenchidos(['ANEXO_SERVICOS']), { crm: true });
     const semCrm = await renderDocx(preenchidos(['ANEXO_SERVICOS']), { crm: false });

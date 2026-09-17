@@ -240,6 +240,11 @@ function paragrafoCorpo(l: Linha, valores: Record<string, string>, faltando: Set
 function paragrafoClausula(titulo: string): Paragraph {
   return new Paragraph({
     spacing: { before: 320, after: 160 },
+    // Título de cláusula nunca fica sozinho no pé da página: `keepNext` gruda ele
+    // no parágrafo seguinte, então quando não cabem juntos os dois descem para a
+    // página seguinte. `keepLines` impede que o próprio título quebre no meio.
+    keepNext: true,
+    keepLines: true,
     border: {
       left: { style: BorderStyle.SINGLE, size: 14, color: COR.verde, space: 10 },
     },
@@ -251,6 +256,8 @@ function paragrafoTitulo(texto: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 0, after: 60 },
+    keepNext: true,
+    keepLines: true,
     children: [run(texto, { bold: true, cor: COR.navy, tam: TAM.titulo })],
   });
 }
