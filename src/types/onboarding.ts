@@ -16,8 +16,13 @@ export type QuestionType =
   | 'cpf'
   | 'email'
   | 'phone'
+  | 'password'
   | 'repeater'
-  | 'file_upload';
+  | 'file_upload'
+  /** Vários campos numa tela só; cada campo é salvo como resposta própria (pergunta_id = campo.id). */
+  | 'grupo'
+  /** Endereço estruturado (CEP com busca no ViaCEP + logradouro/número/bairro/cidade/UF). */
+  | 'endereco';
 
 /** Definição de um campo dentro de um item do repeater. */
 export interface RepeaterFieldDef {
@@ -62,6 +67,30 @@ export interface Question {
   extensoes?: string[];
   /** Para tipo='file_upload': tamanho máximo em MB (default 5). */
   max_mb?: number;
+  /** Para tipo='select': valor pré-selecionado quando o cliente ainda não respondeu. */
+  padrao?: string;
+  /** Para tipo='checkbox_multiple': placeholder do campo "Outro". */
+  placeholder_outro?: string;
+  /**
+   * Id de uma pergunta checkbox_multiple. A pergunta é repetida uma vez por item
+   * marcado lá: id vira `${id}_${valor}` e `{departamento}` no texto vira o rótulo.
+   */
+  repetir_por?: string;
+  /** Id de uma pergunta checkbox_multiple cujos itens marcados viram as opções desta. */
+  opcoes_de?: string;
+  /** Preenchido na expansão de `repetir_por`: id da pergunta original. */
+  origem_id?: string;
+}
+
+/** Valor salvo como resposta de uma pergunta tipo='endereco'. */
+export interface EnderecoValue {
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
 }
 
 /** Valor salvo como resposta de uma pergunta tipo='file_upload'. */

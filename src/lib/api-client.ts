@@ -216,7 +216,11 @@ export const sessionApi = {
     ),
 
   cnpjLookup: (input: { slug: string; token: string; cnpj: string }) =>
-    api<{ razao_social: string; nome_fantasia: string }>('/api/sessions/cnpj-lookup', {
+    api<{
+      razao_social: string;
+      nome_fantasia: string;
+      endereco_sede: { cep: string; logradouro: string; numero: string; complemento: string; bairro: string; cidade: string; uf: string } | null;
+    }>('/api/sessions/cnpj-lookup', {
       method: 'POST',
       body: JSON.stringify(input),
     }),

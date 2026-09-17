@@ -15,8 +15,11 @@ import { cleanCnpj, formatCnpj, validateCnpj } from '@/lib/cnpj';
 import { isPhoneBrValid, maskPhone } from '@/lib/phone';
 
 type Contato = { nome: string; whatsapp: string };
+type EnderecoSede = { cep: string; logradouro: string; numero: string; complemento: string; bairro: string; cidade: string; uf: string };
 type Form = {
   cnpj: string; razao_social: string; nome_fantasia: string; inscricao_estadual: string;
+  /** Vem do lookup de CNPJ; não é editado aqui, só pré-preenche o SAC Geral. */
+  endereco_sede: EnderecoSede | null;
   cobranca_email: string; cobranca_telefone: string; dia_vencimento: string; contrato_email: string;
   doc_contrato_social: UploadMeta[]; doc_responsaveis: UploadMeta[];
   responsavel_nome: string; responsavel_cargo: string; responsavel_email: string; responsavel_whatsapp: string;
@@ -24,7 +27,7 @@ type Form = {
 };
 
 const VAZIO: Form = {
-  cnpj: '', razao_social: '', nome_fantasia: '', inscricao_estadual: '',
+  cnpj: '', razao_social: '', nome_fantasia: '', inscricao_estadual: '', endereco_sede: null,
   cobranca_email: '', cobranca_telefone: '', dia_vencimento: '', contrato_email: '',
   doc_contrato_social: [], doc_responsaveis: [],
   responsavel_nome: '', responsavel_cargo: '', responsavel_email: '', responsavel_whatsapp: '',
@@ -102,6 +105,7 @@ export default function Cadastro() {
           ...f,
           razao_social: f.razao_social || r.razao_social,
           nome_fantasia: f.nome_fantasia || r.nome_fantasia || r.razao_social,
+          endereco_sede: r.endereco_sede ?? f.endereco_sede ?? null,
         }));
       })
       .catch(() => { /* cliente digita à mão */ })

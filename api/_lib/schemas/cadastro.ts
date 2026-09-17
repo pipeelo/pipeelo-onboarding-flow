@@ -28,10 +28,22 @@ export const ContatoExtraSchema = z.object({
   whatsapp: PhoneBrSchema,
 });
 
+/** Endereço da sede vindo do lookup de CNPJ (BrasilAPI/ReceitaWS). Opcional: provedor fora do ar = null. */
+export const EnderecoSedeSchema = z.object({
+  cep: z.string().trim().max(10).default(''),
+  logradouro: z.string().trim().max(200).default(''),
+  numero: z.string().trim().max(20).default(''),
+  complemento: z.string().trim().max(120).default(''),
+  bairro: z.string().trim().max(120).default(''),
+  cidade: z.string().trim().max(120).default(''),
+  uf: z.string().trim().max(2).default(''),
+});
+
 export const CadastroSchema = z.object({
   cnpj: CnpjSchema,
   razao_social: z.string().trim().min(3).max(200),
   nome_fantasia: z.string().trim().min(2).max(120),
+  endereco_sede: EnderecoSedeSchema.nullable().optional(),
   inscricao_estadual: z.string().trim().min(2).max(40),
   cobranca_email: EmailSchema,
   cobranca_telefone: PhoneBrSchema,

@@ -43,29 +43,27 @@ export function useOnboarding() {
 
   const visibleQuestions = useMemo(() => {
     if (!currentSection) return [];
-    return currentSection.perguntas.filter((q: Question) => {
-      if (!q.condicional) return true;
-      return evaluateConditional(q.condicional, state.respostas);
-    });
+    return expandQuestions(currentSection.perguntas as Question[], state.respostas);
   }, [currentSection, state.respostas]);
 
   const currentQuestion = visibleQuestions[state.currentQuestionIndex];
 
   const allQuestions = useMemo(() => {
-    return sections.flatMap(section => 
-      section.perguntas.filter((q: Question) => {
-        if (!q.condicional) return true;
-        return evaluateConditional(q.condicional, state.respostas);
-      })
-    );
+    return sections.flatMap(section => expandQuestions(section.perguntas as Question[], state.respostas));
   }, [sections, state.respostas]);
 
   const totalQuestions = allQuestions.length;
   
   const answeredQuestions = useMemo(() => {
     return allQuestions.filter(q => {
-      const resposta = state.respostas[q.id];
       if (q.tipo === 'info' || q.tipo === 'info_link') return true;
+      if (q.tipo === 'grupo') {
+        return (q.campos ?? []).some((c) => {
+          const v = state.respostas[c.id];
+          return v !== undefined && v !== '' && v !== null;
+        });
+      }
+      const resposta = state.respostas[q.id];
       return resposta !== undefined && resposta !== '' && resposta !== null;
     }).length;
   }, [allQuestions, state.respostas]);
@@ -112,8 +110,9 @@ export function useOnboarding() {
       if (prev.currentQuestionIndex > 0) {
         return { ...prev, currentQuestionIndex: prev.currentQuestionIndex - 1 };
       } else if (prev.currentSectionIndex > 0) {
-        const prevSectionQuestions = sections[prev.currentSectionIndex - 1].perguntas.filter(
-          (q: Question) => !q.condicional || evaluateConditional(q.condicional, prev.respostas)
+        const prevSectionQuestions = expandQuestions(
+          sections[prev.currentSectionIndex - 1].perguntas as Question[],
+          prev.respostas
         );
         return { 
           ...prev, 
@@ -165,6 +164,76 @@ export function useOnboarding() {
     setResponsavelNome,
     resetOnboarding
   };
+}
+
+/**
+ * Itens marcados numa checkbox_multiple, como pares {value,label}. O texto de "Outro"
+ * aceita vários nomes separados por vírgula: cada um vira um item `outro_<n>`.
+ */
+export function itensMarcados(
+  perguntaId: string,
+  respostas: Record<string, any>,
+  todas: Question[]
+): Array<{ value: string; label: string }> {
+  const resposta = respostas[perguntaId];
+  const selected: string[] = Array.isArray(resposta)
+    ? resposta
+    : resposta && typeof resposta === 'object' && Array.isArray(resposta.selected)
+      ? resposta.selected
+      : [];
+  const def = todas.find((q) => q.id === perguntaId);
+  const itens: Array<{ value: string; label: string }> = [];
+  for (const v of selected) {
+    if (v === 'outro') {
+      const nomes = String(resposta?.outroTexto ?? '')
+        .split(/[,;\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      nomes.forEach((nome, i) => itens.push({ value: `outro_${i + 1}`, label: nome }));
+      continue;
+    }
+    const opt = def?.opcoes?.find((o) => o.value === v);
+    itens.push({ value: v, label: opt?.label ?? v });
+  }
+  return itens;
+}
+
+/** Perguntas do questions.json (todos os departamentos) — usadas pra resolver `repetir_por`/`opcoes_de`. */
+const TODAS_PERGUNTAS: Question[] = Object.values(onboardingData.departamentos).flatMap((d) =>
+  Object.values(d.secoes).flatMap((s) => s.perguntas as Question[])
+);
+
+/**
+ * Aplica condicionais e expande `repetir_por` (uma pergunta por item marcado, com
+ * `{departamento}` substituído pelo rótulo) e `opcoes_de` (opções dinâmicas).
+ */
+export function expandQuestions(perguntas: Question[], respostas: Record<string, any>): Question[] {
+  const out: Question[] = [];
+  for (const q of perguntas) {
+    if (q.condicional && !evaluateConditional(q.condicional, respostas)) continue;
+    if (q.repetir_por) {
+      for (const item of itensMarcados(q.repetir_por, respostas, TODAS_PERGUNTAS)) {
+        const troca = (s?: string) => s?.replace(/\{departamento\}/g, item.label);
+        out.push({
+          ...q,
+          id: `${q.id}_${item.value}`,
+          origem_id: q.id,
+          pergunta: troca(q.pergunta) ?? q.pergunta,
+          hint: troca(q.hint),
+          repetir_por: undefined,
+        });
+      }
+      continue;
+    }
+    if (q.opcoes_de) {
+      const opcoes = itensMarcados(q.opcoes_de, respostas, TODAS_PERGUNTAS);
+      if (opcoes.length === 0) continue;
+      out.push({ ...q, opcoes });
+      continue;
+    }
+    out.push(q);
+  }
+  return out;
 }
 
 function evaluateConditional(condicional: string, respostas: Record<string, any>): boolean {

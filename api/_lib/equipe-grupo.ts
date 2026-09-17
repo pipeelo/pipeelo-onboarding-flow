@@ -6,6 +6,8 @@ type PessoaEquipe = {
   nome?: string; email?: string; whatsapp?: string; adicionar_grupo?: string; papel?: string; departamentos?: string;
 };
 
+type PlanilhaEquipe = { path?: string; nome_original?: string; tamanho?: number };
+
 /**
  * EQUIPE DO CLIENTE NO GRUPO: SÓ PELAS MÃOS DO LUCAS (Felipe, 16/09/2026).
  *
@@ -15,6 +17,11 @@ type PessoaEquipe = {
  * Grupos instance does not exist"). Agora o onboarding NÃO chama a Evolution para isso:
  * manda no Staff a lista com nome e telefone para o Lucas adicionar, igual ao roteiro de
  * criação do grupo (`grupo-instrucoes.ts`). Nunca lança.
+ *
+ * questions.json 4.0 (17/09/2026): a equipe chega SÓ pela planilha modelo
+ * (`equipe_planilha_upload`, bucket onboarding-uploads). O onboarding não lê o .xlsx no
+ * servidor: o Staff recebe o nome do arquivo e o caminho para baixar no /admin. Sessões
+ * antigas que ainda têm `equipe_pessoas` (formulário) continuam saindo como lista.
  */
 export async function pedirEquipeNoGrupo(
   supabase: SupabaseClient,
@@ -26,8 +33,15 @@ export async function pedirEquipeNoGrupo(
       .from('onboarding_respostas')
       .select('pergunta_id, valor')
       .eq('session_id', sessionId)
-      .in('pergunta_id', ['equipe_pessoas']);
+      .in('pergunta_id', ['equipe_pessoas', 'equipe_planilha_upload']);
     if (error) throw error;
+
+    const planilha = data?.find((r) => r.pergunta_id === 'equipe_planilha_upload')?.valor as PlanilhaEquipe | undefined;
+    if (planilha && typeof planilha === 'object' && planilha.path) {
+      const r = await notifyStaff(mensagemPlanilhaEquipe(empresaNome, planilha));
+      return { total: 1, enviado: r.sent };
+    }
+
     const raw = data?.find((r) => r.pergunta_id === 'equipe_pessoas')?.valor;
     const lista: PessoaEquipe[] = Array.isArray(raw) ? raw : [];
     const alvo = lista.filter((p) => (p.adicionar_grupo || 'sim') === 'sim' && p.whatsapp?.trim());
@@ -54,9 +68,15 @@ function fmtTelefone(bruto: string): string {
   return bruto.trim();
 }
 
+const PAPEL_LABEL: Record<string, string> = {
+  administrador: 'administrador(a)',
+  gerente: 'gerente',
+  gestor: 'gestor(a)',
+};
+
 export function mensagemEquipeNoGrupo(empresaNome: string, pessoas: PessoaEquipe[]): string {
   const linhas = pessoas.map((p) => {
-    const extra = [p.papel === 'gestor' ? 'gestor(a)' : null, p.departamentos?.trim() || null].filter(Boolean).join(', ');
+    const extra = [p.papel ? PAPEL_LABEL[p.papel] ?? null : null, p.departamentos?.trim() || null].filter(Boolean).join(', ');
     return `• ${p.nome?.trim() || p.email || 'sem nome'}${extra ? ` (${extra})` : ''} — ${fmtTelefone(p.whatsapp ?? '')}`;
   });
   return [
@@ -65,6 +85,19 @@ export function mensagemEquipeNoGrupo(empresaNome: string, pessoas: PessoaEquipe
     `*Lucas*, o cliente concluiu o onboarding. Adicione no grupo *${groupSubject(empresaNome)}* as pessoas que ele marcou para entrar:`,
     '',
     ...linhas,
+    '',
+    'Se alguém não puder ser adicionado por causa da privacidade do WhatsApp, mande o link de convite do grupo para a pessoa.',
+  ].join('\n');
+}
+
+export function mensagemPlanilhaEquipe(empresaNome: string, planilha: PlanilhaEquipe): string {
+  const nome = planilha.nome_original?.trim() || 'planilha da equipe';
+  return [
+    `👥 *Equipe da ${empresaNome} — planilha enviada*`,
+    '',
+    `*Lucas*, o cliente concluiu o onboarding e mandou a equipe pela planilha modelo (*${nome}*).`,
+    'Baixe o arquivo na seção Equipe e Acessos do /admin, crie os acessos (papel Administrador / Gerente / Atendente e departamentos de cada um)',
+    `e adicione no grupo *${groupSubject(empresaNome)}* quem tiver WhatsApp na planilha.`,
     '',
     'Se alguém não puder ser adicionado por causa da privacidade do WhatsApp, mande o link de convite do grupo para a pessoa.',
   ].join('\n');

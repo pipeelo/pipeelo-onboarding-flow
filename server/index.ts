@@ -37,7 +37,6 @@ const routes: Array<[string, Loader]> = [
   ['/api/email/send-welcome',           () => import('../api/email/_send-welcome.ts')],
   ['/api/create-session',               () => import('../api/create-session.ts')],
   ['/api/complete-onboarding',          () => import('../api/complete-onboarding.ts')],
-  ['/api/provision-tenant',             () => import('../api/provision-tenant.ts')],
   ['/api/send-email',                   () => import('../api/send-email.ts')],
   ['/api/sync-department',              () => import('../api/sync-department.ts')],
   ['/api/cron/reconcile-webhooks',      () => import('../api/cron/reconcile-webhooks.ts')],

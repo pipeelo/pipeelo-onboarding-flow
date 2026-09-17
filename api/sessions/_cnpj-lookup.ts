@@ -26,9 +26,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn('[cnpj-lookup] provedor indisponível:', e instanceof Error ? e.message : e);
     }
     const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+    // Endereço da sede: BrasilAPI (descricao_tipo_de_logradouro + logradouro, municipio, uf)
+    // ou ReceitaWS (logradouro já com o tipo, municipio, uf). Vai pro /cadastro e de lá
+    // pré-preenche "Confirme o endereço da sede" no SAC Geral.
+    const tipoLog = str(data.descricao_tipo_de_logradouro);
+    const logradouro = [tipoLog, str(data.logradouro)].filter(Boolean).join(' ');
+    const cepDigits = str(data.cep).replace(/\D/g, '');
+    const endereco_sede = {
+      cep: cepDigits.length === 8 ? `${cepDigits.slice(0, 5)}-${cepDigits.slice(5)}` : str(data.cep),
+      logradouro,
+      numero: str(data.numero),
+      complemento: str(data.complemento),
+      bairro: str(data.bairro),
+      cidade: str(data.municipio),
+      uf: str(data.uf),
+    };
     return res.status(200).json({
       razao_social: str(data.razao_social) || str(data.nome),
       nome_fantasia: str(data.nome_fantasia) || str(data.fantasia),
+      endereco_sede: endereco_sede.logradouro || endereco_sede.cep ? endereco_sede : null,
     });
   } catch (e: unknown) {
     if (e instanceof HttpError) return res.status(e.status).json({ error: e.message });

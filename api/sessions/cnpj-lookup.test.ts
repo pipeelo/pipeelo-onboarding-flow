@@ -20,20 +20,29 @@ describe('POST /api/sessions/cnpj-lookup', () => {
     (fetchCnpj as never as ReturnType<typeof vi.fn>).mockResolvedValue({ razao_social: 'X LTDA', nome_fantasia: 'X' });
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ razao_social: 'X LTDA', nome_fantasia: 'X' });
+    expect(r.body).toEqual({ razao_social: 'X LTDA', nome_fantasia: 'X', endereco_sede: null });
   });
   it('200 com campos vazios quando o provedor está fora', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 's1' });
     (fetchCnpj as never as ReturnType<typeof vi.fn>).mockRejectedValue(new HttpError(503, 'cnpj_lookup_unavailable'));
     const r = await invokeHandler(handler as never, { method: 'POST', body });
     expect(r.statusCode).toBe(200);
-    expect(r.body).toEqual({ razao_social: '', nome_fantasia: '' });
+    expect(r.body).toEqual({ razao_social: '', nome_fantasia: '', endereco_sede: null });
   });
   it('lê o formato da ReceitaWS (nome/fantasia)', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 's1' });
     (fetchCnpj as never as ReturnType<typeof vi.fn>).mockResolvedValue({ nome: 'Y LTDA', fantasia: 'Y' });
     const r = await invokeHandler(handler as never, { method: 'POST', body });
-    expect(r.body).toEqual({ razao_social: 'Y LTDA', nome_fantasia: 'Y' });
+    expect(r.body).toEqual({ razao_social: 'Y LTDA', nome_fantasia: 'Y', endereco_sede: null });
+  });
+  it('devolve o endereço da sede quando a BrasilAPI traz logradouro', async () => {
+    (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 's1' });
+    (fetchCnpj as never as ReturnType<typeof vi.fn>).mockResolvedValue({
+      razao_social: 'X LTDA', nome_fantasia: 'X', cep: '86010000', descricao_tipo_de_logradouro: 'AVENIDA', logradouro: 'BRASIL',
+      numero: '100', complemento: '', bairro: 'CENTRO', municipio: 'LONDRINA', uf: 'PR',
+    });
+    const r = await invokeHandler(handler as never, { method: 'POST', body });
+    expect(r.body.endereco_sede).toEqual({ cep: '86010-000', logradouro: 'AVENIDA BRASIL', numero: '100', complemento: '', bairro: 'CENTRO', cidade: 'LONDRINA', uf: 'PR' });
   });
   it('400 com CNPJ inválido', async () => {
     (assertSessionAccess as never as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 's1' });

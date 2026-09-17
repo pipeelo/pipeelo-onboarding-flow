@@ -1,226 +1,597 @@
 {
   "onboarding_structure": {
     "total_departamentos": 5,
-    "ordem_sugerida": ["identificacao", "sac_geral", "financeiro", "suporte", "vendas"],
+    "ordem_sugerida": [
+      "identificacao",
+      "sac_geral",
+      "financeiro",
+      "suporte",
+      "vendas"
+    ],
     "tempo_total_estimado": "60-80 minutos",
-    "descricao": "Sistema de onboarding Pipeelo v3.0 - 5 departamentos, primeiro (identificacao) é bloqueante e cria o tenant no admin-pipeelo",
-    "versao": "3.7.0",
-    "total_perguntas": 140
+    "descricao": "Sistema de onboarding Pipeelo v4.0 - 5 departamentos; identificação = números de WhatsApp + integrações (dados cadastrais vêm do /cadastro)",
+    "versao": "4.0.0",
+    "total_perguntas": 233
   },
-
   "departamentos": {
-
     "identificacao": {
       "nome": "Identificação da Empresa",
       "slug": "identificacao",
-      "responsavel_sugerido": "CEO ou sócio-administrador",
+      "responsavel_sugerido": "Responsável pelo atendimento ou TI",
       "tempo_estimado": "5 minutos",
-      "descricao": "Dados cadastrais que criam o tenant no admin-pipeelo. Deve ser preenchido primeiro para destravar os outros departamentos.",
+      "descricao": "Números de WhatsApp do atendimento e credenciais das integrações. Deve ser preenchido primeiro para destravar os outros departamentos.",
       "ordem_execucao": 0,
       "bloqueante": true,
       "secoes": {
-
-        "cadastro": {
-          "titulo": "Cadastro da Empresa",
-          "icone": "🪪",
-          "descricao": "Dados usados para criar seu tenant Pipeelo. Verificamos se já existe por CNPJ antes de criar.",
+        "whatsapp": {
+          "titulo": "Números de WhatsApp",
+          "icone": "💬",
+          "descricao": "Os dados cadastrais (CNPJ, razão social, responsável) já vieram do pré-cadastro. Aqui só precisamos dos números que a empresa usa no atendimento.",
           "perguntas": [
             {
-              "id": "cnpj",
-              "pergunta": "Qual o CNPJ da empresa?",
-              "tipo": "cnpj",
+              "id": "whatsapp_numeros",
+              "pergunta": "Quais números de WhatsApp a empresa usa no atendimento?",
+              "tipo": "repeater",
               "obrigatoria": true,
-              "placeholder": "00.000.000/0000-00",
-              "hint": "Usado como chave única — se já houver onboarding para este CNPJ, será retomado."
-            },
-            {
-              "id": "razao_social",
-              "pergunta": "Razão social (nome registrado na Receita)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Pipeelo Telecom Ltda",
-              "validacao": "min:3"
-            },
-            {
-              "id": "nome_fantasia",
-              "pergunta": "Nome fantasia (como os clientes conhecem a empresa)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Pipeelo"
-            },
-            {
-              "id": "numero_assinantes",
-              "pergunta": "Quantos assinantes/clientes ativos vocês têm hoje?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "<1k", "label": "Menos de 1.000"},
-                {"value": "1k-5k", "label": "Entre 1.000 e 5.000"},
-                {"value": "5k-15k", "label": "Entre 5.000 e 15.000"},
-                {"value": "15k-50k", "label": "Entre 15.000 e 50.000"},
-                {"value": "50k+", "label": "Mais de 50.000"}
+              "rotulo_item": "Número",
+              "rotulo_adicionar": "Adicionar número",
+              "minimo": 1,
+              "hint": "Um item por número. Marque se o número já está na API oficial (Meta / 360dialog) ou se é um WhatsApp comum/Business no celular.",
+              "campos": [
+                {
+                  "id": "numero",
+                  "label": "Número com DDD",
+                  "tipo": "phone",
+                  "obrigatoria": true,
+                  "placeholder": "(00) 00000-0000",
+                  "largura": 4
+                },
+                {
+                  "id": "tipo",
+                  "label": "Tipo",
+                  "tipo": "select",
+                  "obrigatoria": true,
+                  "largura": 4,
+                  "opcoes": [
+                    {
+                      "value": "oficial",
+                      "label": "Oficial (API Meta / 360dialog)"
+                    },
+                    {
+                      "value": "nao_oficial",
+                      "label": "Não oficial (celular / WhatsApp Business)"
+                    }
+                  ]
+                },
+                {
+                  "id": "finalidade",
+                  "label": "Para que serve",
+                  "tipo": "select",
+                  "obrigatoria": true,
+                  "largura": 4,
+                  "opcoes": [
+                    {
+                      "value": "geral",
+                      "label": "Atendimento geral"
+                    },
+                    {
+                      "value": "suporte",
+                      "label": "Suporte"
+                    },
+                    {
+                      "value": "vendas",
+                      "label": "Vendas"
+                    },
+                    {
+                      "value": "financeiro",
+                      "label": "Financeiro / Cobrança"
+                    },
+                    {
+                      "value": "outro",
+                      "label": "Outro"
+                    }
+                  ]
+                }
               ]
             }
           ]
         },
-
-        "responsavel": {
-          "titulo": "Responsável Legal",
-          "icone": "🧑‍💼",
-          "descricao": "Pessoa que assina contratos pela empresa.",
-          "perguntas": [
-            {
-              "id": "responsavel_nome",
-              "pergunta": "Nome completo do responsável legal",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Felipe Camargo",
-              "validacao": "min:5"
-            },
-            {
-              "id": "responsavel_cpf",
-              "pergunta": "CPF do responsável legal",
-              "tipo": "cpf",
-              "obrigatoria": true,
-              "placeholder": "000.000.000-00"
-            }
-          ]
-        },
-
-        "acesso": {
-          "titulo": "Acesso ao Painel Pipeelo",
-          "icone": "🔑",
-          "descricao": "Usado para criar o login admin principal e enviar credenciais.",
-          "perguntas": [
-            {
-              "id": "admin_email",
-              "pergunta": "Email principal do administrador (login no painel Pipeelo)",
-              "tipo": "email",
-              "obrigatoria": true,
-              "placeholder": "admin@suaempresa.com.br"
-            },
-            {
-              "id": "whatsapp_business",
-              "pergunta": "Número oficial do WhatsApp Business (atendimento)",
-              "tipo": "phone",
-              "obrigatoria": true,
-              "placeholder": "(00) 00000-0000",
-              "hint": "Número onde seus clientes conversam com a IA."
-            }
-          ]
-        },
-
         "acessos_integracoes": {
           "titulo": "Acessos das Integrações",
           "icone": "🔌",
           "descricao": "Credenciais dos sistemas que você marcou ao gerar o link. Só aparecem perguntas pros sistemas selecionados — se faltar algum, fale com o time pra ajustar.",
           "condicional_secao": "_session_erp != '' || _session_mapas != '' || _session_gerenciamento_rede != '' || _session_gateway_pagamento != ''",
           "perguntas": [
-            { "id": "_int_erp_header", "pergunta": "ERP / Sistema de gestão", "tipo": "info", "texto": "Agora os acessos do seu ERP. A IA usa isso pra consultar planos, faturas, contratos e dados do cliente em tempo real — sem isso, o atendimento fica limitado.", "condicional": "_session_erp != ''" },
-
-            { "id": "erp_ixc_url", "pergunta": "URL da API do IXC", "tipo": "url", "placeholder": "https://ixc.suaempresa.com.br", "condicional": "_session_erp == 'IXC'" },
-            { "id": "erp_ixc_userid", "pergunta": "userID do IXC", "tipo": "text", "condicional": "_session_erp == 'IXC'", "hint": "ID do usuário de API dentro do IXC." },
-            { "id": "erp_ixc_token", "pergunta": "Token do IXC", "tipo": "password", "condicional": "_session_erp == 'IXC'" },
-
-            { "id": "erp_mk_url", "pergunta": "URL da API do MK Solution", "tipo": "url", "placeholder": "https://mk.suaempresa.com.br", "condicional": "_session_erp == 'MK Solution'" },
-            { "id": "erp_mk_token", "pergunta": "Token MK Solution", "tipo": "password", "condicional": "_session_erp == 'MK Solution'" },
-            { "id": "erp_mk_senha", "pergunta": "Senha MK Solution", "tipo": "password", "condicional": "_session_erp == 'MK Solution'" },
-
-            { "id": "erp_voalle_url", "pergunta": "URL Voalle", "tipo": "url", "placeholder": "https://voalle.suaempresa.com.br", "condicional": "_session_erp == 'Voalle'" },
-            { "id": "erp_voalle_client_id", "pergunta": "Client ID Voalle", "tipo": "text", "condicional": "_session_erp == 'Voalle'" },
-            { "id": "erp_voalle_client_secret", "pergunta": "Client Secret Voalle", "tipo": "password", "condicional": "_session_erp == 'Voalle'" },
-            { "id": "erp_voalle_syndata", "pergunta": "Syndata Voalle", "tipo": "text", "condicional": "_session_erp == 'Voalle'" },
-
-            { "id": "erp_hubsoft_url", "pergunta": "URL da API do Hubsoft", "tipo": "url", "placeholder": "https://api.suaempresa.hubsoft.com.br", "condicional": "_session_erp == 'Hubsoft'" },
-            { "id": "erp_hubsoft_usuario", "pergunta": "Usuário Hubsoft", "tipo": "text", "condicional": "_session_erp == 'Hubsoft'" },
-            { "id": "erp_hubsoft_senha", "pergunta": "Senha Hubsoft", "tipo": "password", "condicional": "_session_erp == 'Hubsoft'" },
-            { "id": "erp_hubsoft_client_id", "pergunta": "Client ID Hubsoft", "tipo": "text", "condicional": "_session_erp == 'Hubsoft'" },
-            { "id": "erp_hubsoft_client_secret", "pergunta": "Client Secret Hubsoft", "tipo": "password", "condicional": "_session_erp == 'Hubsoft'" },
-
-            { "id": "erp_rbx_url", "pergunta": "URL da API do RBX", "tipo": "url", "placeholder": "https://rbx.suaempresa.com.br", "condicional": "_session_erp == 'RBX'" },
-            { "id": "erp_rbx_token", "pergunta": "Token RBX", "tipo": "password", "condicional": "_session_erp == 'RBX'" },
-            { "id": "erp_rbx_usuario", "pergunta": "Usuário RBX", "tipo": "text", "condicional": "_session_erp == 'RBX'" },
-            { "id": "erp_rbx_senha", "pergunta": "Senha RBX", "tipo": "password", "condicional": "_session_erp == 'RBX'" },
-
-            { "id": "erp_sgp_url", "pergunta": "URL da API do SGP", "tipo": "url", "placeholder": "https://sgp.suaempresa.com.br", "condicional": "_session_erp == 'SGP'" },
-            { "id": "erp_sgp_token", "pergunta": "Token SGP", "tipo": "password", "condicional": "_session_erp == 'SGP'" },
-            { "id": "erp_sgp_app", "pergunta": "App SGP", "tipo": "text", "condicional": "_session_erp == 'SGP'", "hint": "Nome do app configurado no SGP pra liberar a API." },
-
-            { "id": "erp_outros_nome", "pergunta": "Qual ERP / sistema vocês usam?", "tipo": "text", "placeholder": "Ex: Topp Sap, Integrator, etc.", "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'", "hint": "Se for Topp Sap, pode repetir aqui — só pra confirmar." },
-            { "id": "erp_outros_url", "pergunta": "URL da API do ERP", "tipo": "url", "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'" },
-            { "id": "erp_outros_token", "pergunta": "Token / API Key", "tipo": "password", "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'", "hint": "Se não usar token, pode deixar em branco e preencher usuário/senha abaixo." },
-            { "id": "erp_outros_usuario", "pergunta": "Usuário do ERP (se aplicável)", "tipo": "text", "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'" },
-            { "id": "erp_outros_senha", "pergunta": "Senha do ERP (se aplicável)", "tipo": "password", "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'" },
-
-            { "id": "_int_gateway_header", "pergunta": "Gateway de pagamentos", "tipo": "info", "texto": "Credenciais do seu gateway de cobrança. Permite que a IA confirme pagamentos, gere segunda via e responda dúvidas financeiras com dado real.", "condicional": "_session_gateway_pagamento != ''" },
-
-            { "id": "gateway_7az_token", "pergunta": "Token 7AZ (Bemobi)", "tipo": "password", "condicional": "_session_gateway_pagamento == '7AZ (Bemobi)'" },
-
-            { "id": "gateway_outros_nome", "pergunta": "Qual gateway de pagamentos vocês usam?", "tipo": "text", "placeholder": "Ex: Asaas, Iugu, Pagar.me, Cielo…", "condicional": "_session_gateway_pagamento == 'Outros'" },
-            { "id": "gateway_outros_token", "pergunta": "Token / API Key do gateway", "tipo": "password", "condicional": "_session_gateway_pagamento == 'Outros'" },
-            { "id": "gateway_outros_credenciais", "pergunta": "Outras credenciais (usuário, senha, endpoint, etc.)", "tipo": "textarea", "placeholder": "Liste o que for necessário pra acessar o gateway", "condicional": "_session_gateway_pagamento == 'Outros'" },
-
-            { "id": "_int_rede_header", "pergunta": "Gerenciador de rede", "tipo": "info", "texto": "Acessos do gerenciador de rede. A IA usa pra checar status do CPE, reiniciar equipamento e diagnosticar problemas de conexão sem precisar passar pro suporte.", "condicional": "_session_gerenciamento_rede != ''" },
-
-            { "id": "rede_oltcloud_url", "pergunta": "URL OLT Cloud", "tipo": "url", "placeholder": "https://oltcloud.suaempresa.com.br", "condicional": "_session_gerenciamento_rede == 'OLT Cloud'" },
-            { "id": "rede_oltcloud_usuario", "pergunta": "Usuário OLT Cloud", "tipo": "text", "condicional": "_session_gerenciamento_rede == 'OLT Cloud'" },
-            { "id": "rede_oltcloud_senha", "pergunta": "Senha OLT Cloud", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'OLT Cloud'" },
-
-            { "id": "rede_anlix_url", "pergunta": "URL Anlix", "tipo": "url", "placeholder": "https://anlix.suaempresa.com.br", "condicional": "_session_gerenciamento_rede == 'Anlix'" },
-            { "id": "rede_anlix_usuario", "pergunta": "Usuário Anlix", "tipo": "text", "condicional": "_session_gerenciamento_rede == 'Anlix'" },
-            { "id": "rede_anlix_senha", "pergunta": "Senha Anlix", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'Anlix'" },
-
-            { "id": "rede_smartolt_url", "pergunta": "URL Smart OLT", "tipo": "url", "placeholder": "https://smartolt.suaempresa.com.br", "condicional": "_session_gerenciamento_rede == 'Smart OLT'" },
-            { "id": "rede_smartolt_usuario", "pergunta": "Usuário Smart OLT", "tipo": "text", "condicional": "_session_gerenciamento_rede == 'Smart OLT'" },
-            { "id": "rede_smartolt_senha", "pergunta": "Senha Smart OLT", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'Smart OLT'" },
-
-            { "id": "rede_made4graph_url", "pergunta": "URL Made 4 Graph", "tipo": "url", "placeholder": "https://made4graph.suaempresa.com.br", "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'" },
-            { "id": "rede_made4graph_email", "pergunta": "Email Made 4 Graph", "tipo": "text", "placeholder": "email@suaempresa.com.br", "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'" },
-            { "id": "rede_made4graph_senha", "pergunta": "Senha Made 4 Graph", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'" },
-            { "id": "rede_made4graph_token", "pergunta": "Token Made 4 Graph", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'" },
-
-            { "id": "rede_ixcacs_url", "pergunta": "URL IXC-ACS", "tipo": "url", "placeholder": "https://ixcacs.suaempresa.com.br", "condicional": "_session_gerenciamento_rede == 'IXC-ACS'" },
-            { "id": "rede_ixcacs_usuario", "pergunta": "Usuário IXC-ACS", "tipo": "text", "condicional": "_session_gerenciamento_rede == 'IXC-ACS'" },
-            { "id": "rede_ixcacs_senha", "pergunta": "Senha IXC-ACS", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'IXC-ACS'" },
-
-            { "id": "rede_outros_nome", "pergunta": "Qual gerenciador de rede vocês usam?", "tipo": "text", "placeholder": "Ex: Mikrotik, UNMS, próprio…", "condicional": "_session_gerenciamento_rede == 'Outros'" },
-            { "id": "rede_outros_url", "pergunta": "URL do gerenciador", "tipo": "url", "condicional": "_session_gerenciamento_rede == 'Outros'" },
-            { "id": "rede_outros_usuario", "pergunta": "Usuário", "tipo": "text", "condicional": "_session_gerenciamento_rede == 'Outros'" },
-            { "id": "rede_outros_senha", "pergunta": "Senha", "tipo": "password", "condicional": "_session_gerenciamento_rede == 'Outros'" },
-
-            { "id": "_int_mapas_header", "pergunta": "Mapas / Geo", "tipo": "info", "texto": "Acessos do sistema de mapas. A IA consulta cobertura por endereço, identifica se o lead está em área atendida e qualifica novos contratos sem humano.", "condicional": "_session_mapas != ''" },
-
-            { "id": "mapas_geogrid_url", "pergunta": "URL Geogrid", "tipo": "url", "placeholder": "https://geogrid.suaempresa.com.br", "condicional": "_session_mapas == 'Geogrid'" },
-            { "id": "mapas_geogrid_token", "pergunta": "Token Geogrid", "tipo": "password", "condicional": "_session_mapas == 'Geogrid'" },
-
-            { "id": "mapas_geosite_usuario", "pergunta": "Usuário Geosite", "tipo": "text", "condicional": "_session_mapas == 'Geosite'" },
-            { "id": "mapas_geosite_senha", "pergunta": "Senha Geosite", "tipo": "password", "condicional": "_session_mapas == 'Geosite'" },
-
-            { "id": "mapas_ozmap_url", "pergunta": "URL OZMap", "tipo": "url", "placeholder": "https://ozmap.suaempresa.com.br", "condicional": "_session_mapas == 'OZMap'" },
-            { "id": "mapas_ozmap_token", "pergunta": "Token OZMap", "tipo": "password", "condicional": "_session_mapas == 'OZMap'" },
-            { "id": "mapas_ozmap_usuario", "pergunta": "Usuário OZMap", "tipo": "text", "condicional": "_session_mapas == 'OZMap'" },
-            { "id": "mapas_ozmap_senha", "pergunta": "Senha OZMap", "tipo": "password", "condicional": "_session_mapas == 'OZMap'" },
-
-            { "id": "mapas_ixcmaps_url", "pergunta": "URL IXC Maps", "tipo": "url", "placeholder": "https://ixcmaps.suaempresa.com.br", "condicional": "_session_mapas == 'IXC Maps'" },
-            { "id": "mapas_ixcmaps_usuario", "pergunta": "Usuário IXC Maps", "tipo": "text", "condicional": "_session_mapas == 'IXC Maps'" },
-            { "id": "mapas_ixcmaps_senha", "pergunta": "Senha IXC Maps", "tipo": "password", "condicional": "_session_mapas == 'IXC Maps'" },
-
-            { "id": "mapas_kmz_info", "pergunta": "Área de atendimento (KMZ / Google Maps)", "tipo": "info", "texto": "Vocês usam o mapa de cobertura em KMZ (Google Maps / My Maps). Precisamos do arquivo com o polígono da área atendida — é com ele que a IA identifica se o endereço do lead está dentro da cobertura. Exporte no Google My Maps (menu ⋮ → Exportar para KML/KMZ), hospede num link público (Google Drive, por exemplo) e cole abaixo. Se tiver mais de uma área, adicione quantas precisar. Se preferir, pode enviar o(s) arquivo(s) .kmz direto no nosso grupo do WhatsApp.", "condicional": "_session_mapas == 'KMZ (Google Maps)'" },
-            { "id": "mapas_kmz_areas", "pergunta": "Arquivos de área de atendimento (KMZ/KML)", "tipo": "repeater", "condicional": "_session_mapas == 'KMZ (Google Maps)'", "rotulo_item": "Área de atendimento", "rotulo_adicionar": "Adicionar área", "hint": "Um item por polígono/arquivo. Cole o link público do KMZ/KML de cada área — ou envie o arquivo no grupo.", "campos": [
-              { "id": "nome", "label": "Nome da área", "tipo": "text", "placeholder": "Ex: Centro / Zona Norte / Cidade X", "largura": 6 },
-              { "id": "link", "label": "Link do arquivo KMZ/KML", "tipo": "text", "placeholder": "Cole o link público (Google Drive, My Maps…)", "largura": 6 }
-            ] },
-
-            { "id": "mapas_outros_nome", "pergunta": "Qual sistema de mapas/geo vocês usam?", "tipo": "text", "placeholder": "Ex: Google Maps interno, planilha, próprio…", "condicional": "_session_mapas == 'Outros'" },
-            { "id": "mapas_outros_url", "pergunta": "URL do sistema", "tipo": "url", "condicional": "_session_mapas == 'Outros'" },
-            { "id": "mapas_outros_token", "pergunta": "Token / API Key (se houver)", "tipo": "password", "condicional": "_session_mapas == 'Outros'" },
-            { "id": "mapas_outros_usuario", "pergunta": "Usuário (se houver)", "tipo": "text", "condicional": "_session_mapas == 'Outros'" },
-            { "id": "mapas_outros_senha", "pergunta": "Senha (se houver)", "tipo": "password", "condicional": "_session_mapas == 'Outros'" }
+            {
+              "id": "_int_erp_header",
+              "pergunta": "ERP / Sistema de gestão",
+              "tipo": "info",
+              "texto": "Agora os acessos do seu ERP. A IA usa isso pra consultar planos, faturas, contratos e dados do cliente em tempo real — sem isso, o atendimento fica limitado.",
+              "condicional": "_session_erp != ''"
+            },
+            {
+              "id": "erp_ixc_url",
+              "pergunta": "URL da API do IXC",
+              "tipo": "url",
+              "placeholder": "https://ixc.suaempresa.com.br",
+              "condicional": "_session_erp == 'IXC'"
+            },
+            {
+              "id": "erp_ixc_userid",
+              "pergunta": "userID do IXC",
+              "tipo": "text",
+              "condicional": "_session_erp == 'IXC'",
+              "hint": "ID do usuário de API dentro do IXC."
+            },
+            {
+              "id": "erp_ixc_token",
+              "pergunta": "Token do IXC",
+              "tipo": "password",
+              "condicional": "_session_erp == 'IXC'"
+            },
+            {
+              "id": "erp_mk_url",
+              "pergunta": "URL da API do MK Solution",
+              "tipo": "url",
+              "placeholder": "https://mk.suaempresa.com.br",
+              "condicional": "_session_erp == 'MK Solution'"
+            },
+            {
+              "id": "erp_mk_token",
+              "pergunta": "Token MK Solution",
+              "tipo": "password",
+              "condicional": "_session_erp == 'MK Solution'"
+            },
+            {
+              "id": "erp_mk_senha",
+              "pergunta": "Senha MK Solution",
+              "tipo": "password",
+              "condicional": "_session_erp == 'MK Solution'"
+            },
+            {
+              "id": "erp_voalle_url",
+              "pergunta": "URL Voalle",
+              "tipo": "url",
+              "placeholder": "https://voalle.suaempresa.com.br",
+              "condicional": "_session_erp == 'Voalle'"
+            },
+            {
+              "id": "erp_voalle_client_id",
+              "pergunta": "Client ID Voalle",
+              "tipo": "text",
+              "condicional": "_session_erp == 'Voalle'"
+            },
+            {
+              "id": "erp_voalle_client_secret",
+              "pergunta": "Client Secret Voalle",
+              "tipo": "password",
+              "condicional": "_session_erp == 'Voalle'"
+            },
+            {
+              "id": "erp_voalle_syndata",
+              "pergunta": "Syndata Voalle",
+              "tipo": "text",
+              "condicional": "_session_erp == 'Voalle'"
+            },
+            {
+              "id": "erp_hubsoft_url",
+              "pergunta": "URL da API do Hubsoft",
+              "tipo": "url",
+              "placeholder": "https://api.suaempresa.hubsoft.com.br",
+              "condicional": "_session_erp == 'Hubsoft'"
+            },
+            {
+              "id": "erp_hubsoft_usuario",
+              "pergunta": "Usuário Hubsoft",
+              "tipo": "text",
+              "condicional": "_session_erp == 'Hubsoft'"
+            },
+            {
+              "id": "erp_hubsoft_senha",
+              "pergunta": "Senha Hubsoft",
+              "tipo": "password",
+              "condicional": "_session_erp == 'Hubsoft'"
+            },
+            {
+              "id": "erp_hubsoft_client_id",
+              "pergunta": "Client ID Hubsoft",
+              "tipo": "text",
+              "condicional": "_session_erp == 'Hubsoft'"
+            },
+            {
+              "id": "erp_hubsoft_client_secret",
+              "pergunta": "Client Secret Hubsoft",
+              "tipo": "password",
+              "condicional": "_session_erp == 'Hubsoft'"
+            },
+            {
+              "id": "erp_rbx_url",
+              "pergunta": "URL da API do RBX",
+              "tipo": "url",
+              "placeholder": "https://rbx.suaempresa.com.br",
+              "condicional": "_session_erp == 'RBX'"
+            },
+            {
+              "id": "erp_rbx_token",
+              "pergunta": "Token RBX",
+              "tipo": "password",
+              "condicional": "_session_erp == 'RBX'"
+            },
+            {
+              "id": "erp_rbx_usuario",
+              "pergunta": "Usuário RBX",
+              "tipo": "text",
+              "condicional": "_session_erp == 'RBX'"
+            },
+            {
+              "id": "erp_rbx_senha",
+              "pergunta": "Senha RBX",
+              "tipo": "password",
+              "condicional": "_session_erp == 'RBX'"
+            },
+            {
+              "id": "erp_sgp_url",
+              "pergunta": "URL da API do SGP",
+              "tipo": "url",
+              "placeholder": "https://sgp.suaempresa.com.br",
+              "condicional": "_session_erp == 'SGP'"
+            },
+            {
+              "id": "erp_sgp_token",
+              "pergunta": "Token SGP",
+              "tipo": "password",
+              "condicional": "_session_erp == 'SGP'"
+            },
+            {
+              "id": "erp_sgp_app",
+              "pergunta": "App SGP",
+              "tipo": "text",
+              "condicional": "_session_erp == 'SGP'",
+              "hint": "Nome do app configurado no SGP pra liberar a API."
+            },
+            {
+              "id": "erp_outros_nome",
+              "pergunta": "Qual ERP / sistema vocês usam?",
+              "tipo": "text",
+              "placeholder": "Ex: Topp Sap, Integrator, etc.",
+              "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'",
+              "hint": "Se for Topp Sap, pode repetir aqui — só pra confirmar."
+            },
+            {
+              "id": "erp_outros_url",
+              "pergunta": "URL da API do ERP",
+              "tipo": "url",
+              "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'"
+            },
+            {
+              "id": "erp_outros_token",
+              "pergunta": "Token / API Key",
+              "tipo": "password",
+              "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'",
+              "hint": "Se não usar token, pode deixar em branco e preencher usuário/senha abaixo."
+            },
+            {
+              "id": "erp_outros_usuario",
+              "pergunta": "Usuário do ERP (se aplicável)",
+              "tipo": "text",
+              "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'"
+            },
+            {
+              "id": "erp_outros_senha",
+              "pergunta": "Senha do ERP (se aplicável)",
+              "tipo": "password",
+              "condicional": "_session_erp == 'Topp Sap' || _session_erp == 'Outros'"
+            },
+            {
+              "id": "_int_gateway_header",
+              "pergunta": "Gateway de pagamentos",
+              "tipo": "info",
+              "texto": "Credenciais do seu gateway de cobrança. Permite que a IA confirme pagamentos, gere segunda via e responda dúvidas financeiras com dado real.",
+              "condicional": "_session_gateway_pagamento != ''"
+            },
+            {
+              "id": "gateway_7az_token",
+              "pergunta": "Token 7AZ (Bemobi)",
+              "tipo": "password",
+              "condicional": "_session_gateway_pagamento == '7AZ (Bemobi)'"
+            },
+            {
+              "id": "gateway_outros_nome",
+              "pergunta": "Qual gateway de pagamentos vocês usam?",
+              "tipo": "text",
+              "placeholder": "Ex: Asaas, Iugu, Pagar.me, Cielo…",
+              "condicional": "_session_gateway_pagamento == 'Outros'"
+            },
+            {
+              "id": "gateway_outros_token",
+              "pergunta": "Token / API Key do gateway",
+              "tipo": "password",
+              "condicional": "_session_gateway_pagamento == 'Outros'"
+            },
+            {
+              "id": "gateway_outros_credenciais",
+              "pergunta": "Outras credenciais (usuário, senha, endpoint, etc.)",
+              "tipo": "textarea",
+              "placeholder": "Liste o que for necessário pra acessar o gateway",
+              "condicional": "_session_gateway_pagamento == 'Outros'"
+            },
+            {
+              "id": "_int_rede_header",
+              "pergunta": "Gerenciador de rede",
+              "tipo": "info",
+              "texto": "Acessos do gerenciador de rede. A IA usa pra checar status do CPE, reiniciar equipamento e diagnosticar problemas de conexão sem precisar passar pro suporte.",
+              "condicional": "_session_gerenciamento_rede != ''"
+            },
+            {
+              "id": "rede_oltcloud_url",
+              "pergunta": "URL OLT Cloud",
+              "tipo": "url",
+              "placeholder": "https://oltcloud.suaempresa.com.br",
+              "condicional": "_session_gerenciamento_rede == 'OLT Cloud'"
+            },
+            {
+              "id": "rede_oltcloud_usuario",
+              "pergunta": "Usuário OLT Cloud",
+              "tipo": "text",
+              "condicional": "_session_gerenciamento_rede == 'OLT Cloud'"
+            },
+            {
+              "id": "rede_oltcloud_senha",
+              "pergunta": "Senha OLT Cloud",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'OLT Cloud'"
+            },
+            {
+              "id": "rede_anlix_url",
+              "pergunta": "URL Anlix",
+              "tipo": "url",
+              "placeholder": "https://anlix.suaempresa.com.br",
+              "condicional": "_session_gerenciamento_rede == 'Anlix'"
+            },
+            {
+              "id": "rede_anlix_usuario",
+              "pergunta": "Usuário Anlix",
+              "tipo": "text",
+              "condicional": "_session_gerenciamento_rede == 'Anlix'"
+            },
+            {
+              "id": "rede_anlix_senha",
+              "pergunta": "Senha Anlix",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'Anlix'"
+            },
+            {
+              "id": "rede_smartolt_url",
+              "pergunta": "URL Smart OLT",
+              "tipo": "url",
+              "placeholder": "https://smartolt.suaempresa.com.br",
+              "condicional": "_session_gerenciamento_rede == 'Smart OLT'"
+            },
+            {
+              "id": "rede_smartolt_usuario",
+              "pergunta": "Usuário Smart OLT",
+              "tipo": "text",
+              "condicional": "_session_gerenciamento_rede == 'Smart OLT'"
+            },
+            {
+              "id": "rede_smartolt_senha",
+              "pergunta": "Senha Smart OLT",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'Smart OLT'"
+            },
+            {
+              "id": "rede_made4graph_url",
+              "pergunta": "URL Made 4 Graph",
+              "tipo": "url",
+              "placeholder": "https://made4graph.suaempresa.com.br",
+              "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'"
+            },
+            {
+              "id": "rede_made4graph_email",
+              "pergunta": "Email Made 4 Graph",
+              "tipo": "text",
+              "placeholder": "email@suaempresa.com.br",
+              "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'"
+            },
+            {
+              "id": "rede_made4graph_senha",
+              "pergunta": "Senha Made 4 Graph",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'"
+            },
+            {
+              "id": "rede_made4graph_token",
+              "pergunta": "Token Made 4 Graph",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'Made 4 Graph'"
+            },
+            {
+              "id": "rede_ixcacs_url",
+              "pergunta": "URL IXC-ACS",
+              "tipo": "url",
+              "placeholder": "https://ixcacs.suaempresa.com.br",
+              "condicional": "_session_gerenciamento_rede == 'IXC-ACS'"
+            },
+            {
+              "id": "rede_ixcacs_usuario",
+              "pergunta": "Usuário IXC-ACS",
+              "tipo": "text",
+              "condicional": "_session_gerenciamento_rede == 'IXC-ACS'"
+            },
+            {
+              "id": "rede_ixcacs_senha",
+              "pergunta": "Senha IXC-ACS",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'IXC-ACS'"
+            },
+            {
+              "id": "rede_outros_nome",
+              "pergunta": "Qual gerenciador de rede vocês usam?",
+              "tipo": "text",
+              "placeholder": "Ex: Mikrotik, UNMS, próprio…",
+              "condicional": "_session_gerenciamento_rede == 'Outros'"
+            },
+            {
+              "id": "rede_outros_url",
+              "pergunta": "URL do gerenciador",
+              "tipo": "url",
+              "condicional": "_session_gerenciamento_rede == 'Outros'"
+            },
+            {
+              "id": "rede_outros_usuario",
+              "pergunta": "Usuário",
+              "tipo": "text",
+              "condicional": "_session_gerenciamento_rede == 'Outros'"
+            },
+            {
+              "id": "rede_outros_senha",
+              "pergunta": "Senha",
+              "tipo": "password",
+              "condicional": "_session_gerenciamento_rede == 'Outros'"
+            },
+            {
+              "id": "_int_mapas_header",
+              "pergunta": "Mapas / Geo",
+              "tipo": "info",
+              "texto": "Acessos do sistema de mapas. A IA consulta cobertura por endereço, identifica se o lead está em área atendida e qualifica novos contratos sem humano.",
+              "condicional": "_session_mapas != ''"
+            },
+            {
+              "id": "mapas_geogrid_url",
+              "pergunta": "URL Geogrid",
+              "tipo": "url",
+              "placeholder": "https://geogrid.suaempresa.com.br",
+              "condicional": "_session_mapas == 'Geogrid'"
+            },
+            {
+              "id": "mapas_geogrid_token",
+              "pergunta": "Token Geogrid",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'Geogrid'"
+            },
+            {
+              "id": "mapas_geosite_usuario",
+              "pergunta": "Usuário Geosite",
+              "tipo": "text",
+              "condicional": "_session_mapas == 'Geosite'"
+            },
+            {
+              "id": "mapas_geosite_senha",
+              "pergunta": "Senha Geosite",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'Geosite'"
+            },
+            {
+              "id": "mapas_ozmap_url",
+              "pergunta": "URL OZMap",
+              "tipo": "url",
+              "placeholder": "https://ozmap.suaempresa.com.br",
+              "condicional": "_session_mapas == 'OZMap'"
+            },
+            {
+              "id": "mapas_ozmap_token",
+              "pergunta": "Token OZMap",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'OZMap'"
+            },
+            {
+              "id": "mapas_ozmap_usuario",
+              "pergunta": "Usuário OZMap",
+              "tipo": "text",
+              "condicional": "_session_mapas == 'OZMap'"
+            },
+            {
+              "id": "mapas_ozmap_senha",
+              "pergunta": "Senha OZMap",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'OZMap'"
+            },
+            {
+              "id": "mapas_ixcmaps_url",
+              "pergunta": "URL IXC Maps",
+              "tipo": "url",
+              "placeholder": "https://ixcmaps.suaempresa.com.br",
+              "condicional": "_session_mapas == 'IXC Maps'"
+            },
+            {
+              "id": "mapas_ixcmaps_usuario",
+              "pergunta": "Usuário IXC Maps",
+              "tipo": "text",
+              "condicional": "_session_mapas == 'IXC Maps'"
+            },
+            {
+              "id": "mapas_ixcmaps_senha",
+              "pergunta": "Senha IXC Maps",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'IXC Maps'"
+            },
+            {
+              "id": "mapas_kmz_info",
+              "pergunta": "Área de atendimento (KMZ / Google Maps)",
+              "tipo": "info",
+              "texto": "Vocês usam o mapa de cobertura em KMZ (Google Maps / My Maps). Precisamos do arquivo com o polígono da área atendida — é com ele que a IA identifica se o endereço do lead está dentro da cobertura. Exporte no Google My Maps (menu ⋮ → Exportar para KML/KMZ), hospede num link público (Google Drive, por exemplo) e cole abaixo. Se tiver mais de uma área, adicione quantas precisar. Se preferir, pode enviar o(s) arquivo(s) .kmz direto no nosso grupo do WhatsApp.",
+              "condicional": "_session_mapas == 'KMZ (Google Maps)'"
+            },
+            {
+              "id": "mapas_kmz_areas",
+              "pergunta": "Arquivos de área de atendimento (KMZ/KML)",
+              "tipo": "repeater",
+              "condicional": "_session_mapas == 'KMZ (Google Maps)'",
+              "rotulo_item": "Área de atendimento",
+              "rotulo_adicionar": "Adicionar área",
+              "hint": "Um item por polígono/arquivo. Cole o link público do KMZ/KML de cada área — ou envie o arquivo no grupo.",
+              "campos": [
+                {
+                  "id": "nome",
+                  "label": "Nome da área",
+                  "tipo": "text",
+                  "placeholder": "Ex: Centro / Zona Norte / Cidade X",
+                  "largura": 6
+                },
+                {
+                  "id": "link",
+                  "label": "Link do arquivo KMZ/KML",
+                  "tipo": "text",
+                  "placeholder": "Cole o link público (Google Drive, My Maps…)",
+                  "largura": 6
+                }
+              ]
+            },
+            {
+              "id": "mapas_outros_nome",
+              "pergunta": "Qual sistema de mapas/geo vocês usam?",
+              "tipo": "text",
+              "placeholder": "Ex: Google Maps interno, planilha, próprio…",
+              "condicional": "_session_mapas == 'Outros'"
+            },
+            {
+              "id": "mapas_outros_url",
+              "pergunta": "URL do sistema",
+              "tipo": "url",
+              "condicional": "_session_mapas == 'Outros'"
+            },
+            {
+              "id": "mapas_outros_token",
+              "pergunta": "Token / API Key (se houver)",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'Outros'"
+            },
+            {
+              "id": "mapas_outros_usuario",
+              "pergunta": "Usuário (se houver)",
+              "tipo": "text",
+              "condicional": "_session_mapas == 'Outros'"
+            },
+            {
+              "id": "mapas_outros_senha",
+              "pergunta": "Senha (se houver)",
+              "tipo": "password",
+              "condicional": "_session_mapas == 'Outros'"
+            }
           ]
         }
       }
     },
-
     "sac_geral": {
       "nome": "SAC/Geral",
       "slug": "sac_geral",
@@ -229,96 +600,16 @@
       "descricao": "Informações gerais da empresa, identidade, tom de voz e estrutura organizacional",
       "ordem_execucao": 1,
       "secoes": {
-        
         "identidade": {
           "titulo": "Identidade e Informações Gerais",
           "icone": "🏢",
           "perguntas": [
             {
-              "id": "empresa_nome_oficial",
-              "pergunta": "Qual o nome oficial da empresa para uso nos atendimentos?",
-              "tipo": "text",
+              "id": "empresa_endereco_sede",
+              "pergunta": "Confirme o endereço da sede",
+              "tipo": "endereco",
               "obrigatoria": true,
-              "placeholder": "Ex: Pipeelo Telecom Ltda",
-              "validacao": "min:3"
-            },
-            {
-              "id": "empresa_cep",
-              "pergunta": "Qual o CEP da sede (endereço principal/matriz)?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "00000-000",
-              "hint": "Endereço principal da empresa. A plataforma usa pra configurar os dados da matriz."
-            },
-            {
-              "id": "empresa_logradouro",
-              "pergunta": "Logradouro da sede (rua/avenida)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Av. Brasil"
-            },
-            {
-              "id": "empresa_numero",
-              "pergunta": "Número da sede",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: 1500"
-            },
-            {
-              "id": "empresa_complemento",
-              "pergunta": "Complemento (opcional)",
-              "tipo": "text",
-              "obrigatoria": false,
-              "placeholder": "Ex: Sala 304, Bloco B"
-            },
-            {
-              "id": "empresa_bairro",
-              "pergunta": "Bairro da sede",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Centro"
-            },
-            {
-              "id": "empresa_cidade",
-              "pergunta": "Cidade da sede",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Londrina"
-            },
-            {
-              "id": "empresa_uf",
-              "pergunta": "Estado (UF) da sede",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "AC", "label": "Acre (AC)"},
-                {"value": "AL", "label": "Alagoas (AL)"},
-                {"value": "AP", "label": "Amapá (AP)"},
-                {"value": "AM", "label": "Amazonas (AM)"},
-                {"value": "BA", "label": "Bahia (BA)"},
-                {"value": "CE", "label": "Ceará (CE)"},
-                {"value": "DF", "label": "Distrito Federal (DF)"},
-                {"value": "ES", "label": "Espírito Santo (ES)"},
-                {"value": "GO", "label": "Goiás (GO)"},
-                {"value": "MA", "label": "Maranhão (MA)"},
-                {"value": "MT", "label": "Mato Grosso (MT)"},
-                {"value": "MS", "label": "Mato Grosso do Sul (MS)"},
-                {"value": "MG", "label": "Minas Gerais (MG)"},
-                {"value": "PA", "label": "Pará (PA)"},
-                {"value": "PB", "label": "Paraíba (PB)"},
-                {"value": "PR", "label": "Paraná (PR)"},
-                {"value": "PE", "label": "Pernambuco (PE)"},
-                {"value": "PI", "label": "Piauí (PI)"},
-                {"value": "RJ", "label": "Rio de Janeiro (RJ)"},
-                {"value": "RN", "label": "Rio Grande do Norte (RN)"},
-                {"value": "RS", "label": "Rio Grande do Sul (RS)"},
-                {"value": "RO", "label": "Rondônia (RO)"},
-                {"value": "RR", "label": "Roraima (RR)"},
-                {"value": "SC", "label": "Santa Catarina (SC)"},
-                {"value": "SP", "label": "São Paulo (SP)"},
-                {"value": "SE", "label": "Sergipe (SE)"},
-                {"value": "TO", "label": "Tocantins (TO)"}
-              ]
+              "hint": "Preenchemos com o endereço da Receita Federal pelo CNPJ. Se estiver desatualizado, corrija aqui. Se vier vazio, digite o CEP que buscamos o resto."
             },
             {
               "id": "empresa_cidades",
@@ -329,101 +620,283 @@
               "hint": "Separe por vírgula"
             },
             {
-              "id": "empresa_site",
-              "pergunta": "Qual o site oficial da empresa?",
-              "tipo": "text",
+              "id": "empresa_presenca_digital",
+              "pergunta": "Presença digital da empresa",
+              "tipo": "grupo",
               "obrigatoria": true,
-              "placeholder": "www.suaempresa.com.br",
-              "hint": "Pode digitar sem https://"
+              "hint": "A IA usa esses links para direcionar o cliente: portal para 2ª via e dados, Instagram para novidades, Google Maps quando pede avaliação 5⭐.",
+              "campos": [
+                {
+                  "id": "empresa_site",
+                  "label": "Site oficial",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "www.provedor.com.br",
+                  "largura": 6
+                },
+                {
+                  "id": "empresa_portal_cliente",
+                  "label": "Portal / Central do cliente (área logada)",
+                  "tipo": "text",
+                  "placeholder": "Deixe vazio se não tiver",
+                  "largura": 6
+                },
+                {
+                  "id": "empresa_instagram",
+                  "label": "Instagram (@handle)",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "@provedor",
+                  "largura": 4
+                },
+                {
+                  "id": "empresa_facebook",
+                  "label": "Facebook / Fanpage (URL)",
+                  "tipo": "text",
+                  "placeholder": "Opcional",
+                  "largura": 4
+                },
+                {
+                  "id": "empresa_google_maps",
+                  "label": "Google Maps / Google Business (URL)",
+                  "tipo": "text",
+                  "placeholder": "Opcional",
+                  "largura": 4
+                }
+              ]
             },
             {
-              "id": "empresa_portal_cliente",
-              "pergunta": "Qual o link do Portal/Central do cliente (área logada)?",
-              "tipo": "url_optional",
-              "obrigatoria": false,
-              "placeholder": "https://portal.exemplo.com.br",
-              "hint": "Cole o link ou clique no botão se não possuir"
-            },
-            {
-              "id": "empresa_telefones",
-              "pergunta": "Quais os telefones de contato principais?",
-              "tipo": "textarea",
+              "id": "empresa_contatos",
+              "pergunta": "Outros contatos e pontos de atendimento",
+              "tipo": "grupo",
               "obrigatoria": true,
-              "placeholder": "Ex: (11) 3000-0000, (11) 9 9000-0000",
-              "hint": "Separe por vírgula ou linha"
-            },
-            {
-              "id": "empresa_enderecos",
-              "pergunta": "Outros endereços físicos (lojas/pontos de atendimento)?",
-              "tipo": "textarea",
-              "obrigatoria": false,
-              "placeholder": "Rua Exemplo, 123 - Centro - São Paulo/SP",
-              "hint": "Além da sede. Liste lojas/pontos extras, um por linha. Deixe vazio se só tem a sede."
-            },
-            {
-              "id": "empresa_instagram",
-              "pergunta": "Instagram oficial da empresa (@handle)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "@suaempresa",
-              "hint": "A IA direciona clientes pra acompanhar novidades e promoções."
-            },
-            {
-              "id": "empresa_facebook",
-              "pergunta": "Facebook / Fanpage (URL)",
-              "tipo": "url_optional",
-              "obrigatoria": false,
-              "placeholder": "https://facebook.com/suaempresa"
-            },
-            {
-              "id": "empresa_google_maps",
-              "pergunta": "Link do perfil no Google Maps / Google Business",
-              "tipo": "url_optional",
-              "obrigatoria": false,
-              "placeholder": "https://maps.app.goo.gl/...",
-              "hint": "Usado quando a IA pede avaliação 5⭐ em NPS alto."
+              "hint": "Telefones que a IA pode passar ao cliente e lojas/pontos além da sede.",
+              "campos": [
+                {
+                  "id": "empresa_telefones",
+                  "label": "Telefones de contato principais",
+                  "tipo": "textarea",
+                  "obrigatoria": true,
+                  "placeholder": "Um por linha, com DDD",
+                  "largura": 6
+                },
+                {
+                  "id": "empresa_enderecos",
+                  "label": "Outros endereços físicos (lojas / pontos de atendimento)",
+                  "tipo": "textarea",
+                  "placeholder": "Um por linha. Deixe vazio se só tiver a sede.",
+                  "largura": 6
+                }
+              ]
             },
             {
               "id": "empresa_timezone",
               "pergunta": "Qual o fuso horário da empresa?",
               "tipo": "select",
               "obrigatoria": true,
-              "hint": "A plataforma usa pra agendar horário de atendimento, régua de cobrança e disparos no horário certo.",
+              "hint": "Já deixamos Brasília marcado — troque só se a empresa estiver em outro fuso. A plataforma usa isso para horário de atendimento, régua de cobrança e disparos.",
               "opcoes": [
-                {"value": "America/Sao_Paulo", "label": "Brasília (UTC-3) — SP, Sul, Sudeste, Nordeste, GO, DF, TO, PA"},
-                {"value": "America/Manaus", "label": "Amazônia (UTC-4) — AM, RR, RO, MT, MS"},
-                {"value": "America/Rio_Branco", "label": "Acre (UTC-5) — AC e sudoeste do AM"},
-                {"value": "America/Noronha", "label": "Fernando de Noronha (UTC-2)"}
-              ]
+                {
+                  "value": "America/Sao_Paulo",
+                  "label": "Brasília (UTC-3) — SP, Sul, Sudeste, Nordeste, GO, DF, TO, PA"
+                },
+                {
+                  "value": "America/Manaus",
+                  "label": "Amazônia (UTC-4) — AM, RR, RO, MT, MS"
+                },
+                {
+                  "value": "America/Rio_Branco",
+                  "label": "Acre (UTC-5) — AC e sudoeste do AM"
+                },
+                {
+                  "value": "America/Noronha",
+                  "label": "Fernando de Noronha (UTC-2)"
+                }
+              ],
+              "padrao": "America/Sao_Paulo"
+            }
+          ],
+          "descricao": "Endereço, cidades atendidas, links e contatos que a IA repassa ao cliente."
+        },
+        "estrutura_departamentos": {
+          "titulo": "Estrutura de Departamentos",
+          "icone": "🏗️",
+          "perguntas": [
+            {
+              "id": "departamentos_lista",
+              "pergunta": "Quais departamentos vocês têm hoje?",
+              "tipo": "checkbox_multiple",
+              "obrigatoria": true,
+              "opcoes": [
+                {
+                  "value": "atendimento_geral",
+                  "label": "Atendimento Geral / SAC"
+                },
+                {
+                  "value": "financeiro",
+                  "label": "Financeiro"
+                },
+                {
+                  "value": "suporte",
+                  "label": "Suporte Técnico"
+                },
+                {
+                  "value": "vendas",
+                  "label": "Vendas / Comercial"
+                },
+                {
+                  "value": "cobranca",
+                  "label": "Cobrança"
+                },
+                {
+                  "value": "retencao",
+                  "label": "Retenção"
+                },
+                {
+                  "value": "cancelamento",
+                  "label": "Cancelamento"
+                },
+                {
+                  "value": "noc",
+                  "label": "NOC (Centro de Operações)"
+                },
+                {
+                  "value": "administrativo",
+                  "label": "Administrativo"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
+                }
+              ],
+              "hint": "Marque todos que existem hoje. Em \"Outro\", separe por vírgula se tiver mais de um (ex.: Ouvidoria, Instalação).",
+              "placeholder_outro": "Ex.: Ouvidoria, Instalação (separe por vírgula)"
             },
             {
-              "id": "horario_atendimento",
-              "pergunta": "Qual o horário de atendimento padrão?",
+              "id": "atividades_atendimento_geral",
+              "pergunta": "Descreva todas as atividades realizadas pelo Atendimento Geral/SAC:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'atendimento_geral'",
+              "placeholder": "Ex: Atende reclamações, faz troca de titularidade, responde dúvidas sobre faturas, agenda visitas técnicas...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_financeiro",
+              "pergunta": "Descreva todas as atividades realizadas pelo Financeiro:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'financeiro'",
+              "placeholder": "Ex: Emite segundas vias, negocia débitos, faz estornos, atualiza dados bancários...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_suporte",
+              "pergunta": "Descreva todas as atividades realizadas pelo Suporte Técnico:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'suporte'",
+              "placeholder": "Ex: Resolve problemas de conexão, faz diagnóstico remoto, agenda visitas técnicas, configura roteadores...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_vendas",
+              "pergunta": "Descreva todas as atividades realizadas pelo Vendas/Comercial:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'vendas'",
+              "placeholder": "Ex: Apresenta planos, negocia preços, faz upgrade/downgrade, agenda instalações...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_cobranca",
+              "pergunta": "Descreva todas as atividades realizadas pela Cobrança:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'cobranca'",
+              "placeholder": "Ex: Liga para clientes inadimplentes, negocia parcelamentos, envia notificações de corte...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_retencao",
+              "pergunta": "Descreva todas as atividades realizadas pela Retenção:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'retencao'",
+              "placeholder": "Ex: Oferece descontos para clientes que querem cancelar, apresenta novos planos, resolve insatisfações...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_cancelamento",
+              "pergunta": "Descreva todas as atividades realizadas pelo Cancelamento:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'cancelamento'",
+              "placeholder": "Ex: Processa pedidos de cancelamento, agenda retirada de equipamentos, calcula multas...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_noc",
+              "pergunta": "Descreva todas as atividades realizadas pelo NOC:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'noc'",
+              "placeholder": "Ex: Monitora a rede 24/7, identifica quedas massivas, coordena manutenções programadas...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_administrativo",
+              "pergunta": "Descreva todas as atividades realizadas pelo Administrativo:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'administrativo'",
+              "placeholder": "Ex: Gerencia contratos, cuida de documentação, responde solicitações formais...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            },
+            {
+              "id": "atividades_outro",
+              "pergunta": "Descreva todas as atividades realizadas pelos outros departamentos que você listou:",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "departamentos_lista includes 'outro'",
+              "placeholder": "Descreva em detalhes o que este departamento faz...",
+              "hint": "Inclua tudo que esse departamento trata — inclusive cancelamento, suspensão temporária, ponto adicional, troca de titularidade, mudança de endereço. É por essa descrição que a IA decide para onde transferir cada pedido."
+            }
+          ],
+          "descricao": "Quais setores existem e o que cada um trata. Isso define para onde a IA transfere cada pedido — não vamos perguntar de novo em cada processo."
+        },
+        "horarios": {
+          "titulo": "Horário de cada departamento",
+          "icone": "🕐",
+          "descricao": "A IA usa o horário de cada departamento para saber quando pode transferir. Fora dele, ela avisa o cliente que o setor está fora do horário de atendimento.",
+          "perguntas": [
+            {
+              "id": "horario",
+              "pergunta": "Horário de atendimento — {departamento}",
               "tipo": "horario_semanal",
               "obrigatoria": true,
-              "hint": "Defina os horários para cada período da semana"
+              "repetir_por": "departamentos_lista",
+              "hint": "A IA usa este horário para saber quando pode transferir para {departamento}. Fora dele, ela avisa o cliente que o setor está fora do horário de atendimento."
             },
             {
-              "id": "tem_plantao",
-              "pergunta": "Existe plantão fora do horário comercial?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "sim", "label": "Sim"},
-                {"value": "nao", "label": "Não"}
-              ]
+              "id": "plantao_departamentos",
+              "pergunta": "Quais departamentos têm plantão fora do horário?",
+              "tipo": "checkbox_multiple",
+              "obrigatoria": false,
+              "opcoes_de": "departamentos_lista",
+              "hint": "Normalmente Suporte e NOC. Deixe em branco se nenhum atende fora do horário."
             },
             {
               "id": "horario_plantao",
-              "pergunta": "Qual o horário do plantão?",
+              "pergunta": "Como funciona o plantão — {departamento}",
               "tipo": "text",
               "obrigatoria": true,
-              "condicional": "tem_plantao == 'sim'",
-              "placeholder": "Ex: Após 18h e fins de semana"
+              "repetir_por": "plantao_departamentos",
+              "placeholder": "Ex.: 18h às 23h em dias úteis e 8h às 20h nos fins de semana, pelo mesmo WhatsApp",
+              "hint": "Diga o horário e como o cliente chega no plantão (mesmo número, outro número, telefone)."
             }
           ]
         },
-
         "identidade_ia": {
           "titulo": "Identidade e Tom de Voz da IA",
           "icone": "🤖",
@@ -435,8 +908,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, vou escolher um nome"},
-                {"value": "nao", "label": "Não, prefiro 'Assistente Virtual'"}
+                {
+                  "value": "sim",
+                  "label": "Sim, vou escolher um nome"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, prefiro 'Assistente Virtual'"
+                }
               ]
             },
             {
@@ -447,159 +926,27 @@
               "condicional": "nome_ia_customizado == 'sim'",
               "placeholder": "Ex: Nick, Eva, Laila, Aninha, Clara...",
               "hint": "Pode deixar em branco agora e definir depois (até 7 dias)."
-            },
-            {
-              "id": "regionalismo",
-              "pergunta": "Existe algum regionalismo ou forma específica de tratamento que a IA deve usar?",
-              "tipo": "textarea",
-              "obrigatoria": false,
-              "placeholder": "Ex: 'Bah', 'Uai', 'Oxe', 'Meu rei', gírias locais usadas pelo time de atendimento...",
-              "hint": "Opcional — ajuda a IA soar local."
             }
           ]
         },
-
-        "estrutura_departamentos": {
-          "titulo": "Estrutura de Departamentos",
-          "icone": "🏗️",
-          "perguntas": [
-            {
-              "id": "departamentos_lista",
-              "pergunta": "Quais departamentos vocês têm hoje?",
-              "tipo": "checkbox_multiple",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "atendimento_geral", "label": "Atendimento Geral / SAC"},
-                {"value": "financeiro", "label": "Financeiro"},
-                {"value": "suporte", "label": "Suporte Técnico"},
-                {"value": "vendas", "label": "Vendas / Comercial"},
-                {"value": "cobranca", "label": "Cobrança"},
-                {"value": "retencao", "label": "Retenção"},
-                {"value": "cancelamento", "label": "Cancelamento"},
-                {"value": "noc", "label": "NOC (Centro de Operações)"},
-                {"value": "administrativo", "label": "Administrativo"},
-                {"value": "outro", "label": "Outro"}
-              ]
-            },
-            {
-              "id": "atividades_atendimento_geral",
-              "pergunta": "Descreva todas as atividades realizadas pelo Atendimento Geral/SAC:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'atendimento_geral'",
-              "placeholder": "Ex: Atende reclamações, faz troca de titularidade, responde dúvidas sobre faturas, agenda visitas técnicas...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_financeiro",
-              "pergunta": "Descreva todas as atividades realizadas pelo Financeiro:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'financeiro'",
-              "placeholder": "Ex: Emite segundas vias, negocia débitos, faz estornos, atualiza dados bancários...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_suporte",
-              "pergunta": "Descreva todas as atividades realizadas pelo Suporte Técnico:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'suporte'",
-              "placeholder": "Ex: Resolve problemas de conexão, faz diagnóstico remoto, agenda visitas técnicas, configura roteadores...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_vendas",
-              "pergunta": "Descreva todas as atividades realizadas pelo Vendas/Comercial:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'vendas'",
-              "placeholder": "Ex: Apresenta planos, negocia preços, faz upgrade/downgrade, agenda instalações...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_cobranca",
-              "pergunta": "Descreva todas as atividades realizadas pela Cobrança:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'cobranca'",
-              "placeholder": "Ex: Liga para clientes inadimplentes, negocia parcelamentos, envia notificações de corte...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_retencao",
-              "pergunta": "Descreva todas as atividades realizadas pela Retenção:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'retencao'",
-              "placeholder": "Ex: Oferece descontos para clientes que querem cancelar, apresenta novos planos, resolve insatisfações...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_cancelamento",
-              "pergunta": "Descreva todas as atividades realizadas pelo Cancelamento:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'cancelamento'",
-              "placeholder": "Ex: Processa pedidos de cancelamento, agenda retirada de equipamentos, calcula multas...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_noc",
-              "pergunta": "Descreva todas as atividades realizadas pelo NOC:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'noc'",
-              "placeholder": "Ex: Monitora a rede 24/7, identifica quedas massivas, coordena manutenções programadas...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "atividades_administrativo",
-              "pergunta": "Descreva todas as atividades realizadas pelo Administrativo:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'administrativo'",
-              "placeholder": "Ex: Gerencia contratos, cuida de documentação, responde solicitações formais...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            },
-            {
-              "id": "departamentos_outros",
-              "pergunta": "Quais outros departamentos?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'outro'",
-              "placeholder": "Ex: RH, Jurídico..."
-            },
-            {
-              "id": "atividades_outro",
-              "pergunta": "Descreva todas as atividades realizadas por este departamento:",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "condicional": "departamentos_lista includes 'outro'",
-              "placeholder": "Descreva em detalhes o que este departamento faz...",
-              "hint": "Seja detalhado, isso ajudará a IA a entender quando transferir para este departamento"
-            }
-          ]
-        },
-
         "equipe_acessos": {
           "titulo": "Equipe e Acessos",
           "icone": "👥",
-          "descricao": "Quem opera cada departamento — usamos isso pra criar os acessos da sua equipe na plataforma.",
+          "descricao": "Quem da equipe vai usar a plataforma — sempre pela planilha modelo.",
           "perguntas": [
             {
               "id": "_equipe_intro",
-              "pergunta": "Como organizar sua equipe",
+              "pergunta": "Acessos da equipe: pela planilha",
               "tipo": "info",
               "obrigatoria": false,
-              "texto": "Pra criar os acessos da sua equipe na Pipeelo, precisamos da estrutura completa: cada departamento, se ele é separado por cidade, e as pessoas que atuam nele — com e-mail. Exemplo: Financeiro trata 2ª via de boleto, desbloqueio em confiança e negociação, com a Ana (ana@provedor.com.br) como gestora; Suporte é separado por cidade, com equipe própria em cada uma. Quanto mais organizado vier, mais rápido sua equipe recebe os acessos."
+              "texto": "Os acessos da sua equipe na Pipeelo saem de uma planilha. Baixe o modelo no próximo passo, preencha uma linha por pessoa — nome, e-mail (será o login), papel (Administrador, Gerente ou Atendente), departamentos em que atua, cidade/unidade e WhatsApp — e envie de volta no passo seguinte. Os departamentos são os que você marcou na etapa anterior."
             },
             {
               "id": "equipe_planilha_modelo",
-              "pergunta": "Prefere montar numa planilha?",
+              "pergunta": "Baixe a planilha modelo",
               "tipo": "info_link",
               "obrigatoria": false,
-              "hint": "Se for mais fácil organizar fora do formulário, baixe a planilha modelo — ela já vem preenchida com um exemplo nas abas Departamentos e Equipe. Preencha com a sua estrutura e envie de volta no passo seguinte.",
+              "hint": "Ela já vem com um exemplo preenchido. Papéis aceitos: Administrador (acesso total), Gerente (gestão do departamento) e Atendente.",
               "link": "/modelo-departamentos-equipe.xlsx",
               "texto": "Baixar planilha modelo"
             },
@@ -609,8 +956,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim — temos equipes/departamentos por cidade"},
-                {"value": "nao", "label": "Não — a mesma equipe atende todas as cidades"}
+                {
+                  "value": "sim",
+                  "label": "Sim — temos equipes/departamentos por cidade"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não — a mesma equipe atende todas as cidades"
+                }
               ],
               "hint": "Ex.: Suporte próprio em cada cidade, ou Financeiro centralizado na matriz."
             },
@@ -624,64 +977,17 @@
               "hint": "Liste cada cidade e quais departamentos existem nela."
             },
             {
-              "id": "equipe_forma_entrega",
-              "pergunta": "Como você prefere informar as pessoas da equipe?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "formulario", "label": "Vou preencher aqui no formulário"},
-                {"value": "planilha", "label": "Vou enviar a planilha modelo preenchida"}
-              ]
-            },
-            {
-              "id": "equipe_pessoas",
-              "pergunta": "Quem são as pessoas da sua equipe que vão usar a plataforma?",
-              "tipo": "repeater",
-              "obrigatoria": true,
-              "condicional": "equipe_forma_entrega == 'formulario'",
-              "rotulo_item": "Pessoa",
-              "rotulo_adicionar": "Adicionar pessoa",
-              "minimo": 1,
-              "hint": "Cada pessoa listada aqui recebe um acesso à plataforma no e-mail informado. Quem tiver WhatsApp entra no grupo com a Pipeelo.",
-              "campos": [
-                {"id": "nome", "label": "Nome completo", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Ana Souza", "largura": 6},
-                {"id": "email", "label": "E-mail (será o login)", "tipo": "text", "obrigatoria": true, "placeholder": "ana@provedor.com.br", "largura": 6},
-                {"id": "departamentos", "label": "Departamento(s) em que atua", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Financeiro, Cobrança", "largura": 6},
-                {"id": "cidade", "label": "Cidade/unidade", "tipo": "text", "obrigatoria": false, "placeholder": "Deixe vazio se atende todas", "largura": 3},
-                {"id": "papel", "label": "Papel", "tipo": "select", "obrigatoria": true, "largura": 3, "opcoes": [
-                  {"value": "gestor", "label": "Gestor (vê tudo e relatórios)"},
-                  {"value": "atendente", "label": "Atendente (só atende)"}
-                ]},
-                {
-                  "id": "whatsapp",
-                  "label": "WhatsApp",
-                  "tipo": "phone",
-                  "obrigatoria": false,
-                  "placeholder": "(00) 00000-0000",
-                  "largura": 4
-                },
-                {
-                  "id": "adicionar_grupo",
-                  "label": "Adicionar ao grupo da Pipeelo?",
-                  "tipo": "select",
-                  "obrigatoria": false,
-                  "largura": 4,
-                  "opcoes": [
-                    { "value": "sim", "label": "Sim" },
-                    { "value": "nao", "label": "Não" }
-                  ]
-                }
-              ]
-            },
-            {
               "id": "equipe_planilha_upload",
-              "pergunta": "Envie a planilha preenchida",
+              "pergunta": "Envie a planilha da equipe preenchida",
               "tipo": "file_upload",
               "obrigatoria": true,
-              "condicional": "equipe_forma_entrega == 'planilha'",
-              "extensoes": ["xlsx", "xls", "csv"],
+              "extensoes": [
+                "xlsx",
+                "xls",
+                "csv"
+              ],
               "max_mb": 5,
-              "hint": "Aceita .xlsx, .xls ou .csv até 5MB. Use a planilha modelo do passo anterior como base."
+              "hint": "Aceita .xlsx, .xls ou .csv até 5MB. Use a planilha modelo do passo anterior."
             },
             {
               "id": "equipe_observacoes",
@@ -692,7 +998,6 @@
             }
           ]
         },
-
         "fluxo_transferencias": {
           "titulo": "Fluxo de Transferências para Humanos",
           "icone": "🔄",
@@ -703,52 +1008,26 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim_ambos", "label": "Sim, priorizar CNPJ e Link Dedicado"},
-                {"value": "apenas_cnpj", "label": "Priorizar apenas clientes CNPJ"},
-                {"value": "apenas_link", "label": "Priorizar apenas clientes Link Dedicado"},
-                {"value": "nao", "label": "Não, todos na mesma fila"}
+                {
+                  "value": "sim_ambos",
+                  "label": "Sim, priorizar CNPJ e Link Dedicado"
+                },
+                {
+                  "value": "apenas_cnpj",
+                  "label": "Priorizar apenas clientes CNPJ"
+                },
+                {
+                  "value": "apenas_link",
+                  "label": "Priorizar apenas clientes Link Dedicado"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, todos na mesma fila"
+                }
               ]
             }
           ]
         },
-
-        "avaliacao_nps": {
-          "titulo": "Avaliação e NPS",
-          "icone": "⭐",
-          "perguntas": [
-            {
-              "id": "nps_nota_baixa_acao",
-              "pergunta": "O que fazer quando o cliente dá nota baixa (0-3) no NPS?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "transferir_sucesso", "label": "Transferir para equipe de Sucesso do Cliente"},
-                {"value": "transferir_geral", "label": "Transferir para atendimento humano geral"},
-                {"value": "coletar_motivo", "label": "Apenas registrar o motivo da insatisfação"}
-              ]
-            },
-            {
-              "id": "nps_nota_alta_acao",
-              "pergunta": "O que fazer quando o cliente dá nota alta (9-10) no NPS?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "avaliacao_google", "label": "Solicitar avaliação no Google"},
-                {"value": "outra_acao", "label": "Solicitar outra ação específica (indicação, case, testemunho, etc.)"},
-                {"value": "nenhuma", "label": "Apenas agradecer, sem solicitar nada"}
-              ]
-            },
-            {
-              "id": "nps_nota_alta_acao_outra",
-              "pergunta": "Qual solicitação você gostaria de fazer?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "nps_nota_alta_acao == 'outra_acao'",
-              "placeholder": "Descreva a ação desejada..."
-            }
-          ]
-        },
-
         "processos_especiais": {
           "titulo": "Processos Especiais",
           "icone": "⚙️",
@@ -759,79 +1038,41 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "salvar", "label": "Sim — reutilizar o último CPF automaticamente"},
-                {"value": "sempre_perguntar", "label": "Não — perguntar o CPF em todo atendimento"}
+                {
+                  "value": "salvar",
+                  "label": "Sim — reutilizar o último CPF automaticamente"
+                },
+                {
+                  "value": "sempre_perguntar",
+                  "label": "Não — perguntar o CPF em todo atendimento"
+                }
               ],
               "hint": "Reutilizando o último CPF, a IA executa 2ª via, desbloqueio e consultas direto, sem repetir a pergunta — e quem precisar de outro CPF só informa no início da conversa. Perguntar sempre é mais indicado quando o mesmo WhatsApp costuma cuidar de vários contratos/CPFs diferentes."
             },
             {
-              "id": "cancelamento_coletar_motivo",
-              "pergunta": "Quando cliente pede cancelamento, a IA deve coletar o motivo?",
+              "id": "cancelamento_padrao",
+              "pergunta": "Nos cancelamentos, nosso padrão é sempre pedir o motivo ao cliente e, na sequência, transferir para o departamento responsável. Vocês querem seguir dessa forma?",
               "tipo": "select",
               "obrigatoria": true,
+              "hint": "O departamento responsável é o que trata cancelamento na descrição de atividades que você preencheu.",
               "opcoes": [
-                {"value": "sim", "label": "Sim, sempre coletar motivo"},
-                {"value": "nao", "label": "Não, transferir direto"}
+                {
+                  "value": "sim",
+                  "label": "Sim, seguir o padrão"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, queremos diferente"
+                }
               ]
             },
             {
-              "id": "cancelamento_tentar_reter",
-              "pergunta": "A IA deve tentar reter o cliente ou apenas coletar info?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "tentar_reter", "label": "Tentar reter com argumentos"},
-                {"value": "coletar_transferir", "label": "Apenas coletar e transferir"},
-                {"value": "transferir_direto", "label": "Transferir direto para Retenção"}
-              ]
-            },
-            {
-              "id": "cancelamento_departamento",
-              "pergunta": "Para qual departamento transferir pedidos de cancelamento?",
+              "id": "cancelamento_fluxo_desejado",
+              "pergunta": "Como vocês gostariam que fosse o fluxo de cancelamento?",
               "tipo": "textarea",
               "obrigatoria": true,
-              "placeholder": "Ex: Retenção, Comercial, SAC/Geral...",
-              "hint": "Descreva o departamento ou fluxo de transferência"
-            },
-            {
-              "id": "suspensao_temporaria_departamento",
-              "pergunta": "Para suspensão temporária, a IA coleta dados e transfere para qual departamento?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "sac", "label": "SAC/Geral"},
-                {"value": "financeiro", "label": "Financeiro"},
-                {"value": "comercial", "label": "Comercial"}
-              ]
-            },
-            {
-              "id": "suspensao_periodo",
-              "pergunta": "Por quanto tempo pode suspender?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: '30 a 90 dias'",
-              "hint": "Período mínimo e máximo"
-            },
-            {
-              "id": "suspensao_cobranca",
-              "pergunta": "Há cobrança reduzida durante suspensão?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "sim", "label": "Sim, cobra taxa reduzida"},
-                {"value": "nao", "label": "Não, sem cobrança"}
-              ]
-            },
-            {
-              "id": "ponto_adicional_departamento",
-              "pergunta": "Para ponto adicional, a IA coleta dados e transfere para qual departamento?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {"value": "comercial", "label": "Comercial/Vendas"},
-                {"value": "suporte", "label": "Suporte Técnico"},
-                {"value": "sac", "label": "SAC/Geral"}
-              ]
+              "condicional": "cancelamento_padrao == 'nao'",
+              "placeholder": "Descreva passo a passo o que a IA deve fazer quando o cliente pede cancelamento."
             },
             {
               "id": "ponto_adicional_taxa",
@@ -839,8 +1080,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim"},
-                {"value": "nao", "label": "Não"}
+                {
+                  "value": "sim",
+                  "label": "Sim"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                }
               ]
             },
             {
@@ -851,27 +1098,60 @@
               "condicional": "ponto_adicional_taxa == 'sim'",
               "placeholder": "Ex: 80.00"
             }
-          ]
+          ],
+          "descricao": "Só o que foge do padrão. Cancelamento, suspensão e ponto adicional vão para o departamento que você descreveu na estrutura."
         },
-
         "integracao_app": {
           "titulo": "Aplicativo do Cliente",
           "icone": "📱",
           "perguntas": [
             {
-              "id": "login_senha_app",
-              "pergunta": "Qual o nome do aplicativo de vocês para cliente?",
+              "id": "app_tem",
+              "pergunta": "Vocês têm um aplicativo para o cliente?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                }
+              ]
+            },
+            {
+              "id": "app_nome",
+              "pergunta": "Qual o nome do aplicativo?",
               "tipo": "text",
-              "obrigatoria": false,
+              "obrigatoria": true,
+              "condicional": "app_tem == 'sim'",
               "placeholder": "Ex: 'Meu Provedor', 'App Conecta'",
-              "hint": "A IA pode informar ao cliente"
+              "hint": "A IA informa ao cliente pelo nome."
+            },
+            {
+              "id": "app_link",
+              "pergunta": "Link do aplicativo (loja ou site)",
+              "tipo": "url_optional",
+              "obrigatoria": false,
+              "condicional": "app_tem == 'sim'",
+              "placeholder": "https://play.google.com/... ou https://apps.apple.com/...",
+              "hint": "A IA manda esse link quando o cliente pergunta onde baixar."
+            },
+            {
+              "id": "app_acoes_atendentes",
+              "pergunta": "Quais ações os atendentes fazem hoje relacionadas ao aplicativo?",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "app_tem == 'sim'",
+              "placeholder": "Ex.: enviar a senha do app, trocar a senha, orientar o primeiro acesso, liberar acesso bloqueado… Descreva cada uma e como é feita hoje.",
+              "hint": "Usamos isso para automatizar essas ações na IA."
             }
           ]
         }
-
       }
     },
-
     "financeiro": {
       "nome": "Financeiro",
       "slug": "financeiro",
@@ -880,7 +1160,6 @@
       "descricao": "Gateway, formas de pagamento, políticas de bloqueio, taxas e negociação com inadimplentes.",
       "ordem_execucao": 2,
       "secoes": {
-
         "gateway_e_cobranca": {
           "titulo": "Gateway e Geração de Cobranças",
           "icone": "💰",
@@ -893,9 +1172,18 @@
               "obrigatoria": true,
               "hint": "Se o boleto e o PIX já saem pelo ERP, escolha a primeira opção. Se usam um gateway à parte, escolha qual.",
               "opcoes": [
-                {"value": "integrado_erp", "label": "Já está configurado no ERP"},
-                {"value": "7az", "label": "Fora do ERP: 7AZ (Bemobi)"},
-                {"value": "outro", "label": "Fora do ERP: outro gateway"}
+                {
+                  "value": "integrado_erp",
+                  "label": "Já está configurado no ERP"
+                },
+                {
+                  "value": "7az",
+                  "label": "Fora do ERP: 7AZ (Bemobi)"
+                },
+                {
+                  "value": "outro",
+                  "label": "Fora do ERP: outro gateway"
+                }
               ]
             },
             {
@@ -913,12 +1201,30 @@
               "obrigatoria": true,
               "hint": "A IA só permite mudar pra um desses dias.",
               "opcoes": [
-                {"value": "5", "label": "Dia 5"},
-                {"value": "10", "label": "Dia 10"},
-                {"value": "15", "label": "Dia 15"},
-                {"value": "20", "label": "Dia 20"},
-                {"value": "25", "label": "Dia 25"},
-                {"value": "outro", "label": "Outro"}
+                {
+                  "value": "5",
+                  "label": "Dia 5"
+                },
+                {
+                  "value": "10",
+                  "label": "Dia 10"
+                },
+                {
+                  "value": "15",
+                  "label": "Dia 15"
+                },
+                {
+                  "value": "20",
+                  "label": "Dia 20"
+                },
+                {
+                  "value": "25",
+                  "label": "Dia 25"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
+                }
               ]
             },
             {
@@ -931,7 +1237,6 @@
             }
           ]
         },
-
         "regua_cobranca": {
           "titulo": "Régua de Cobrança",
           "icone": "📅",
@@ -949,13 +1254,34 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "10_antes", "label": "10 dias antes"},
-                {"value": "7_antes", "label": "7 dias antes"},
-                {"value": "5_antes", "label": "5 dias antes"},
-                {"value": "3_antes", "label": "3 dias antes"},
-                {"value": "1_antes", "label": "1 dia antes"},
-                {"value": "no_dia", "label": "No dia do vencimento"},
-                {"value": "outro", "label": "Outros dias"}
+                {
+                  "value": "10_antes",
+                  "label": "10 dias antes"
+                },
+                {
+                  "value": "7_antes",
+                  "label": "7 dias antes"
+                },
+                {
+                  "value": "5_antes",
+                  "label": "5 dias antes"
+                },
+                {
+                  "value": "3_antes",
+                  "label": "3 dias antes"
+                },
+                {
+                  "value": "1_antes",
+                  "label": "1 dia antes"
+                },
+                {
+                  "value": "no_dia",
+                  "label": "No dia do vencimento"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outros dias"
+                }
               ]
             },
             {
@@ -964,13 +1290,34 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "1_depois", "label": "1 dia depois"},
-                {"value": "3_depois", "label": "3 dias depois"},
-                {"value": "5_depois", "label": "5 dias depois"},
-                {"value": "7_depois", "label": "7 dias depois"},
-                {"value": "10_depois", "label": "10 dias depois"},
-                {"value": "15_depois", "label": "15 dias depois"},
-                {"value": "outro", "label": "Outros dias"}
+                {
+                  "value": "1_depois",
+                  "label": "1 dia depois"
+                },
+                {
+                  "value": "3_depois",
+                  "label": "3 dias depois"
+                },
+                {
+                  "value": "5_depois",
+                  "label": "5 dias depois"
+                },
+                {
+                  "value": "7_depois",
+                  "label": "7 dias depois"
+                },
+                {
+                  "value": "10_depois",
+                  "label": "10 dias depois"
+                },
+                {
+                  "value": "15_depois",
+                  "label": "15 dias depois"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outros dias"
+                }
               ]
             },
             {
@@ -982,7 +1329,6 @@
             }
           ]
         },
-
         "formas_pagamento": {
           "titulo": "Formas de Pagamento",
           "icone": "💳",
@@ -993,13 +1339,34 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "boleto", "label": "Boleto Bancário"},
-                {"value": "pix", "label": "PIX"},
-                {"value": "cartao_credito", "label": "Cartão de Crédito recorrente"},
-                {"value": "cartao_debito_avulso", "label": "Cartão / débito avulso"},
-                {"value": "debito_conta", "label": "Débito em Conta"},
-                {"value": "carne", "label": "Carnê impresso"},
-                {"value": "dinheiro", "label": "Dinheiro (presencial)"}
+                {
+                  "value": "boleto",
+                  "label": "Boleto Bancário"
+                },
+                {
+                  "value": "pix",
+                  "label": "PIX"
+                },
+                {
+                  "value": "cartao_credito",
+                  "label": "Cartão de Crédito recorrente"
+                },
+                {
+                  "value": "cartao_debito_avulso",
+                  "label": "Cartão / débito avulso"
+                },
+                {
+                  "value": "debito_conta",
+                  "label": "Débito em Conta"
+                },
+                {
+                  "value": "carne",
+                  "label": "Carnê impresso"
+                },
+                {
+                  "value": "dinheiro",
+                  "label": "Dinheiro (presencial)"
+                }
               ]
             },
             {
@@ -1008,9 +1375,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "pix", "label": "PIX (recomendado — mais rápido)"},
-                {"value": "boleto", "label": "Boleto"},
-                {"value": "perguntar", "label": "Sempre perguntar o preferido"}
+                {
+                  "value": "pix",
+                  "label": "PIX (recomendado — mais rápido)"
+                },
+                {
+                  "value": "boleto",
+                  "label": "Boleto"
+                },
+                {
+                  "value": "perguntar",
+                  "label": "Sempre perguntar o preferido"
+                }
               ]
             },
             {
@@ -1020,8 +1396,14 @@
               "obrigatoria": true,
               "hint": "Quando salva, reduz trocas de mensagem em atendimentos futuros.",
               "opcoes": [
-                {"value": "sim", "label": "Sim, salvar"},
-                {"value": "nao", "label": "Não, perguntar sempre"}
+                {
+                  "value": "sim",
+                  "label": "Sim, salvar"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, perguntar sempre"
+                }
               ]
             },
             {
@@ -1042,7 +1424,6 @@
             }
           ]
         },
-
         "bloqueio_desbloqueio": {
           "titulo": "Bloqueio e Desbloqueio",
           "icone": "🔒",
@@ -1061,9 +1442,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "reducao", "label": "Redução de velocidade primeiro"},
-                {"value": "bloqueio_total", "label": "Bloqueio total direto"},
-                {"value": "ambos", "label": "Redução, depois bloqueio se não pagar"}
+                {
+                  "value": "reducao",
+                  "label": "Redução de velocidade primeiro"
+                },
+                {
+                  "value": "bloqueio_total",
+                  "label": "Bloqueio total direto"
+                },
+                {
+                  "value": "ambos",
+                  "label": "Redução, depois bloqueio se não pagar"
+                }
               ]
             },
             {
@@ -1082,8 +1472,14 @@
               "obrigatoria": true,
               "hint": "A IA liberaria o serviço temporariamente por X dias até confirmar o pagamento no sistema",
               "opcoes": [
-                {"value": "sim", "label": "Sim, liberar em confiança"},
-                {"value": "nao", "label": "Não, aguardar confirmação do pagamento"}
+                {
+                  "value": "sim",
+                  "label": "Sim, liberar em confiança"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, aguardar confirmação do pagamento"
+                }
               ]
             },
             {
@@ -1103,8 +1499,14 @@
               "condicional": "liberacao_confianca == 'sim'",
               "hint": "A carência evita que o mesmo cliente use a liberação em confiança repetidamente sem pagar.",
               "opcoes": [
-                {"value": "padrao_30", "label": "Sim, 1 vez a cada 30 dias está ótimo"},
-                {"value": "outro_padrao", "label": "Não, usamos outro padrão"}
+                {
+                  "value": "padrao_30",
+                  "label": "Sim, 1 vez a cada 30 dias está ótimo"
+                },
+                {
+                  "value": "outro_padrao",
+                  "label": "Não, usamos outro padrão"
+                }
               ]
             },
             {
@@ -1131,8 +1533,14 @@
               "obrigatoria": true,
               "condicional": "liberacao_confianca == 'sim'",
               "opcoes": [
-                {"value": "todos", "label": "Todos os serviços (internet, TV, telefone)"},
-                {"value": "so_internet", "label": "Apenas internet"}
+                {
+                  "value": "todos",
+                  "label": "Todos os serviços (internet, TV, telefone)"
+                },
+                {
+                  "value": "so_internet",
+                  "label": "Apenas internet"
+                }
               ]
             },
             {
@@ -1142,8 +1550,14 @@
               "obrigatoria": true,
               "hint": "Cliente informa quando vai pagar e a IA mantém o serviço ativo via API até a data prometida",
               "opcoes": [
-                {"value": "sim", "label": "Sim"},
-                {"value": "nao", "label": "Não"}
+                {
+                  "value": "sim",
+                  "label": "Sim"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                }
               ]
             },
             {
@@ -1156,7 +1570,6 @@
             }
           ]
         },
-
         "taxas_cobrancas": {
           "titulo": "Taxas",
           "icone": "💵",
@@ -1168,9 +1581,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, sempre cobra"},
-                {"value": "condicional", "label": "Depende do tempo de bloqueio"},
-                {"value": "nao", "label": "Não cobra"}
+                {
+                  "value": "sim",
+                  "label": "Sim, sempre cobra"
+                },
+                {
+                  "value": "condicional",
+                  "label": "Depende do tempo de bloqueio"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não cobra"
+                }
               ]
             },
             {
@@ -1187,8 +1609,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim"},
-                {"value": "nao", "label": "Não"}
+                {
+                  "value": "sim",
+                  "label": "Sim"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                }
               ]
             },
             {
@@ -1209,7 +1637,6 @@
             }
           ]
         },
-
         "casos_especiais": {
           "titulo": "Casos Especiais",
           "icone": "⚠️",
@@ -1221,8 +1648,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "coletar_transferir", "label": "Coleta dados do boleto e transfere pro Financeiro"},
-                {"value": "transferir_direto", "label": "Transfere direto sem triagem"}
+                {
+                  "value": "coletar_transferir",
+                  "label": "Coleta dados do boleto e transfere pro Financeiro"
+                },
+                {
+                  "value": "transferir_direto",
+                  "label": "Transfere direto sem triagem"
+                }
               ]
             },
             {
@@ -1231,8 +1664,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "coletar_transferir", "label": "Pede comprovantes e transfere"},
-                {"value": "transferir_direto", "label": "Transfere direto sem triagem"}
+                {
+                  "value": "coletar_transferir",
+                  "label": "Pede comprovantes e transfere"
+                },
+                {
+                  "value": "transferir_direto",
+                  "label": "Transfere direto sem triagem"
+                }
               ]
             },
             {
@@ -1241,17 +1680,24 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "verifica_sistema", "label": "Verifica no sistema e confirma; se não achou, transfere"},
-                {"value": "transfere_anexo", "label": "Encaminha direto pro Financeiro com o anexo"},
-                {"value": "libera_confianca", "label": "Libera em confiança e o Financeiro confirma depois"}
+                {
+                  "value": "verifica_sistema",
+                  "label": "Verifica no sistema e confirma; se não achou, transfere"
+                },
+                {
+                  "value": "transfere_anexo",
+                  "label": "Encaminha direto pro Financeiro com o anexo"
+                },
+                {
+                  "value": "libera_confianca",
+                  "label": "Libera em confiança e o Financeiro confirma depois"
+                }
               ]
             }
           ]
         }
-
       }
     },
-
     "suporte": {
       "nome": "Suporte Técnico",
       "slug": "suporte",
@@ -1260,7 +1706,6 @@
       "descricao": "ERPs, sistemas de gestão, parâmetros de sinal, fluxo de diagnóstico e regras de suporte técnico.",
       "ordem_execucao": 3,
       "secoes": {
-
         "infraestrutura": {
           "titulo": "Infraestrutura e Integrações",
           "icone": "🏗️",
@@ -1272,14 +1717,38 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "ixc", "label": "IXC Provedor"},
-                {"value": "mk_solutions", "label": "MK Solutions"},
-                {"value": "voalle", "label": "Voalle / SynSuite"},
-                {"value": "hubsoft", "label": "HUBSOFT"},
-                {"value": "topsapp", "label": "TopSapp"},
-                {"value": "sgp", "label": "SGP (Sistema de Gestão do Provedor)"},
-                {"value": "integrator", "label": "Integrator"},
-                {"value": "outro", "label": "Outro"}
+                {
+                  "value": "ixc",
+                  "label": "IXC Provedor"
+                },
+                {
+                  "value": "mk_solutions",
+                  "label": "MK Solutions"
+                },
+                {
+                  "value": "voalle",
+                  "label": "Voalle / SynSuite"
+                },
+                {
+                  "value": "hubsoft",
+                  "label": "HUBSOFT"
+                },
+                {
+                  "value": "topsapp",
+                  "label": "TopSapp"
+                },
+                {
+                  "value": "sgp",
+                  "label": "SGP (Sistema de Gestão do Provedor)"
+                },
+                {
+                  "value": "integrator",
+                  "label": "Integrator"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
+                }
               ]
             },
             {
@@ -1297,9 +1766,18 @@
               "obrigatoria": true,
               "hint": "Sem credenciais, a IA não consulta boletos, contratos ou status do cliente.",
               "opcoes": [
-                {"value": "sim_imediato", "label": "Sim, conseguimos fornecer agora"},
-                {"value": "sim_depois", "label": "Sim, em até 7 dias"},
-                {"value": "nao", "label": "Não temos como fornecer"}
+                {
+                  "value": "sim_imediato",
+                  "label": "Sim, conseguimos fornecer agora"
+                },
+                {
+                  "value": "sim_depois",
+                  "label": "Sim, em até 7 dias"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não temos como fornecer"
+                }
               ]
             },
             {
@@ -1308,14 +1786,38 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "smart_olt", "label": "Smart OLT"},
-                {"value": "olt_cloud", "label": "OLT Cloud"},
-                {"value": "genieacs", "label": "GenieACS"},
-                {"value": "int6", "label": "INT6"},
-                {"value": "ixc_acs", "label": "IXC ACS"},
-                {"value": "manager_huawei", "label": "Manager (fabricante OLT — Huawei/ZTE/etc.)"},
-                {"value": "outro", "label": "Outro"},
-                {"value": "nenhum", "label": "Não usamos sistema de gerenciamento"}
+                {
+                  "value": "smart_olt",
+                  "label": "Smart OLT"
+                },
+                {
+                  "value": "olt_cloud",
+                  "label": "OLT Cloud"
+                },
+                {
+                  "value": "genieacs",
+                  "label": "GenieACS"
+                },
+                {
+                  "value": "int6",
+                  "label": "INT6"
+                },
+                {
+                  "value": "ixc_acs",
+                  "label": "IXC ACS"
+                },
+                {
+                  "value": "manager_huawei",
+                  "label": "Manager (fabricante OLT — Huawei/ZTE/etc.)"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
+                },
+                {
+                  "value": "nenhum",
+                  "label": "Não usamos sistema de gerenciamento"
+                }
               ]
             },
             {
@@ -1333,10 +1835,22 @@
               "obrigatoria": true,
               "hint": "Sem TR-069 a IA não troca senha/nome WiFi remotamente.",
               "opcoes": [
-                {"value": "sim", "label": "Sim, em toda a base"},
-                {"value": "parcial", "label": "Sim, em parte da base"},
-                {"value": "nao", "label": "Não"},
-                {"value": "contratando", "label": "Estamos contratando / implementando"}
+                {
+                  "value": "sim",
+                  "label": "Sim, em toda a base"
+                },
+                {
+                  "value": "parcial",
+                  "label": "Sim, em parte da base"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                },
+                {
+                  "value": "contratando",
+                  "label": "Estamos contratando / implementando"
+                }
               ]
             },
             {
@@ -1345,10 +1859,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "100", "label": "100% documentada (toda rede mapeada)"},
-                {"value": "bem_documentada", "label": "Bem documentada (>80% mapeado)"},
-                {"value": "parcialmente", "label": "Parcialmente documentada (40-80%)"},
-                {"value": "pouco_documentada", "label": "Pouco documentada (<40%)"}
+                {
+                  "value": "100",
+                  "label": "100% documentada (toda rede mapeada)"
+                },
+                {
+                  "value": "bem_documentada",
+                  "label": "Bem documentada (>80% mapeado)"
+                },
+                {
+                  "value": "parcialmente",
+                  "label": "Parcialmente documentada (40-80%)"
+                },
+                {
+                  "value": "pouco_documentada",
+                  "label": "Pouco documentada (<40%)"
+                }
               ]
             },
             {
@@ -1357,11 +1883,26 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "todas", "label": "Todas (100%)"},
-                {"value": "80_99", "label": "80-99%"},
-                {"value": "50_79", "label": "50-79%"},
-                {"value": "lt_50", "label": "Menos de 50%"},
-                {"value": "nao_sei", "label": "Não sei ainda"}
+                {
+                  "value": "todas",
+                  "label": "Todas (100%)"
+                },
+                {
+                  "value": "80_99",
+                  "label": "80-99%"
+                },
+                {
+                  "value": "50_79",
+                  "label": "50-79%"
+                },
+                {
+                  "value": "lt_50",
+                  "label": "Menos de 50%"
+                },
+                {
+                  "value": "nao_sei",
+                  "label": "Não sei ainda"
+                }
               ]
             },
             {
@@ -1372,13 +1913,18 @@
               "condicional": "rede_documentada != 'bem_documentada'",
               "hint": "A IA consulta antes de confirmar cobertura pro cliente.",
               "opcoes": [
-                {"value": "sim", "label": "Sim, forneceremos a lista"},
-                {"value": "nao", "label": "Não"}
+                {
+                  "value": "sim",
+                  "label": "Sim, forneceremos a lista"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                }
               ]
             }
           ]
         },
-
         "cliente_bancada": {
           "titulo": "Cliente de Bancada (Homologação)",
           "icone": "🧪",
@@ -1396,9 +1942,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, já tenho o CPF de um cliente de testes"},
-                {"value": "preparar", "label": "Vou preparar e enviar em até 7 dias"},
-                {"value": "ajuda", "label": "Preciso de ajuda pra montar esse cliente"}
+                {
+                  "value": "sim",
+                  "label": "Sim, já tenho o CPF de um cliente de testes"
+                },
+                {
+                  "value": "preparar",
+                  "label": "Vou preparar e enviar em até 7 dias"
+                },
+                {
+                  "value": "ajuda",
+                  "label": "Preciso de ajuda pra montar esse cliente"
+                }
               ]
             },
             {
@@ -1421,7 +1976,6 @@
             }
           ]
         },
-
         "parametros_sinal": {
           "titulo": "Parâmetros de Sinal ONU",
           "icone": "📡",
@@ -1457,14 +2011,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "abre_os", "label": "Abre OS de visita técnica automaticamente"},
-                {"value": "transfere_suporte", "label": "Transfere para suporte humano com a informação"},
-                {"value": "tenta_reset", "label": "Tenta reset da ONU antes de transferir"}
+                {
+                  "value": "abre_os",
+                  "label": "Abre OS de visita técnica automaticamente"
+                },
+                {
+                  "value": "transfere_suporte",
+                  "label": "Transfere para suporte humano com a informação"
+                },
+                {
+                  "value": "tenta_reset",
+                  "label": "Tenta reset da ONU antes de transferir"
+                }
               ]
             }
           ]
         },
-
         "fluxo_diagnostico": {
           "titulo": "Fluxo de Diagnóstico",
           "icone": "🌐",
@@ -1477,14 +2039,38 @@
               "obrigatoria": true,
               "hint": "A IA prioriza diagnóstico pros mais frequentes.",
               "opcoes": [
-                {"value": "sem_internet", "label": "Sem conexão total"},
-                {"value": "lentidao", "label": "Lentidão / velocidade baixa"},
-                {"value": "wifi_sinal", "label": "Sinal WiFi fraco em cômodos distantes"},
-                {"value": "senha_wifi", "label": "Trocar senha WiFi"},
-                {"value": "nome_wifi", "label": "Trocar nome da rede"},
-                {"value": "mudar_endereco", "label": "Mudança de endereço"},
-                {"value": "ping_alto", "label": "Ping alto / oscilações em games"},
-                {"value": "iptv", "label": "Problemas de IPTV/streaming"}
+                {
+                  "value": "sem_internet",
+                  "label": "Sem conexão total"
+                },
+                {
+                  "value": "lentidao",
+                  "label": "Lentidão / velocidade baixa"
+                },
+                {
+                  "value": "wifi_sinal",
+                  "label": "Sinal WiFi fraco em cômodos distantes"
+                },
+                {
+                  "value": "senha_wifi",
+                  "label": "Trocar senha WiFi"
+                },
+                {
+                  "value": "nome_wifi",
+                  "label": "Trocar nome da rede"
+                },
+                {
+                  "value": "mudar_endereco",
+                  "label": "Mudança de endereço"
+                },
+                {
+                  "value": "ping_alto",
+                  "label": "Ping alto / oscilações em games"
+                },
+                {
+                  "value": "iptv",
+                  "label": "Problemas de IPTV/streaming"
+                }
               ]
             },
             {
@@ -1501,14 +2087,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "transfere_financeiro", "label": "Informa situação e transfere pro Financeiro"},
-                {"value": "atende_depois_financeiro", "label": "Atende, resolve e ao final lembra da pendência"},
-                {"value": "atende_normal", "label": "Atende normalmente, sem menção à pendência"}
+                {
+                  "value": "transfere_financeiro",
+                  "label": "Informa situação e transfere pro Financeiro"
+                },
+                {
+                  "value": "atende_depois_financeiro",
+                  "label": "Atende, resolve e ao final lembra da pendência"
+                },
+                {
+                  "value": "atende_normal",
+                  "label": "Atende normalmente, sem menção à pendência"
+                }
               ]
             }
           ]
         },
-
         "visita_tecnica": {
           "titulo": "Visita Técnica",
           "icone": "🚗",
@@ -1519,9 +2113,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, sempre cobra"},
-                {"value": "condicional", "label": "Depende da causa do problema"},
-                {"value": "nao", "label": "Não, visita é gratuita"}
+                {
+                  "value": "sim",
+                  "label": "Sim, sempre cobra"
+                },
+                {
+                  "value": "condicional",
+                  "label": "Depende da causa do problema"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, visita é gratuita"
+                }
               ]
             },
             {
@@ -1539,17 +2142,34 @@
               "obrigatoria": true,
               "condicional": "taxa_visita == 'condicional'",
               "opcoes": [
-                {"value": "cobra_equipamento_cliente", "label": "COBRA se o problema for no equipamento do cliente"},
-                {"value": "cobra_cabeamento_interno", "label": "COBRA se for cabeamento interno / infraestrutura do cliente"},
-                {"value": "cobra_mau_uso", "label": "COBRA se houver mau uso ou dano"},
-                {"value": "nao_cobra_rede_externa", "label": "NÃO COBRA se o problema for na rede externa"},
-                {"value": "nao_cobra_equipamento_empresa", "label": "NÃO COBRA se o equipamento for da empresa (comodato)"},
-                {"value": "nao_cobra_recem_instalado", "label": "NÃO COBRA na primeira visita pós-instalação"}
+                {
+                  "value": "cobra_equipamento_cliente",
+                  "label": "COBRA se o problema for no equipamento do cliente"
+                },
+                {
+                  "value": "cobra_cabeamento_interno",
+                  "label": "COBRA se for cabeamento interno / infraestrutura do cliente"
+                },
+                {
+                  "value": "cobra_mau_uso",
+                  "label": "COBRA se houver mau uso ou dano"
+                },
+                {
+                  "value": "nao_cobra_rede_externa",
+                  "label": "NÃO COBRA se o problema for na rede externa"
+                },
+                {
+                  "value": "nao_cobra_equipamento_empresa",
+                  "label": "NÃO COBRA se o equipamento for da empresa (comodato)"
+                },
+                {
+                  "value": "nao_cobra_recem_instalado",
+                  "label": "NÃO COBRA na primeira visita pós-instalação"
+                }
               ]
             }
           ]
         },
-
         "pesquisas_automaticas": {
           "titulo": "Pesquisas Automáticas (Pós-instalação e Pós-suporte)",
           "icone": "📊",
@@ -1567,8 +2187,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, ativar"},
-                {"value": "nao", "label": "Não por enquanto"}
+                {
+                  "value": "sim",
+                  "label": "Sim, ativar"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não por enquanto"
+                }
               ]
             },
             {
@@ -1591,8 +2217,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, ativar"},
-                {"value": "nao", "label": "Não por enquanto"}
+                {
+                  "value": "sim",
+                  "label": "Sim, ativar"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não por enquanto"
+                }
               ]
             },
             {
@@ -1602,9 +2234,18 @@
               "obrigatoria": true,
               "condicional": "pos_suporte_ativo == 'sim'",
               "opcoes": [
-                {"value": "horas_depois", "label": "Algumas horas depois da visita (mesmo dia)"},
-                {"value": "dia_seguinte", "label": "No dia seguinte"},
-                {"value": "outro", "label": "Outro momento"}
+                {
+                  "value": "horas_depois",
+                  "label": "Algumas horas depois da visita (mesmo dia)"
+                },
+                {
+                  "value": "dia_seguinte",
+                  "label": "No dia seguinte"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro momento"
+                }
               ]
             },
             {
@@ -1625,7 +2266,6 @@
             }
           ]
         },
-
         "alteracoes_remotas": {
           "titulo": "Alterações Remotas",
           "icone": "🔧",
@@ -1637,8 +2277,14 @@
               "obrigatoria": true,
               "hint": "⚠️ Esta funcionalidade só está disponível se você tiver protocolo TR-069 ativo",
               "opcoes": [
-                {"value": "sim", "label": "Sim, pode trocar via API"},
-                {"value": "nao", "label": "Não, precisa transferir para Suporte"}
+                {
+                  "value": "sim",
+                  "label": "Sim, pode trocar via API"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, precisa transferir para Suporte"
+                }
               ]
             },
             {
@@ -1648,9 +2294,18 @@
               "obrigatoria": true,
               "condicional": "troca_senha_wifi == 'sim'",
               "opcoes": [
-                {"value": "localizacao_whatsapp", "label": "Localização do WhatsApp"},
-                {"value": "data_nascimento", "label": "Data de nascimento"},
-                {"value": "email", "label": "Email cadastrado"}
+                {
+                  "value": "localizacao_whatsapp",
+                  "label": "Localização do WhatsApp"
+                },
+                {
+                  "value": "data_nascimento",
+                  "label": "Data de nascimento"
+                },
+                {
+                  "value": "email",
+                  "label": "Email cadastrado"
+                }
               ]
             },
             {
@@ -1659,8 +2314,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, pode alterar via API"},
-                {"value": "nao", "label": "Não, precisa transferir para Suporte"}
+                {
+                  "value": "sim",
+                  "label": "Sim, pode alterar via API"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, precisa transferir para Suporte"
+                }
               ]
             },
             {
@@ -1669,14 +2330,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim_mostrar", "label": "Sim, e informar ao cliente"},
-                {"value": "sim_interno", "label": "Sim, mas apenas para análise interna"},
-                {"value": "nao", "label": "Prefiro não informar o cliente sobre isso"}
+                {
+                  "value": "sim_mostrar",
+                  "label": "Sim, e informar ao cliente"
+                },
+                {
+                  "value": "sim_interno",
+                  "label": "Sim, mas apenas para análise interna"
+                },
+                {
+                  "value": "nao",
+                  "label": "Prefiro não informar o cliente sobre isso"
+                }
               ]
             }
           ]
         },
-
         "outros_servicos": {
           "titulo": "Outros Serviços (TV, Telefonia, Streaming)",
           "icone": "📺",
@@ -1688,14 +2357,38 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "tv", "label": "TV por assinatura / IPTV"},
-                {"value": "streaming", "label": "Streaming (Watch, HBO Max, Prime, etc.)"},
-                {"value": "telefonia_fixa", "label": "Telefonia fixa"},
-                {"value": "telefonia_movel", "label": "Telefonia móvel"},
-                {"value": "cameras", "label": "Câmeras / monitoramento"},
-                {"value": "alarme", "label": "Alarme / segurança"},
-                {"value": "mesh", "label": "WiFi Mesh"},
-                {"value": "nenhum", "label": "Apenas internet"}
+                {
+                  "value": "tv",
+                  "label": "TV por assinatura / IPTV"
+                },
+                {
+                  "value": "streaming",
+                  "label": "Streaming (Watch, HBO Max, Prime, etc.)"
+                },
+                {
+                  "value": "telefonia_fixa",
+                  "label": "Telefonia fixa"
+                },
+                {
+                  "value": "telefonia_movel",
+                  "label": "Telefonia móvel"
+                },
+                {
+                  "value": "cameras",
+                  "label": "Câmeras / monitoramento"
+                },
+                {
+                  "value": "alarme",
+                  "label": "Alarme / segurança"
+                },
+                {
+                  "value": "mesh",
+                  "label": "WiFi Mesh"
+                },
+                {
+                  "value": "nenhum",
+                  "label": "Apenas internet"
+                }
               ]
             },
             {
@@ -1705,8 +2398,14 @@
               "obrigatoria": true,
               "condicional": "outros_servicos_oferecidos != 'nenhum'",
               "opcoes": [
-                {"value": "transfere_direto", "label": "Transfere direto pra suporte humano (triagem mínima)"},
-                {"value": "perguntas_antes", "label": "Faz triagem por texto antes de transferir"}
+                {
+                  "value": "transfere_direto",
+                  "label": "Transfere direto pra suporte humano (triagem mínima)"
+                },
+                {
+                  "value": "perguntas_antes",
+                  "label": "Faz triagem por texto antes de transferir"
+                }
               ]
             },
             {
@@ -1720,7 +2419,6 @@
             }
           ]
         },
-
         "detalhe_tv": {
           "titulo": "Detalhamento — TV",
           "icone": "📺",
@@ -1732,10 +2430,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "iptv", "label": "IPTV (via internet)"},
-                {"value": "dth", "label": "DTH (satélite)"},
-                {"value": "cabo", "label": "Cabo (coaxial)"},
-                {"value": "ott", "label": "Streaming OTT (sem set-top box)"}
+                {
+                  "value": "iptv",
+                  "label": "IPTV (via internet)"
+                },
+                {
+                  "value": "dth",
+                  "label": "DTH (satélite)"
+                },
+                {
+                  "value": "cabo",
+                  "label": "Cabo (coaxial)"
+                },
+                {
+                  "value": "ott",
+                  "label": "Streaming OTT (sem set-top box)"
+                }
               ]
             },
             {
@@ -1747,10 +2457,36 @@
               "rotulo_item": "Pacote",
               "rotulo_adicionar": "Adicionar pacote",
               "campos": [
-                {"id": "nome", "label": "Nome do pacote", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Top HD", "largura": 6},
-                {"id": "qtd_canais", "label": "Qtd canais", "tipo": "number", "placeholder": "120", "largura": 6},
-                {"id": "preco_avulso", "label": "Preço avulso (R$)", "tipo": "currency", "obrigatoria": true, "placeholder": "59.90", "largura": 6},
-                {"id": "preco_combo", "label": "Preço em combo c/ internet (R$)", "tipo": "currency", "placeholder": "39.90", "largura": 6}
+                {
+                  "id": "nome",
+                  "label": "Nome do pacote",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: Top HD",
+                  "largura": 6
+                },
+                {
+                  "id": "qtd_canais",
+                  "label": "Qtd canais",
+                  "tipo": "number",
+                  "placeholder": "120",
+                  "largura": 6
+                },
+                {
+                  "id": "preco_avulso",
+                  "label": "Preço avulso (R$)",
+                  "tipo": "currency",
+                  "obrigatoria": true,
+                  "placeholder": "59.90",
+                  "largura": 6
+                },
+                {
+                  "id": "preco_combo",
+                  "label": "Preço em combo c/ internet (R$)",
+                  "tipo": "currency",
+                  "placeholder": "39.90",
+                  "largura": 6
+                }
               ]
             },
             {
@@ -1759,19 +2495,42 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": false,
               "opcoes": [
-                {"value": "telecine", "label": "Telecine"},
-                {"value": "hbo", "label": "HBO"},
-                {"value": "premiere", "label": "Premiere"},
-                {"value": "combate", "label": "Combate"},
-                {"value": "globoplay", "label": "Globoplay"},
-                {"value": "espn", "label": "ESPN"},
-                {"value": "discovery", "label": "Discovery"},
-                {"value": "outro", "label": "Outro"}
+                {
+                  "value": "telecine",
+                  "label": "Telecine"
+                },
+                {
+                  "value": "hbo",
+                  "label": "HBO"
+                },
+                {
+                  "value": "premiere",
+                  "label": "Premiere"
+                },
+                {
+                  "value": "combate",
+                  "label": "Combate"
+                },
+                {
+                  "value": "globoplay",
+                  "label": "Globoplay"
+                },
+                {
+                  "value": "espn",
+                  "label": "ESPN"
+                },
+                {
+                  "value": "discovery",
+                  "label": "Discovery"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
+                }
               ]
             }
           ]
         },
-
         "detalhe_streaming": {
           "titulo": "Detalhamento — Streaming",
           "icone": "🎬",
@@ -1783,17 +2542,50 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "watch", "label": "Watch Brasil"},
-                {"value": "hbo_max", "label": "HBO Max"},
-                {"value": "prime_video", "label": "Prime Video"},
-                {"value": "globoplay", "label": "Globoplay"},
-                {"value": "paramount", "label": "Paramount+"},
-                {"value": "apple_tv", "label": "Apple TV+"},
-                {"value": "disney", "label": "Disney+"},
-                {"value": "skeelo", "label": "Skeelo (livros)"},
-                {"value": "deezer", "label": "Deezer"},
-                {"value": "qualifica", "label": "Qualifica AI"},
-                {"value": "outro", "label": "Outro"}
+                {
+                  "value": "watch",
+                  "label": "Watch Brasil"
+                },
+                {
+                  "value": "hbo_max",
+                  "label": "HBO Max"
+                },
+                {
+                  "value": "prime_video",
+                  "label": "Prime Video"
+                },
+                {
+                  "value": "globoplay",
+                  "label": "Globoplay"
+                },
+                {
+                  "value": "paramount",
+                  "label": "Paramount+"
+                },
+                {
+                  "value": "apple_tv",
+                  "label": "Apple TV+"
+                },
+                {
+                  "value": "disney",
+                  "label": "Disney+"
+                },
+                {
+                  "value": "skeelo",
+                  "label": "Skeelo (livros)"
+                },
+                {
+                  "value": "deezer",
+                  "label": "Deezer"
+                },
+                {
+                  "value": "qualifica",
+                  "label": "Qualifica AI"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
+                }
               ]
             },
             {
@@ -1802,9 +2594,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "todos_planos", "label": "Inclusos em todos os planos"},
-                {"value": "planos_superiores", "label": "Inclusos a partir de plano específico"},
-                {"value": "addon_pago", "label": "Addon pago opcional"}
+                {
+                  "value": "todos_planos",
+                  "label": "Inclusos em todos os planos"
+                },
+                {
+                  "value": "planos_superiores",
+                  "label": "Inclusos a partir de plano específico"
+                },
+                {
+                  "value": "addon_pago",
+                  "label": "Addon pago opcional"
+                }
               ]
             },
             {
@@ -1817,7 +2618,6 @@
             }
           ]
         },
-
         "detalhe_telefonia_fixa": {
           "titulo": "Detalhamento — Telefonia Fixa",
           "icone": "☎️",
@@ -1829,11 +2629,26 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "propria", "label": "Própria (licença STFC)"},
-                {"value": "algar", "label": "Algar"},
-                {"value": "vivo", "label": "Vivo"},
-                {"value": "embratel", "label": "Embratel"},
-                {"value": "outro", "label": "Outra"}
+                {
+                  "value": "propria",
+                  "label": "Própria (licença STFC)"
+                },
+                {
+                  "value": "algar",
+                  "label": "Algar"
+                },
+                {
+                  "value": "vivo",
+                  "label": "Vivo"
+                },
+                {
+                  "value": "embratel",
+                  "label": "Embratel"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outra"
+                }
               ]
             },
             {
@@ -1857,11 +2672,26 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "fixo_local", "label": "Fixo local"},
-                {"value": "fixo_nacional", "label": "Fixo nacional (DDD)"},
-                {"value": "movel_local", "label": "Móvel local"},
-                {"value": "movel_nacional", "label": "Móvel nacional"},
-                {"value": "internacional", "label": "Internacional"}
+                {
+                  "value": "fixo_local",
+                  "label": "Fixo local"
+                },
+                {
+                  "value": "fixo_nacional",
+                  "label": "Fixo nacional (DDD)"
+                },
+                {
+                  "value": "movel_local",
+                  "label": "Móvel local"
+                },
+                {
+                  "value": "movel_nacional",
+                  "label": "Móvel nacional"
+                },
+                {
+                  "value": "internacional",
+                  "label": "Internacional"
+                }
               ]
             },
             {
@@ -1880,7 +2710,6 @@
             }
           ]
         },
-
         "detalhe_telefonia_movel": {
           "titulo": "Detalhamento — Telefonia Móvel",
           "icone": "📱",
@@ -1892,13 +2721,34 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "mvno_surf", "label": "MVNO Surf"},
-                {"value": "mvno_algar", "label": "Algar"},
-                {"value": "claro", "label": "Claro"},
-                {"value": "vivo", "label": "Vivo"},
-                {"value": "tim", "label": "TIM"},
-                {"value": "propria", "label": "Própria (operadora autorizada)"},
-                {"value": "outro", "label": "Outra"}
+                {
+                  "value": "mvno_surf",
+                  "label": "MVNO Surf"
+                },
+                {
+                  "value": "mvno_algar",
+                  "label": "Algar"
+                },
+                {
+                  "value": "claro",
+                  "label": "Claro"
+                },
+                {
+                  "value": "vivo",
+                  "label": "Vivo"
+                },
+                {
+                  "value": "tim",
+                  "label": "TIM"
+                },
+                {
+                  "value": "propria",
+                  "label": "Própria (operadora autorizada)"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outra"
+                }
               ]
             },
             {
@@ -1918,12 +2768,50 @@
               "rotulo_item": "Plano móvel",
               "rotulo_adicionar": "Adicionar plano móvel",
               "campos": [
-                {"id": "nome", "label": "Nome", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Móvel 20GB", "largura": 6},
-                {"id": "gb", "label": "Internet (GB)", "tipo": "number", "obrigatoria": true, "placeholder": "20", "largura": 3},
-                {"id": "minutos", "label": "Minutos", "tipo": "text", "placeholder": "Ilimitado", "largura": 3},
-                {"id": "redes_sociais_ilimitadas", "label": "Redes sociais ilimitadas?", "tipo": "boolean", "largura": 6},
-                {"id": "preco_avulso", "label": "Preço avulso (R$)", "tipo": "currency", "obrigatoria": true, "placeholder": "39.90", "largura": 3},
-                {"id": "preco_combo", "label": "Preço combo c/ internet (R$)", "tipo": "currency", "placeholder": "29.90", "largura": 3}
+                {
+                  "id": "nome",
+                  "label": "Nome",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: Móvel 20GB",
+                  "largura": 6
+                },
+                {
+                  "id": "gb",
+                  "label": "Internet (GB)",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "20",
+                  "largura": 3
+                },
+                {
+                  "id": "minutos",
+                  "label": "Minutos",
+                  "tipo": "text",
+                  "placeholder": "Ilimitado",
+                  "largura": 3
+                },
+                {
+                  "id": "redes_sociais_ilimitadas",
+                  "label": "Redes sociais ilimitadas?",
+                  "tipo": "boolean",
+                  "largura": 6
+                },
+                {
+                  "id": "preco_avulso",
+                  "label": "Preço avulso (R$)",
+                  "tipo": "currency",
+                  "obrigatoria": true,
+                  "placeholder": "39.90",
+                  "largura": 3
+                },
+                {
+                  "id": "preco_combo",
+                  "label": "Preço combo c/ internet (R$)",
+                  "tipo": "currency",
+                  "placeholder": "29.90",
+                  "largura": 3
+                }
               ]
             },
             {
@@ -1935,7 +2823,6 @@
             }
           ]
         },
-
         "follow_up": {
           "titulo": "Follow-up de Atendimentos",
           "icone": "🔄",
@@ -1947,8 +2834,14 @@
               "obrigatoria": true,
               "hint": "Ex: Se o cliente foi reiniciar a ONU e não retornou, a IA pode perguntar se resolveu",
               "opcoes": [
-                {"value": "sim", "label": "Sim, ativar follow-up"},
-                {"value": "nao", "label": "Não, apenas aguardar"}
+                {
+                  "value": "sim",
+                  "label": "Sim, ativar follow-up"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, apenas aguardar"
+                }
               ]
             },
             {
@@ -1971,10 +2864,8 @@
             }
           ]
         }
-
       }
     },
-
     "vendas": {
       "nome": "Vendas/Comercial",
       "slug": "vendas",
@@ -1983,7 +2874,6 @@
       "descricao": "Portfólio de planos, método de vendas, recomendação por perfil e instalação. A IA usa TUDO isso direto no atendimento — quanto mais completo, menos humano precisa intervir.",
       "ordem_execucao": 4,
       "secoes": {
-
         "fluxo_pos_pre_cadastro": {
           "titulo": "Fluxo Pós Pré-cadastro",
           "icone": "🔀",
@@ -1997,14 +2887,19 @@
               "obrigatoria": true,
               "condicional": "_session_modo == 'comercial'",
               "opcoes": [
-                {"value": "transferir_pipeelo", "label": "Transferir a conversa pro time comercial dentro da Pipeelo (vamos atender pela plataforma)"},
-                {"value": "apenas_crm", "label": "Apenas registrar no CRM/ERP — IA encerra a conversa e o time atende pelo nosso sistema"}
+                {
+                  "value": "transferir_pipeelo",
+                  "label": "Transferir a conversa pro time comercial dentro da Pipeelo (vamos atender pela plataforma)"
+                },
+                {
+                  "value": "apenas_crm",
+                  "label": "Apenas registrar no CRM/ERP — IA encerra a conversa e o time atende pelo nosso sistema"
+                }
               ],
               "hint": "Se escolher 'apenas CRM', a IA finaliza o atendimento educadamente após o pré-cadastro. Se 'transferir', a conversa segue dentro da Pipeelo com o time comercial."
             }
           ]
         },
-
         "portfolio_planos": {
           "titulo": "Portfólio de Planos",
           "icone": "📦",
@@ -2017,12 +2912,30 @@
               "obrigatoria": true,
               "hint": "Pra cada serviço marcado abaixo, vai aparecer a lista correspondente — é obrigatório cadastrar pelo menos 1 plano em cada serviço marcado.",
               "opcoes": [
-                {"value": "internet_residencial", "label": "📶 Internet Residencial (Fibra)"},
-                {"value": "internet_pme", "label": "🏢 Internet Empresarial / PME"},
-                {"value": "internet_radio", "label": "📡 Internet via Rádio"},
-                {"value": "telefonia_fixa", "label": "☎️ Telefonia Fixa"},
-                {"value": "chip_movel", "label": "📱 Chip / Telefonia Móvel"},
-                {"value": "tv_streaming", "label": "📺 TV / Streaming"}
+                {
+                  "value": "internet_residencial",
+                  "label": "📶 Internet Residencial (Fibra)"
+                },
+                {
+                  "value": "internet_pme",
+                  "label": "🏢 Internet Empresarial / PME"
+                },
+                {
+                  "value": "internet_radio",
+                  "label": "📡 Internet via Rádio"
+                },
+                {
+                  "value": "telefonia_fixa",
+                  "label": "☎️ Telefonia Fixa"
+                },
+                {
+                  "value": "chip_movel",
+                  "label": "📱 Chip / Telefonia Móvel"
+                },
+                {
+                  "value": "tv_streaming",
+                  "label": "📺 TV / Streaming"
+                }
               ]
             },
             {
@@ -2035,19 +2948,100 @@
               "rotulo_adicionar": "Adicionar plano residencial",
               "hint": "Planos de fibra para residências. Siga o padrão da KB Techy — preencha benefícios e argumento de venda completos pra IA usar literalmente no atendimento.",
               "campos": [
-                {"id": "nome", "label": "Nome do plano", "tipo": "text", "placeholder": "Ex: Techy Light 350Mbps", "largura": 6},
-                {"id": "id_plano_erp", "label": "ID do plano no ERP", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: 1024", "largura": 6, "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."},
-                {"id": "preco", "label": "Preço mensal (R$)", "tipo": "currency", "placeholder": "Ex: 114.90", "largura": 3},
-                {"id": "taxa_instalacao", "label": "Taxa de instalação (R$)", "tipo": "currency", "placeholder": "0 = grátis", "largura": 3},
-                {"id": "velocidade_download", "label": "Download (Mbps)", "tipo": "number", "placeholder": "Ex: 350", "largura": 3},
-                {"id": "velocidade_upload", "label": "Upload (Mbps)", "tipo": "number", "placeholder": "Ex: 350", "largura": 3},
-                {"id": "simetrico", "label": "Simétrico (mesma vel. download/upload)?", "tipo": "boolean", "largura": 6},
-                {"id": "publico_alvo", "label": "Para quem é ideal", "tipo": "text", "placeholder": "Ex: 3-4 pessoas, uso intermediário, casa média", "largura": 12, "hint": "A IA usa pra recomendar baseado no perfil do lead"},
-                {"id": "beneficios", "label": "Benefícios completos", "tipo": "textarea", "largura": 12, "placeholder": "Liste TUDO que o cliente recebe. Ex: 100% fibra óptica até dentro do ambiente (FTTH), 1x roteador Wi-Fi 6 incluso, velocidade REAL simétrica, dados ilimitados, instalação gratuita em até 72h, suporte humanizado via WhatsApp/telefone/presencial, monitoramento proativo 24h, App incluso, Wi-Fi Mesh integrado, expansão com roteadores adicionais a partir de R$19,90/mês.", "hint": "Não economize — quanto mais detalhe, mais a IA tem munição pra fechar"},
-                {"id": "argumento_venda", "label": "Argumento de venda", "tipo": "textarea", "largura": 12, "placeholder": "Frase de efeito que a IA usa pra apresentar o plano. Ex: 'Ideal para quem busca estabilidade no dia a dia sem complicação. Com fibra 100% até dentro do ambiente, velocidade real, Wi-Fi 6 incluso e cobertura completa com Mesh, você navega com qualidade — com suporte próximo e disponível sempre que precisar.'"},
-                {"id": "disponibilidade", "label": "Disponibilidade geográfica (se restrita)", "tipo": "text", "largura": 12, "placeholder": "Deixe vazio se vale pra toda a área. Ex: APENAS em São Miguel do Oeste e Maravilha"},
-                {"id": "is_promocional_campanha", "label": "É plano promocional EXCLUSIVO de campanha?", "tipo": "boolean", "largura": 6, "hint": "Marque se o plano só pode ser ofertado quando o lead vem de anúncio (Meta/Google). A IA NÃO oferta espontaneamente."},
-                {"id": "regra_uso_promocional", "label": "Regra de uso (se promocional)", "tipo": "textarea", "largura": 12, "placeholder": "Como a IA deve tratar esse plano. Ex: NUNCA ofertar espontaneamente. Se cliente perguntar pelo plano de R$89,90, transferir IMEDIATAMENTE para o time comercial via send_to_department, sem argumentar nem oferecer alternativas."}
+                {
+                  "id": "nome",
+                  "label": "Nome do plano",
+                  "tipo": "text",
+                  "placeholder": "Ex: Techy Light 350Mbps",
+                  "largura": 6
+                },
+                {
+                  "id": "id_plano_erp",
+                  "label": "ID do plano no ERP",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: 1024",
+                  "largura": 6,
+                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
+                },
+                {
+                  "id": "preco",
+                  "label": "Preço mensal (R$)",
+                  "tipo": "currency",
+                  "placeholder": "Ex: 114.90",
+                  "largura": 3
+                },
+                {
+                  "id": "taxa_instalacao",
+                  "label": "Taxa de instalação (R$)",
+                  "tipo": "currency",
+                  "placeholder": "0 = grátis",
+                  "largura": 3
+                },
+                {
+                  "id": "velocidade_download",
+                  "label": "Download (Mbps)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 350",
+                  "largura": 3
+                },
+                {
+                  "id": "velocidade_upload",
+                  "label": "Upload (Mbps)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 350",
+                  "largura": 3
+                },
+                {
+                  "id": "simetrico",
+                  "label": "Simétrico (mesma vel. download/upload)?",
+                  "tipo": "boolean",
+                  "largura": 6
+                },
+                {
+                  "id": "publico_alvo",
+                  "label": "Para quem é ideal",
+                  "tipo": "text",
+                  "placeholder": "Ex: 3-4 pessoas, uso intermediário, casa média",
+                  "largura": 12,
+                  "hint": "A IA usa pra recomendar baseado no perfil do lead"
+                },
+                {
+                  "id": "beneficios",
+                  "label": "Benefícios completos",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Liste TUDO que o cliente recebe. Ex: 100% fibra óptica até dentro do ambiente (FTTH), 1x roteador Wi-Fi 6 incluso, velocidade REAL simétrica, dados ilimitados, instalação gratuita em até 72h, suporte humanizado via WhatsApp/telefone/presencial, monitoramento proativo 24h, App incluso, Wi-Fi Mesh integrado, expansão com roteadores adicionais a partir de R$19,90/mês.",
+                  "hint": "Não economize — quanto mais detalhe, mais a IA tem munição pra fechar"
+                },
+                {
+                  "id": "argumento_venda",
+                  "label": "Argumento de venda",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Frase de efeito que a IA usa pra apresentar o plano. Ex: 'Ideal para quem busca estabilidade no dia a dia sem complicação. Com fibra 100% até dentro do ambiente, velocidade real, Wi-Fi 6 incluso e cobertura completa com Mesh, você navega com qualidade — com suporte próximo e disponível sempre que precisar.'"
+                },
+                {
+                  "id": "disponibilidade",
+                  "label": "Disponibilidade geográfica (se restrita)",
+                  "tipo": "text",
+                  "largura": 12,
+                  "placeholder": "Deixe vazio se vale pra toda a área. Ex: APENAS em São Miguel do Oeste e Maravilha"
+                },
+                {
+                  "id": "is_promocional_campanha",
+                  "label": "É plano promocional EXCLUSIVO de campanha?",
+                  "tipo": "boolean",
+                  "largura": 6,
+                  "hint": "Marque se o plano só pode ser ofertado quando o lead vem de anúncio (Meta/Google). A IA NÃO oferta espontaneamente."
+                },
+                {
+                  "id": "regra_uso_promocional",
+                  "label": "Regra de uso (se promocional)",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Como a IA deve tratar esse plano. Ex: NUNCA ofertar espontaneamente. Se cliente perguntar pelo plano de R$89,90, transferir IMEDIATAMENTE para o time comercial via send_to_department, sem argumentar nem oferecer alternativas."
+                }
               ]
             },
             {
@@ -2060,17 +3054,85 @@
               "rotulo_adicionar": "Adicionar plano empresarial",
               "hint": "Planos voltados pra empresas — geralmente com SLA, IP fixo opcional, suporte prioritário.",
               "campos": [
-                {"id": "nome", "label": "Nome do plano", "tipo": "text", "placeholder": "Ex: Techy Business 450Mbps (PME)", "largura": 6},
-                {"id": "id_plano_erp", "label": "ID do plano no ERP", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: 1024", "largura": 6, "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."},
-                {"id": "preco", "label": "Preço mensal (R$)", "tipo": "currency", "placeholder": "Ex: 179.90", "largura": 3},
-                {"id": "taxa_instalacao", "label": "Taxa de instalação (R$)", "tipo": "currency", "placeholder": "0 = grátis", "largura": 3},
-                {"id": "velocidade_download", "label": "Download (Mbps)", "tipo": "number", "placeholder": "Ex: 450", "largura": 3},
-                {"id": "velocidade_upload", "label": "Upload (Mbps)", "tipo": "number", "placeholder": "Ex: 450", "largura": 3},
-                {"id": "sla", "label": "SLA de atendimento", "tipo": "text", "placeholder": "Ex: até 4 horas / até 2 horas / 24/7", "largura": 6},
-                {"id": "publico_alvo", "label": "Para quem é ideal", "tipo": "text", "placeholder": "Ex: PME com até 20 colaboradores, escritório com VPN", "largura": 12},
-                {"id": "beneficios", "label": "Benefícios completos", "tipo": "textarea", "largura": 12, "placeholder": "Ex: 100% fibra (FTTH), Wi-Fi 6 + Mikrotik incluso, velocidade simétrica, dados ilimitados, SLA até 4h, segmentação de rede, controle de acessos, VPN opcional, monitoramento proativo, atendimento via WhatsApp/telefone/presencial. Inclua IP fixo, telefonia, gestão dedicada se houver."},
-                {"id": "argumento_venda", "label": "Argumento de venda", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Mais controle, segurança e suporte próximo para o ambiente corporativo. Sua empresa ganha estabilidade com atendimento acessível sempre que precisar."},
-                {"id": "disponibilidade", "label": "Disponibilidade geográfica (se restrita)", "tipo": "text", "largura": 12, "placeholder": "Deixe vazio se vale pra toda a área de cobertura"}
+                {
+                  "id": "nome",
+                  "label": "Nome do plano",
+                  "tipo": "text",
+                  "placeholder": "Ex: Techy Business 450Mbps (PME)",
+                  "largura": 6
+                },
+                {
+                  "id": "id_plano_erp",
+                  "label": "ID do plano no ERP",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: 1024",
+                  "largura": 6,
+                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
+                },
+                {
+                  "id": "preco",
+                  "label": "Preço mensal (R$)",
+                  "tipo": "currency",
+                  "placeholder": "Ex: 179.90",
+                  "largura": 3
+                },
+                {
+                  "id": "taxa_instalacao",
+                  "label": "Taxa de instalação (R$)",
+                  "tipo": "currency",
+                  "placeholder": "0 = grátis",
+                  "largura": 3
+                },
+                {
+                  "id": "velocidade_download",
+                  "label": "Download (Mbps)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 450",
+                  "largura": 3
+                },
+                {
+                  "id": "velocidade_upload",
+                  "label": "Upload (Mbps)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 450",
+                  "largura": 3
+                },
+                {
+                  "id": "sla",
+                  "label": "SLA de atendimento",
+                  "tipo": "text",
+                  "placeholder": "Ex: até 4 horas / até 2 horas / 24/7",
+                  "largura": 6
+                },
+                {
+                  "id": "publico_alvo",
+                  "label": "Para quem é ideal",
+                  "tipo": "text",
+                  "placeholder": "Ex: PME com até 20 colaboradores, escritório com VPN",
+                  "largura": 12
+                },
+                {
+                  "id": "beneficios",
+                  "label": "Benefícios completos",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: 100% fibra (FTTH), Wi-Fi 6 + Mikrotik incluso, velocidade simétrica, dados ilimitados, SLA até 4h, segmentação de rede, controle de acessos, VPN opcional, monitoramento proativo, atendimento via WhatsApp/telefone/presencial. Inclua IP fixo, telefonia, gestão dedicada se houver."
+                },
+                {
+                  "id": "argumento_venda",
+                  "label": "Argumento de venda",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Mais controle, segurança e suporte próximo para o ambiente corporativo. Sua empresa ganha estabilidade com atendimento acessível sempre que precisar."
+                },
+                {
+                  "id": "disponibilidade",
+                  "label": "Disponibilidade geográfica (se restrita)",
+                  "tipo": "text",
+                  "largura": 12,
+                  "placeholder": "Deixe vazio se vale pra toda a área de cobertura"
+                }
               ]
             },
             {
@@ -2083,16 +3145,78 @@
               "rotulo_adicionar": "Adicionar plano via rádio",
               "hint": "Para áreas onde a fibra ainda não chegou. Pula essa categoria se vocês só oferecem fibra.",
               "campos": [
-                {"id": "nome", "label": "Nome do plano", "tipo": "text", "placeholder": "Ex: Plano Via Rádio 15 Mega", "largura": 6},
-                {"id": "id_plano_erp", "label": "ID do plano no ERP", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: 1024", "largura": 6, "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."},
-                {"id": "preco", "label": "Preço mensal (R$)", "tipo": "currency", "placeholder": "Ex: 109.90", "largura": 3},
-                {"id": "taxa_instalacao", "label": "Taxa de instalação (R$)", "tipo": "currency", "placeholder": "0 = grátis", "largura": 3},
-                {"id": "velocidade_download", "label": "Download (Mbps)", "tipo": "number", "placeholder": "Ex: 15", "largura": 6},
-                {"id": "velocidade_upload", "label": "Upload (Mbps)", "tipo": "number", "placeholder": "Ex: 15", "largura": 6},
-                {"id": "publico_alvo", "label": "Para quem é ideal", "tipo": "text", "placeholder": "Ex: zona rural, sítios sem cobertura de fibra, uso básico de internet", "largura": 12},
-                {"id": "beneficios", "label": "Benefícios", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Tecnologia rádio, instalação especializada com torre/antena, suporte humanizado, monitoramento, App incluso. Indique limitações conhecidas (ex: depende de visada)."},
-                {"id": "argumento_venda", "label": "Argumento de venda", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Conexão estável onde a fibra ainda não chegou — ideal pra propriedades rurais que precisam de internet de qualidade pra trabalho remoto, vigilância e streaming básico."},
-                {"id": "disponibilidade", "label": "Onde atendem", "tipo": "text", "largura": 12, "placeholder": "Ex: Zonas rurais de São Miguel do Oeste e municípios vizinhos"}
+                {
+                  "id": "nome",
+                  "label": "Nome do plano",
+                  "tipo": "text",
+                  "placeholder": "Ex: Plano Via Rádio 15 Mega",
+                  "largura": 6
+                },
+                {
+                  "id": "id_plano_erp",
+                  "label": "ID do plano no ERP",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: 1024",
+                  "largura": 6,
+                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
+                },
+                {
+                  "id": "preco",
+                  "label": "Preço mensal (R$)",
+                  "tipo": "currency",
+                  "placeholder": "Ex: 109.90",
+                  "largura": 3
+                },
+                {
+                  "id": "taxa_instalacao",
+                  "label": "Taxa de instalação (R$)",
+                  "tipo": "currency",
+                  "placeholder": "0 = grátis",
+                  "largura": 3
+                },
+                {
+                  "id": "velocidade_download",
+                  "label": "Download (Mbps)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 15",
+                  "largura": 6
+                },
+                {
+                  "id": "velocidade_upload",
+                  "label": "Upload (Mbps)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 15",
+                  "largura": 6
+                },
+                {
+                  "id": "publico_alvo",
+                  "label": "Para quem é ideal",
+                  "tipo": "text",
+                  "placeholder": "Ex: zona rural, sítios sem cobertura de fibra, uso básico de internet",
+                  "largura": 12
+                },
+                {
+                  "id": "beneficios",
+                  "label": "Benefícios",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Tecnologia rádio, instalação especializada com torre/antena, suporte humanizado, monitoramento, App incluso. Indique limitações conhecidas (ex: depende de visada)."
+                },
+                {
+                  "id": "argumento_venda",
+                  "label": "Argumento de venda",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Conexão estável onde a fibra ainda não chegou — ideal pra propriedades rurais que precisam de internet de qualidade pra trabalho remoto, vigilância e streaming básico."
+                },
+                {
+                  "id": "disponibilidade",
+                  "label": "Onde atendem",
+                  "tipo": "text",
+                  "largura": 12,
+                  "placeholder": "Ex: Zonas rurais de São Miguel do Oeste e municípios vizinhos"
+                }
               ]
             },
             {
@@ -2105,13 +3229,57 @@
               "rotulo_adicionar": "Adicionar plano de telefonia fixa",
               "hint": "Telefonia fixa avulsa ou combinada. Pula se vocês não oferecem telefonia.",
               "campos": [
-                {"id": "nome", "label": "Nome do plano", "tipo": "text", "placeholder": "Ex: Telefonia Fixa Local / Telefonia Fixa Ilimitada", "largura": 8},
-                {"id": "id_plano_erp", "label": "ID do plano no ERP", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: 1024", "largura": 4, "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."},
-                {"id": "preco", "label": "Preço mensal (R$)", "tipo": "currency", "placeholder": "Ex: 89.90", "largura": 4},
-                {"id": "minutos_inclusos", "label": "Minutos inclusos", "tipo": "text", "placeholder": "Ex: Ilimitado pra fixos da região / Ilimitado pra fixo e móvel Brasil / 100 min", "largura": 12},
-                {"id": "tarifas_extras", "label": "Tarifas para chamadas fora do plano", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Fixo Brasil R$0,25/min | Móvel R$0,75/min. Use | para separar cada faixa."},
-                {"id": "beneficios", "label": "Benefícios", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Telefonia digital, portabilidade do mesmo número, identificador de chamadas, ligações ilimitadas pra fixos da região, suporte humanizado."},
-                {"id": "argumento_venda", "label": "Argumento de venda", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Mantenha o número de sempre com qualidade digital — sem perder ligações importantes."}
+                {
+                  "id": "nome",
+                  "label": "Nome do plano",
+                  "tipo": "text",
+                  "placeholder": "Ex: Telefonia Fixa Local / Telefonia Fixa Ilimitada",
+                  "largura": 8
+                },
+                {
+                  "id": "id_plano_erp",
+                  "label": "ID do plano no ERP",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: 1024",
+                  "largura": 4,
+                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
+                },
+                {
+                  "id": "preco",
+                  "label": "Preço mensal (R$)",
+                  "tipo": "currency",
+                  "placeholder": "Ex: 89.90",
+                  "largura": 4
+                },
+                {
+                  "id": "minutos_inclusos",
+                  "label": "Minutos inclusos",
+                  "tipo": "text",
+                  "placeholder": "Ex: Ilimitado pra fixos da região / Ilimitado pra fixo e móvel Brasil / 100 min",
+                  "largura": 12
+                },
+                {
+                  "id": "tarifas_extras",
+                  "label": "Tarifas para chamadas fora do plano",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Fixo Brasil R$0,25/min | Móvel R$0,75/min. Use | para separar cada faixa."
+                },
+                {
+                  "id": "beneficios",
+                  "label": "Benefícios",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Telefonia digital, portabilidade do mesmo número, identificador de chamadas, ligações ilimitadas pra fixos da região, suporte humanizado."
+                },
+                {
+                  "id": "argumento_venda",
+                  "label": "Argumento de venda",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Mantenha o número de sempre com qualidade digital — sem perder ligações importantes."
+                }
               ]
             },
             {
@@ -2124,15 +3292,71 @@
               "rotulo_adicionar": "Adicionar plano de chip móvel",
               "hint": "Planos de chip operadora própria ou MVNO. Pula se vocês não oferecem.",
               "campos": [
-                {"id": "nome", "label": "Nome do plano", "tipo": "text", "placeholder": "Ex: Techy Chip Móvel 7GB + 1GB portabilidade", "largura": 8},
-                {"id": "id_plano_erp", "label": "ID do plano no ERP", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: 1024", "largura": 4, "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."},
-                {"id": "preco", "label": "Preço mensal (R$)", "tipo": "currency", "placeholder": "Ex: 59.90", "largura": 4},
-                {"id": "franquia_dados_gb", "label": "Franquia de dados (GB)", "tipo": "number", "placeholder": "Ex: 7", "largura": 3},
-                {"id": "bonus_portabilidade_gb", "label": "Bônus portabilidade (GB)", "tipo": "number", "placeholder": "Ex: 1", "largura": 3},
-                {"id": "minutos_ligacao", "label": "Minutos de ligação", "tipo": "text", "placeholder": "Ex: 100 minutos Brasil / Ilimitado / 50 min", "largura": 6},
-                {"id": "apps_ilimitados", "label": "Apps ilimitados (não consomem franquia)", "tipo": "text", "placeholder": "Ex: WhatsApp ilimitado, Instagram ilimitado", "largura": 12},
-                {"id": "beneficios", "label": "Benefícios extras", "tipo": "textarea", "largura": 12, "placeholder": "Ex: 50 SMS, plataforma de livros digitais Skeelo inclusa, app próprio pra gerenciar consumo, portabilidade do número, sem fidelidade."},
-                {"id": "argumento_venda", "label": "Argumento de venda", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Plano completo pra quem usa muito WhatsApp e quer ligar à vontade, sem se preocupar com saldo."}
+                {
+                  "id": "nome",
+                  "label": "Nome do plano",
+                  "tipo": "text",
+                  "placeholder": "Ex: Techy Chip Móvel 7GB + 1GB portabilidade",
+                  "largura": 8
+                },
+                {
+                  "id": "id_plano_erp",
+                  "label": "ID do plano no ERP",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: 1024",
+                  "largura": 4,
+                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
+                },
+                {
+                  "id": "preco",
+                  "label": "Preço mensal (R$)",
+                  "tipo": "currency",
+                  "placeholder": "Ex: 59.90",
+                  "largura": 4
+                },
+                {
+                  "id": "franquia_dados_gb",
+                  "label": "Franquia de dados (GB)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 7",
+                  "largura": 3
+                },
+                {
+                  "id": "bonus_portabilidade_gb",
+                  "label": "Bônus portabilidade (GB)",
+                  "tipo": "number",
+                  "placeholder": "Ex: 1",
+                  "largura": 3
+                },
+                {
+                  "id": "minutos_ligacao",
+                  "label": "Minutos de ligação",
+                  "tipo": "text",
+                  "placeholder": "Ex: 100 minutos Brasil / Ilimitado / 50 min",
+                  "largura": 6
+                },
+                {
+                  "id": "apps_ilimitados",
+                  "label": "Apps ilimitados (não consomem franquia)",
+                  "tipo": "text",
+                  "placeholder": "Ex: WhatsApp ilimitado, Instagram ilimitado",
+                  "largura": 12
+                },
+                {
+                  "id": "beneficios",
+                  "label": "Benefícios extras",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: 50 SMS, plataforma de livros digitais Skeelo inclusa, app próprio pra gerenciar consumo, portabilidade do número, sem fidelidade."
+                },
+                {
+                  "id": "argumento_venda",
+                  "label": "Argumento de venda",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Plano completo pra quem usa muito WhatsApp e quer ligar à vontade, sem se preocupar com saldo."
+                }
               ]
             },
             {
@@ -2145,21 +3369,80 @@
               "rotulo_adicionar": "Adicionar plano TV/Streaming",
               "hint": "TV por assinatura (IPTV/cabo) ou pacotes de streaming combinados. Pula se vocês não oferecem.",
               "campos": [
-                {"id": "nome", "label": "Nome do plano", "tipo": "text", "placeholder": "Ex: Techy TV Plus 165 canais / Pacote Streaming Premium", "largura": 8},
-                {"id": "id_plano_erp", "label": "ID do plano no ERP", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: 1024", "largura": 4, "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."},
-                {"id": "preco", "label": "Preço mensal (R$)", "tipo": "currency", "placeholder": "Ex: 49.90", "largura": 4},
-                {"id": "tipo_servico", "label": "Tipo", "tipo": "select", "largura": 6,
+                {
+                  "id": "nome",
+                  "label": "Nome do plano",
+                  "tipo": "text",
+                  "placeholder": "Ex: Techy TV Plus 165 canais / Pacote Streaming Premium",
+                  "largura": 8
+                },
+                {
+                  "id": "id_plano_erp",
+                  "label": "ID do plano no ERP",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: 1024",
+                  "largura": 4,
+                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
+                },
+                {
+                  "id": "preco",
+                  "label": "Preço mensal (R$)",
+                  "tipo": "currency",
+                  "placeholder": "Ex: 49.90",
+                  "largura": 4
+                },
+                {
+                  "id": "tipo_servico",
+                  "label": "Tipo",
+                  "tipo": "select",
+                  "largura": 6,
                   "opcoes": [
-                    {"value": "iptv", "label": "IPTV"},
-                    {"value": "cabo", "label": "TV a cabo"},
-                    {"value": "streaming", "label": "Streaming (HBO, Prime, etc.)"},
-                    {"value": "combo", "label": "Combo TV + Streaming"}
+                    {
+                      "value": "iptv",
+                      "label": "IPTV"
+                    },
+                    {
+                      "value": "cabo",
+                      "label": "TV a cabo"
+                    },
+                    {
+                      "value": "streaming",
+                      "label": "Streaming (HBO, Prime, etc.)"
+                    },
+                    {
+                      "value": "combo",
+                      "label": "Combo TV + Streaming"
+                    }
                   ]
                 },
-                {"id": "qtd_canais_apps", "label": "Qtd canais ou apps inclusos", "tipo": "text", "placeholder": "Ex: 165 canais / Watch + HBO Max + Prime Video", "largura": 6},
-                {"id": "beneficios", "label": "Benefícios", "tipo": "textarea", "largura": 12, "placeholder": "Ex: 165 canais, 30 em HD, 5 dispositivos simultâneos, app pra mobile, gravação na nuvem, controle parental, instalação inclusa."},
-                {"id": "argumento_venda", "label": "Argumento de venda", "tipo": "textarea", "largura": 12, "placeholder": "Ex: Toda a família entretida — TV ao vivo, streaming e mobile sem precisar contratar várias assinaturas separadas."},
-                {"id": "exige_internet_combo", "label": "Exige contratar internet junto?", "tipo": "boolean", "largura": 12}
+                {
+                  "id": "qtd_canais_apps",
+                  "label": "Qtd canais ou apps inclusos",
+                  "tipo": "text",
+                  "placeholder": "Ex: 165 canais / Watch + HBO Max + Prime Video",
+                  "largura": 6
+                },
+                {
+                  "id": "beneficios",
+                  "label": "Benefícios",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: 165 canais, 30 em HD, 5 dispositivos simultâneos, app pra mobile, gravação na nuvem, controle parental, instalação inclusa."
+                },
+                {
+                  "id": "argumento_venda",
+                  "label": "Argumento de venda",
+                  "tipo": "textarea",
+                  "largura": 12,
+                  "placeholder": "Ex: Toda a família entretida — TV ao vivo, streaming e mobile sem precisar contratar várias assinaturas separadas."
+                },
+                {
+                  "id": "exige_internet_combo",
+                  "label": "Exige contratar internet junto?",
+                  "tipo": "boolean",
+                  "largura": 12
+                }
               ]
             },
             {
@@ -2184,9 +3467,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, portfólio empresarial separado"},
-                {"value": "mesmos", "label": "Usamos os mesmos planos para ambos"},
-                {"value": "nao", "label": "Não atendemos empresas"}
+                {
+                  "value": "sim",
+                  "label": "Sim, portfólio empresarial separado"
+                },
+                {
+                  "value": "mesmos",
+                  "label": "Usamos os mesmos planos para ambos"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não atendemos empresas"
+                }
               ]
             },
             {
@@ -2196,17 +3488,34 @@
               "obrigatoria": true,
               "condicional": "tem_planos_empresariais == 'sim'",
               "opcoes": [
-                {"value": "ip_fixo", "label": "IP fixo incluído"},
-                {"value": "sla_4h", "label": "SLA de atendimento até 4h"},
-                {"value": "upload_simetrico", "label": "Upload 100% simétrico"},
-                {"value": "suporte_prioritario", "label": "Suporte prioritário"},
-                {"value": "instalacao_gratis", "label": "Instalação gratuita"},
-                {"value": "ponto_adicional", "label": "Ponto cabeado adicional"}
+                {
+                  "value": "ip_fixo",
+                  "label": "IP fixo incluído"
+                },
+                {
+                  "value": "sla_4h",
+                  "label": "SLA de atendimento até 4h"
+                },
+                {
+                  "value": "upload_simetrico",
+                  "label": "Upload 100% simétrico"
+                },
+                {
+                  "value": "suporte_prioritario",
+                  "label": "Suporte prioritário"
+                },
+                {
+                  "value": "instalacao_gratis",
+                  "label": "Instalação gratuita"
+                },
+                {
+                  "value": "ponto_adicional",
+                  "label": "Ponto cabeado adicional"
+                }
               ]
             }
           ]
         },
-
         "metodo_vendas": {
           "titulo": "Método de Vendas",
           "icone": "🎯",
@@ -2218,12 +3527,30 @@
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "pessoas", "label": "Quantas pessoas moram no imóvel?"},
-                {"value": "dispositivos", "label": "Quantos dispositivos se conectam simultaneamente?"},
-                {"value": "tipo_imovel", "label": "Casa pequena, média, sobrado ou apartamento?"},
-                {"value": "uso_principal", "label": "Qual uso principal (streaming, games, home office)?"},
-                {"value": "provedor_atual", "label": "Usa qual provedor hoje e por quê quer trocar?"},
-                {"value": "origem", "label": "Como conheceu a empresa?"}
+                {
+                  "value": "pessoas",
+                  "label": "Quantas pessoas moram no imóvel?"
+                },
+                {
+                  "value": "dispositivos",
+                  "label": "Quantos dispositivos se conectam simultaneamente?"
+                },
+                {
+                  "value": "tipo_imovel",
+                  "label": "Casa pequena, média, sobrado ou apartamento?"
+                },
+                {
+                  "value": "uso_principal",
+                  "label": "Qual uso principal (streaming, games, home office)?"
+                },
+                {
+                  "value": "provedor_atual",
+                  "label": "Usa qual provedor hoje e por quê quer trocar?"
+                },
+                {
+                  "value": "origem",
+                  "label": "Como conheceu a empresa?"
+                }
               ],
               "hint": "Uma pergunta por vez — nunca várias na mesma mensagem."
             },
@@ -2259,7 +3586,6 @@
             }
           ]
         },
-
         "politicas_comerciais": {
           "titulo": "Políticas Comerciais",
           "icone": "📋",
@@ -2271,8 +3597,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim"},
-                {"value": "nao", "label": "Não, sem fidelidade"}
+                {
+                  "value": "sim",
+                  "label": "Sim"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, sem fidelidade"
+                }
               ]
             },
             {
@@ -2282,11 +3614,26 @@
               "obrigatoria": true,
               "condicional": "tem_fidelidade == 'sim'",
               "opcoes": [
-                {"value": "6", "label": "6 meses"},
-                {"value": "12", "label": "12 meses"},
-                {"value": "18", "label": "18 meses"},
-                {"value": "24", "label": "24 meses"},
-                {"value": "variavel", "label": "Varia por plano"}
+                {
+                  "value": "6",
+                  "label": "6 meses"
+                },
+                {
+                  "value": "12",
+                  "label": "12 meses"
+                },
+                {
+                  "value": "18",
+                  "label": "18 meses"
+                },
+                {
+                  "value": "24",
+                  "label": "24 meses"
+                },
+                {
+                  "value": "variavel",
+                  "label": "Varia por plano"
+                }
               ]
             },
             {
@@ -2304,14 +3651,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "retencao", "label": "Transfere para retenção (comercial) após coletar motivo"},
-                {"value": "financeiro", "label": "Transfere para financeiro"},
-                {"value": "humano_direto", "label": "Transfere para atendente humano sem triagem"}
+                {
+                  "value": "retencao",
+                  "label": "Transfere para retenção (comercial) após coletar motivo"
+                },
+                {
+                  "value": "financeiro",
+                  "label": "Transfere para financeiro"
+                },
+                {
+                  "value": "humano_direto",
+                  "label": "Transfere para atendente humano sem triagem"
+                }
               ]
             }
           ]
         },
-
         "combos": {
           "titulo": "Combos / Pacotes",
           "icone": "🎁",
@@ -2323,8 +3678,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, oferecemos combos com desconto"},
-                {"value": "nao", "label": "Não, vendemos cada serviço avulso"}
+                {
+                  "value": "sim",
+                  "label": "Sim, oferecemos combos com desconto"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, vendemos cada serviço avulso"
+                }
               ]
             },
             {
@@ -2337,24 +3698,74 @@
               "rotulo_item": "Combo",
               "rotulo_adicionar": "Adicionar combo",
               "campos": [
-                {"id": "nome", "label": "Nome do combo", "tipo": "text", "obrigatoria": true, "placeholder": "Ex: Combo Total", "largura": 6},
-                {"id": "preco_final", "label": "Preço final mensal (R$)", "tipo": "currency", "obrigatoria": true, "placeholder": "149.90", "largura": 6},
-                {"id": "servicos_inclusos", "label": "Serviços inclusos", "tipo": "checkbox_multiple", "obrigatoria": true, "largura": 12,
+                {
+                  "id": "nome",
+                  "label": "Nome do combo",
+                  "tipo": "text",
+                  "obrigatoria": true,
+                  "placeholder": "Ex: Combo Total",
+                  "largura": 6
+                },
+                {
+                  "id": "preco_final",
+                  "label": "Preço final mensal (R$)",
+                  "tipo": "currency",
+                  "obrigatoria": true,
+                  "placeholder": "149.90",
+                  "largura": 6
+                },
+                {
+                  "id": "servicos_inclusos",
+                  "label": "Serviços inclusos",
+                  "tipo": "checkbox_multiple",
+                  "obrigatoria": true,
+                  "largura": 12,
                   "opcoes": [
-                    {"value": "internet", "label": "Internet"},
-                    {"value": "tv", "label": "TV"},
-                    {"value": "streaming", "label": "Streaming"},
-                    {"value": "telefonia_fixa", "label": "Telefonia fixa"},
-                    {"value": "telefonia_movel", "label": "Telefonia móvel"},
-                    {"value": "mesh", "label": "Mesh"}
-                  ]},
-                {"id": "desconto_vs_avulso", "label": "Desconto vs avulso (%)", "tipo": "number", "placeholder": "20", "largura": 6, "hint": "Quanto economiza vs comprar separado"},
-                {"id": "publico_alvo", "label": "Público-alvo", "tipo": "text", "placeholder": "Ex: Famílias 4+ pessoas", "largura": 6}
+                    {
+                      "value": "internet",
+                      "label": "Internet"
+                    },
+                    {
+                      "value": "tv",
+                      "label": "TV"
+                    },
+                    {
+                      "value": "streaming",
+                      "label": "Streaming"
+                    },
+                    {
+                      "value": "telefonia_fixa",
+                      "label": "Telefonia fixa"
+                    },
+                    {
+                      "value": "telefonia_movel",
+                      "label": "Telefonia móvel"
+                    },
+                    {
+                      "value": "mesh",
+                      "label": "Mesh"
+                    }
+                  ]
+                },
+                {
+                  "id": "desconto_vs_avulso",
+                  "label": "Desconto vs avulso (%)",
+                  "tipo": "number",
+                  "placeholder": "20",
+                  "largura": 6,
+                  "hint": "Quanto economiza vs comprar separado"
+                },
+                {
+                  "id": "publico_alvo",
+                  "label": "Público-alvo",
+                  "tipo": "text",
+                  "placeholder": "Ex: Famílias 4+ pessoas",
+                  "largura": 6
+                }
               ]
             }
           ]
         },
-
         "instalacao": {
           "titulo": "Instalação",
           "icone": "🔧",
@@ -2365,11 +3776,26 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "24h", "label": "Até 24 horas"},
-                {"value": "48h", "label": "Até 48 horas"},
-                {"value": "72h", "label": "Até 72 horas"},
-                {"value": "5_dias", "label": "Até 5 dias úteis"},
-                {"value": "7_dias", "label": "Até 7 dias úteis"}
+                {
+                  "value": "24h",
+                  "label": "Até 24 horas"
+                },
+                {
+                  "value": "48h",
+                  "label": "Até 48 horas"
+                },
+                {
+                  "value": "72h",
+                  "label": "Até 72 horas"
+                },
+                {
+                  "value": "5_dias",
+                  "label": "Até 5 dias úteis"
+                },
+                {
+                  "value": "7_dias",
+                  "label": "Até 7 dias úteis"
+                }
               ]
             },
             {
@@ -2378,10 +3804,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "gratuita_todos", "label": "Instalação gratuita para todos os planos"},
-                {"value": "gratuita_planos_superiores", "label": "Gratuita a partir de um plano específico"},
-                {"value": "valor_fixo", "label": "Valor fixo para todos"},
-                {"value": "variavel_negociavel", "label": "Valor variável — equipe comercial informa no atendimento"}
+                {
+                  "value": "gratuita_todos",
+                  "label": "Instalação gratuita para todos os planos"
+                },
+                {
+                  "value": "gratuita_planos_superiores",
+                  "label": "Gratuita a partir de um plano específico"
+                },
+                {
+                  "value": "valor_fixo",
+                  "label": "Valor fixo para todos"
+                },
+                {
+                  "value": "variavel_negociavel",
+                  "label": "Valor variável — equipe comercial informa no atendimento"
+                }
               ]
             },
             {
@@ -2408,10 +3846,22 @@
               "obrigatoria": true,
               "condicional": "taxa_instalacao_modelo == 'valor_fixo' || taxa_instalacao_modelo == 'gratuita_planos_superiores'",
               "opcoes": [
-                {"value": "antecipado", "label": "Antecipado (antes da instalação)"},
-                {"value": "primeira_fatura", "label": "Diluída na primeira fatura"},
-                {"value": "parcelada", "label": "Parcelada nas primeiras faturas"},
-                {"value": "separado", "label": "Boleto separado"}
+                {
+                  "value": "antecipado",
+                  "label": "Antecipado (antes da instalação)"
+                },
+                {
+                  "value": "primeira_fatura",
+                  "label": "Diluída na primeira fatura"
+                },
+                {
+                  "value": "parcelada",
+                  "label": "Parcelada nas primeiras faturas"
+                },
+                {
+                  "value": "separado",
+                  "label": "Boleto separado"
+                }
               ]
             },
             {
@@ -2420,9 +3870,18 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "comercial_humano", "label": "Equipe comercial humana (IA não agenda)"},
-                {"value": "ia_preenche_os", "label": "IA coleta dados, abre OS, comercial confirma horário"},
-                {"value": "tecnico_liga", "label": "Técnico liga pra combinar direto"}
+                {
+                  "value": "comercial_humano",
+                  "label": "Equipe comercial humana (IA não agenda)"
+                },
+                {
+                  "value": "ia_preenche_os",
+                  "label": "IA coleta dados, abre OS, comercial confirma horário"
+                },
+                {
+                  "value": "tecnico_liga",
+                  "label": "Técnico liga pra combinar direto"
+                }
               ]
             },
             {
@@ -2431,14 +3890,22 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "periodo", "label": "Período (manhã/tarde)"},
-                {"value": "hora_marcada", "label": "Hora marcada exata"},
-                {"value": "fila", "label": "Por ordem de chegada, sem compromisso de horário"}
+                {
+                  "value": "periodo",
+                  "label": "Período (manhã/tarde)"
+                },
+                {
+                  "value": "hora_marcada",
+                  "label": "Hora marcada exata"
+                },
+                {
+                  "value": "fila",
+                  "label": "Por ordem de chegada, sem compromisso de horário"
+                }
               ]
             }
           ]
         },
-
         "follow_up": {
           "titulo": "Follow-up de Leads Inativos",
           "icone": "🔄",
@@ -2449,8 +3916,14 @@
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
-                {"value": "sim", "label": "Sim, mensagem de reengajamento"},
-                {"value": "nao", "label": "Não, apenas aguardar"}
+                {
+                  "value": "sim",
+                  "label": "Sim, mensagem de reengajamento"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, apenas aguardar"
+                }
               ]
             },
             {
@@ -2471,9 +3944,7 @@
             }
           ]
         }
-
       }
     }
-
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check, Building2, DollarSign, Wrench, TrendingUp, Loader2, IdCard } from 'lucide-react';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { PipeeloLogo } from '@/components/PipeeloLogo';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { QuestionRenderer } from '@/components/onboarding/QuestionRenderer';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { useOnboarding, expandQuestions } from '@/hooks/useOnboarding';
 import { DepartmentId } from '@/types/onboarding';
 import { useToast } from '@/hooks/use-toast';
 import { sessionApi, ApiError } from '@/lib/api-client';
@@ -130,18 +130,22 @@ export default function Onboarding() {
           setResposta(r.pergunta_id, r.valor);
         });
 
-        // Identificação: dados já informados no /cadastro entram como default
+        // SAC Geral: o endereço da sede vem do lookup de CNPJ feito no /cadastro
         // (só quando o cliente ainda não respondeu). O autosave persiste ao avançar.
-        if (urlDepartamento === 'identificacao') {
-          const cad = (session as { cadastro?: Record<string, unknown> | null }).cadastro ?? null;
+        if (urlDepartamento === 'sac_geral') {
+          const cad = (session as { cadastro?: { endereco_sede?: Record<string, string> | null } | null }).cadastro ?? null;
           const respondidas = new Set(ofDept.map((r) => r.pergunta_id));
-          const prefill: Array<[string, unknown]> = [
-            ['cnpj', cad?.cnpj],
-            ['razao_social', cad?.razao_social],
-            ['nome_fantasia', cad?.nome_fantasia],
-          ];
-          for (const [id, valor] of prefill) {
-            if (!respondidas.has(id) && typeof valor === 'string' && valor) setResposta(id, valor);
+          const end = cad?.endereco_sede;
+          if (!respondidas.has('empresa_endereco_sede') && end && typeof end === 'object' && (end.logradouro || end.cep)) {
+            setResposta('empresa_endereco_sede', {
+              cep: end.cep ?? '',
+              logradouro: end.logradouro ?? '',
+              numero: end.numero ?? '',
+              complemento: end.complemento ?? '',
+              bairro: end.bairro ?? '',
+              cidade: end.cidade ?? '',
+              uf: end.uf ?? '',
+            });
           }
         }
       } catch (e) {
@@ -182,7 +186,16 @@ export default function Onboarding() {
 
   // Autosave per-question debounced (HARD-02)
   const currentQuestionId = currentQuestion?.id;
-  const currentValue = currentQuestionId ? state.respostas[currentQuestionId] : undefined;
+  const isGrupo = currentQuestion?.tipo === 'grupo';
+  const grupoCampos = useMemo(() => (isGrupo ? (currentQuestion?.campos ?? []).map((c) => c.id) : []), [isGrupo, currentQuestion]);
+  // Tipo 'grupo': o valor exibido é montado a partir das respostas de cada subcampo
+  // (cada um é salvo com o próprio pergunta_id).
+  const currentValue = useMemo(() => {
+    if (!currentQuestionId) return undefined;
+    if (isGrupo) return Object.fromEntries(grupoCampos.map((id) => [id, state.respostas[id]]));
+    return state.respostas[currentQuestionId];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestionId, isGrupo, grupoCampos, state.respostas]);
   const lastSavedKeyRef = useRef<string | null>(null);
 
   const saver = useCallback(
@@ -191,22 +204,23 @@ export default function Onboarding() {
       // pseudo-respostas (stack injetada da sessão) nunca vão pra DB
       if (currentQuestionId.startsWith('_session_')) return;
       if (v === undefined || v === null || v === '') return;
-      try {
-        await sessionApi.saveResposta({
-          slug,
-          token,
-          departamento: state.departamento,
-          pergunta_id: currentQuestionId,
-          valor: v,
-        });
-        lastSavedKeyRef.current = `${currentQuestionId}:${JSON.stringify(v)}`;
-      } catch (e) {
-        // Silencioso — debounced-save loga + value continua em state pra retry
-        // eslint-disable-next-line no-console
-        console.error('[autosave] falhou', e);
+      const pares: Array<[string, unknown]> = isGrupo
+        ? Object.entries((v as Record<string, unknown>) ?? {}).filter(([, val]) => val !== undefined && val !== null && val !== '')
+        : [[currentQuestionId, v]];
+      for (const [pergunta_id, valor] of pares) {
+        const key = `${pergunta_id}:${JSON.stringify(valor)}`;
+        if (isGrupo && lastSavedKeyRef.current?.includes(`|${key}|`)) continue;
+        try {
+          await sessionApi.saveResposta({ slug, token, departamento: state.departamento, pergunta_id, valor });
+          lastSavedKeyRef.current = isGrupo ? `${lastSavedKeyRef.current ?? ''}|${key}|` : key;
+        } catch (e) {
+          // Silencioso — debounced-save loga + value continua em state pra retry
+          // eslint-disable-next-line no-console
+          console.error('[autosave] falhou', e);
+        }
       }
     },
-    [slug, token, state.departamento, currentQuestionId]
+    [slug, token, state.departamento, currentQuestionId, isGrupo]
   );
 
   useDebouncedAutosave(currentValue, saver, 500, !!currentQuestionId && !loading);
@@ -324,22 +338,11 @@ export default function Onboarding() {
           // eslint-disable-next-line no-console
           .catch((err) => console.error(`${path} failed (non-blocking):`, err));
 
-      // 1. Se for Identificação → provisionar tenant no admin-pipeelo
-      if (state.departamento === 'identificacao') {
-        const r = state.respostas;
-        postJson('/api/provision-tenant', {
-          sessionId,
-          cnpj: r.cnpj,
-          razao_social: r.razao_social,
-          nome_fantasia: r.nome_fantasia,
-          responsavel_nome: r.responsavel_nome,
-          responsavel_cpf: r.responsavel_cpf,
-          admin_email: r.admin_email,
-          whatsapp_business: r.whatsapp_business,
-          numero_assinantes: r.numero_assinantes,
-        });
-      } else {
-        // 2. Outros deptos → sync parcial (categorias, office-hours)
+      // 1. Identificação: nada a sincronizar. O tenant e o login admin são criados à mão
+      //    pela Pipeelo (o antigo /api/provision-tenant chamava um POST que não existe
+      //    no admin-pipeelo e falhava em silêncio — removido em 17/09/2026).
+      // 2. Outros deptos → sync parcial (categorias, office-hours)
+      if (state.departamento !== 'identificacao') {
         postJson('/api/sync-department', {
           sessionId,
           departamento: state.departamento,
@@ -485,9 +488,13 @@ export default function Onboarding() {
 
               <QuestionRenderer
                 question={currentQuestion}
-                value={state.respostas[currentQuestion.id]}
+                value={currentValue}
                 onChange={(value) => {
-                  setResposta(currentQuestion.id, value);
+                  if (currentQuestion.tipo === 'grupo') {
+                    for (const [id, v] of Object.entries((value as Record<string, unknown>) ?? {})) setResposta(id, v);
+                  } else {
+                    setResposta(currentQuestion.id, value);
+                  }
                   setError('');
                 }}
                 onSubmit={handleNext}
@@ -558,15 +565,50 @@ export default function Onboarding() {
                       {section.titulo}
                     </h3>
                     <div className="space-y-2 pl-6">
-                      {section.perguntas
+                      {expandQuestions(section.perguntas as any, state.respostas)
                         .filter((q: any) => q.tipo !== 'info' && q.tipo !== 'info_link')
                         .map((q: any) => {
-                          const resposta = state.respostas[q.id];
+                          // Tipo 'grupo': cada subcampo é uma resposta própria.
+                          const resposta = q.tipo === 'grupo'
+                            ? Object.fromEntries((q.campos ?? []).map((c: any) => [c.id, state.respostas[c.id]]))
+                            : state.respostas[q.id];
                           if (resposta === undefined || resposta === '') return null;
 
                           let displayValue: string = '';
 
-                          if (q.tipo === 'checkbox_multiple') {
+                          if (q.tipo === 'grupo') {
+                            const partes = (q.campos ?? [])
+                              .filter((c: any) => resposta[c.id] !== undefined && resposta[c.id] !== '' && resposta[c.id] !== null)
+                              .map((c: any) => `${c.label}: ${String(resposta[c.id])}`);
+                            if (partes.length === 0) return null;
+                            displayValue = partes.join(' | ');
+                          } else if (q.tipo === 'endereco' && typeof resposta === 'object') {
+                            const e = resposta as Record<string, string>;
+                            displayValue = [
+                              [e.logradouro, e.numero].filter(Boolean).join(', '),
+                              e.complemento,
+                              e.bairro,
+                              [e.cidade, e.uf].filter(Boolean).join('/'),
+                              e.cep ? `CEP ${e.cep}` : '',
+                            ].filter(Boolean).join(' - ');
+                          } else if (q.tipo === 'repeater' && Array.isArray(resposta)) {
+                            displayValue = resposta
+                              .map((item: Record<string, unknown>) =>
+                                (q.campos ?? [])
+                                  .map((c: any) => {
+                                    const v = item[c.id];
+                                    if (v === undefined || v === '' || v === null) return null;
+                                    const opt = c.opcoes?.find((o: any) => o.value === v);
+                                    return opt?.label ?? String(v);
+                                  })
+                                  .filter(Boolean)
+                                  .join(' · ')
+                              )
+                              .filter(Boolean)
+                              .join(' | ');
+                          } else if (q.tipo === 'file_upload' && typeof resposta === 'object') {
+                            displayValue = String((resposta as { nome_original?: string }).nome_original ?? 'arquivo enviado');
+                          } else if (q.tipo === 'checkbox_multiple') {
                             const selected = resposta?.selected || (Array.isArray(resposta) ? resposta : []);
                             const labels = selected.map((v: string) => {
                               const opt = q.opcoes?.find((o: any) => o.value === v);

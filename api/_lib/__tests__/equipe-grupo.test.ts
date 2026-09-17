@@ -40,6 +40,19 @@ describe('pedirEquipeNoGrupo', () => {
     expect(getInviteUrl).not.toHaveBeenCalled();
   });
 
+  it('planilha enviada: manda o Staff baixar o arquivo no /admin', async () => {
+    const r = await pedirEquipeNoGrupo(
+      sb([{ pergunta_id: 'equipe_planilha_upload', valor: { path: 's1/equipe_planilha_upload/1-equipe.xlsx', nome_original: 'equipe.xlsx', tamanho: 1234 } }]),
+      's1', 'Provedor X'
+    );
+    expect(r).toEqual({ total: 1, enviado: true });
+    const texto = (notifyStaff as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(texto).toContain('*Lucas*');
+    expect(texto).toContain('equipe.xlsx');
+    expect(texto).toContain('Pipeelo & Provedor X');
+    expect(updateParticipants).not.toHaveBeenCalled();
+  });
+
   it('sem ninguém para entrar, não manda nada', async () => {
     const r = await pedirEquipeNoGrupo(sb([]), 's1', 'Provedor X');
     expect(r).toEqual({ total: 0, enviado: false });

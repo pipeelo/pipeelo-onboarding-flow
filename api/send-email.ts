@@ -16,7 +16,7 @@ interface OnboardingEmailRequest {
 const PROMPT_MAPPING: Record<string, Record<string, Array<{ questionId: string; placeholder?: string; section?: string; fromSacGeral?: boolean; label?: string }>>> = {
   sac_geral: {
     secao_8_empresa: [
-      { questionId: "empresa_nome_oficial", placeholder: "[Nome da empresa]", section: "SEÇÃO 8" },
+      { questionId: "empresa_endereco_sede", placeholder: "[Endereço da sede]", section: "SEÇÃO 8" },
       { questionId: "empresa_cidades", placeholder: "[Cidades atendidas]", section: "SEÇÃO 8" },
       { questionId: "empresa_enderecos", placeholder: "[Endereço]", section: "SEÇÃO 8" },
       { questionId: "empresa_telefones", placeholder: "[Telefones]", section: "SEÇÃO 8" },
@@ -25,28 +25,29 @@ const PROMPT_MAPPING: Record<string, Record<string, Array<{ questionId: string; 
     identidade_ia: [
       { questionId: "nome_ia_customizado", label: "Nome IA customizado" },
       { questionId: "nome_ia", label: "Nome da IA" },
-      { questionId: "regionalismo", label: "Regionalismo" },
     ],
     horarios: [
-      { questionId: "horario_atendimento", label: "Horário de atendimento" },
-      { questionId: "tem_plantao", label: "Tem plantão" },
-      { questionId: "horario_plantao", label: "Horário do plantão" },
-      { questionId: "horario_aciona_plantao", label: "Horário aciona plantão" },
+      // questions.json 4.0: um `horario_<departamento>` por departamento marcado.
+      // Os ids dinâmicos aparecem na tabela "Expandir todas as respostas".
+      { questionId: "plantao_departamentos", label: "Departamentos com plantão" },
     ],
     estrutura: [
       { questionId: "departamentos_lista", label: "Departamentos existentes" },
-      { questionId: "departamentos_destino", label: "Departamentos destino transferência" },
       { questionId: "clientes_prioritarios", label: "Clientes prioritários" },
     ],
-    nps: [
-      { questionId: "nps_nota_baixa_acao", label: "NPS nota baixa (0-3)" },
-      { questionId: "nps_nota_alta_acao", label: "NPS nota alta (9-10)" },
-      { questionId: "nps_nota_alta_acao_outra", label: "Outra ação NPS" },
+    processos: [
+      { questionId: "cancelamento_padrao", label: "Cancelamento segue o padrão" },
+      { questionId: "cancelamento_fluxo_desejado", label: "Fluxo de cancelamento desejado" },
+    ],
+    app: [
+      { questionId: "app_tem", label: "Tem aplicativo" },
+      { questionId: "app_nome", label: "Nome do app" },
+      { questionId: "app_link", label: "Link do app" },
+      { questionId: "app_acoes_atendentes", label: "Ações dos atendentes no app" },
     ],
   },
   financeiro: {
     secao_11_empresa: [
-      { questionId: "empresa_nome_oficial", placeholder: "[Nome]", section: "SEÇÃO 11", fromSacGeral: true },
       { questionId: "empresa_cidades", placeholder: "[Cidades atendidas]", section: "SEÇÃO 11", fromSacGeral: true },
       { questionId: "empresa_enderecos", placeholder: "[Endereço]", section: "SEÇÃO 11", fromSacGeral: true },
       { questionId: "empresa_telefones", placeholder: "[Telefones]", section: "SEÇÃO 11", fromSacGeral: true },
@@ -73,7 +74,6 @@ const PROMPT_MAPPING: Record<string, Record<string, Array<{ questionId: string; 
   },
   suporte: {
     secao_11_empresa: [
-      { questionId: "empresa_nome_oficial", placeholder: "[Nome]", section: "SEÇÃO 11", fromSacGeral: true },
       { questionId: "empresa_cidades", placeholder: "[Cidades]", section: "SEÇÃO 11", fromSacGeral: true },
     ],
     diagnostico: [
@@ -96,7 +96,6 @@ const PROMPT_MAPPING: Record<string, Record<string, Array<{ questionId: string; 
   },
   vendas: {
     secao_13_empresa: [
-      { questionId: "empresa_nome_oficial", placeholder: "[Nome]", section: "SEÇÃO 13", fromSacGeral: true },
       { questionId: "empresa_cidades", placeholder: "[Cidades]", section: "SEÇÃO 13", fromSacGeral: true },
     ],
     portfolio: [
@@ -142,7 +141,20 @@ function formatValue(value: unknown): string {
       else if (dom?.nao_atende) parts.push("Dom/Feriado: Não atende");
       return parts.join(" | ");
     }
-    if (Array.isArray(value)) return (value as unknown[]).join(", ");
+    if (typeof obj.logradouro === "string" && typeof obj.cidade === "string") {
+      return [
+        [obj.logradouro, obj.numero].filter(Boolean).join(", "),
+        obj.complemento,
+        obj.bairro,
+        [obj.cidade, obj.uf].filter(Boolean).join("/"),
+        obj.cep ? `CEP ${obj.cep}` : "",
+      ].filter(Boolean).join(" - ");
+    }
+    if (Array.isArray(value)) {
+      return (value as unknown[])
+        .map((v) => (v && typeof v === "object" ? Object.values(v as Record<string, unknown>).filter(Boolean).join(" · ") : String(v)))
+        .join(" | ");
+    }
     return JSON.stringify(value);
   }
   return String(value);

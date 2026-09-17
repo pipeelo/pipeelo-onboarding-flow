@@ -100,7 +100,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const categoryId = categoryRes?.id ?? categoryRes?.data?.id;
 
-    const horarioKey = body.departamento === "sac_geral" ? "horario_atendimento" : `horario_${body.departamento}`;
+    // questions.json 4.0: um `horario_<departamento>` por item marcado em
+    // `departamentos_lista` (SAC Geral). Geral = atendimento_geral.
+    const horarioKey = body.departamento === "sac_geral" ? "horario_atendimento_geral" : `horario_${body.departamento}`;
     const horario = respostasMap[horarioKey] as HorarioSemanal | undefined;
     if (categoryId && horario) {
       await pipeeloApi(session.pipeelo_token, `/v1/categories/${categoryId}/office-hours`, {

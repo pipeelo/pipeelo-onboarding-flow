@@ -68,6 +68,10 @@ export function QuestionRenderer({
       }
       setNaoTemPortal(value === 'NAO_POSSUI');
       setLocalValue(value ?? '');
+    } else if (question.tipo === 'select' && question.padrao && (value === undefined || value === null || value === '')) {
+      // Select com valor padrão: já nasce marcado e salvo (cliente troca se quiser).
+      setLocalValue(question.padrao);
+      onChange(question.padrao);
     } else {
       setLocalValue(value ?? '');
     }
@@ -84,6 +88,116 @@ export function QuestionRenderer({
       onSubmit();
     }
   };
+
+  const widthClass = (w?: number) => {
+    switch (w) {
+      case 3: return 'col-span-12 md:col-span-3';
+      case 4: return 'col-span-12 md:col-span-4';
+      case 6: return 'col-span-12 md:col-span-6';
+      case 8: return 'col-span-12 md:col-span-8';
+      default: return 'col-span-12';
+    }
+  };
+
+  /** Grade de subcampos (usada pelo repeater — um item — e pelo tipo 'grupo'). */
+  const renderCampos = (
+    campos: NonNullable<Question['campos']>,
+    item: Record<string, unknown>,
+    patch: (p: Record<string, unknown>) => void,
+    keyPrefix: string
+  ) => (
+    <div className="grid grid-cols-12 gap-3">
+      {campos.map((campo) => {
+        const fieldVal = item[campo.id];
+        return (
+          <div key={campo.id} className={widthClass(campo.largura)}>
+            <Label className="text-sm mb-1 block">
+              {campo.label}
+              {campo.obrigatoria && <span className="text-destructive ml-0.5">*</span>}
+            </Label>
+            {(campo.tipo === 'text' || campo.tipo === 'number' || campo.tipo === 'currency') && (
+              <Input
+                type={campo.tipo === 'number' || campo.tipo === 'currency' ? 'number' : 'text'}
+                step={campo.tipo === 'currency' ? '0.01' : undefined}
+                value={(fieldVal as string | number | undefined) ?? ''}
+                onChange={(e) => patch({ [campo.id]: e.target.value })}
+                placeholder={campo.placeholder}
+                className="text-base"
+              />
+            )}
+            {campo.tipo === 'phone' && (
+              <Input
+                type="tel"
+                inputMode="tel"
+                value={maskPhone(String(fieldVal ?? ''))}
+                onChange={(e) => patch({ [campo.id]: maskPhone(e.target.value) })}
+                placeholder={campo.placeholder ?? '(00) 00000-0000'}
+                className="text-base"
+              />
+            )}
+            {campo.tipo === 'textarea' && (
+              <Textarea
+                value={(fieldVal as string | undefined) ?? ''}
+                onChange={(e) => patch({ [campo.id]: e.target.value })}
+                placeholder={campo.placeholder}
+                className="text-base min-h-[80px]"
+              />
+            )}
+            {campo.tipo === 'select' && (
+              <select
+                value={(fieldVal as string | undefined) ?? ''}
+                onChange={(e) => patch({ [campo.id]: e.target.value })}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-base"
+              >
+                <option value="">Selecione...</option>
+                {campo.opcoes?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            )}
+            {campo.tipo === 'boolean' && (
+              <div className="flex items-center space-x-2 h-10">
+                <Checkbox
+                  id={`${keyPrefix}-${campo.id}`}
+                  checked={Boolean(fieldVal)}
+                  onCheckedChange={(c) => patch({ [campo.id]: Boolean(c) })}
+                />
+                <Label htmlFor={`${keyPrefix}-${campo.id}`} className="text-sm cursor-pointer">
+                  Sim
+                </Label>
+              </div>
+            )}
+            {campo.tipo === 'checkbox_multiple' && (() => {
+              const arr = Array.isArray(fieldVal) ? (fieldVal as string[]) : [];
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {campo.opcoes?.map((opt) => {
+                    const checked = arr.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          const next = checked ? arr.filter((v) => v !== opt.value) : [...arr, opt.value];
+                          patch({ [campo.id]: next });
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-sm border ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-input hover:bg-accent'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            {campo.hint && (
+              <p className="text-xs text-muted-foreground mt-1">{campo.hint}</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   const renderInput = () => {
     switch (question.tipo) {
@@ -467,7 +581,7 @@ export function QuestionRenderer({
                     };
                     handleChange(newValue);
                   }}
-                  placeholder="Especifique qual..."
+                  placeholder={question.placeholder_outro ?? 'Especifique qual...'}
                   className="text-base"
                   autoFocus
                 />
@@ -497,16 +611,6 @@ export function QuestionRenderer({
           handleChange(items.filter((_, i) => i !== idx));
         };
 
-        const widthClass = (w?: number) => {
-          switch (w) {
-            case 3: return 'col-span-12 md:col-span-3';
-            case 4: return 'col-span-12 md:col-span-4';
-            case 6: return 'col-span-12 md:col-span-6';
-            case 8: return 'col-span-12 md:col-span-8';
-            default: return 'col-span-12';
-          }
-        };
-
         return (
           <div className="space-y-4">
             {items.length === 0 && (
@@ -530,97 +634,7 @@ export function QuestionRenderer({
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-12 gap-3">
-                  {campos.map((campo) => {
-                    const fieldVal = (item as Record<string, unknown>)[campo.id];
-                    return (
-                      <div key={campo.id} className={widthClass(campo.largura)}>
-                        <Label className="text-sm mb-1 block">
-                          {campo.label}
-                          {campo.obrigatoria && <span className="text-destructive ml-0.5">*</span>}
-                        </Label>
-                        {(campo.tipo === 'text' || campo.tipo === 'number' || campo.tipo === 'currency') && (
-                          <Input
-                            type={campo.tipo === 'number' || campo.tipo === 'currency' ? 'number' : 'text'}
-                            step={campo.tipo === 'currency' ? '0.01' : undefined}
-                            value={(fieldVal as string | number | undefined) ?? ''}
-                            onChange={(e) => updateItem(idx, { [campo.id]: e.target.value })}
-                            placeholder={campo.placeholder}
-                            className="text-base"
-                          />
-                        )}
-                        {campo.tipo === 'phone' && (
-                          <Input
-                            type="tel"
-                            inputMode="tel"
-                            value={maskPhone(String(fieldVal ?? ''))}
-                            onChange={(e) => updateItem(idx, { [campo.id]: maskPhone(e.target.value) })}
-                            placeholder={campo.placeholder ?? '(00) 00000-0000'}
-                            className="text-base"
-                          />
-                        )}
-                        {campo.tipo === 'textarea' && (
-                          <Textarea
-                            value={(fieldVal as string | undefined) ?? ''}
-                            onChange={(e) => updateItem(idx, { [campo.id]: e.target.value })}
-                            placeholder={campo.placeholder}
-                            className="text-base min-h-[80px]"
-                          />
-                        )}
-                        {campo.tipo === 'select' && (
-                          <select
-                            value={(fieldVal as string | undefined) ?? ''}
-                            onChange={(e) => updateItem(idx, { [campo.id]: e.target.value })}
-                            className="w-full h-10 rounded-md border border-input bg-background px-3 text-base"
-                          >
-                            <option value="">Selecione...</option>
-                            {campo.opcoes?.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        )}
-                        {campo.tipo === 'boolean' && (
-                          <div className="flex items-center space-x-2 h-10">
-                            <Checkbox
-                              id={`${question.id}-${idx}-${campo.id}`}
-                              checked={Boolean(fieldVal)}
-                              onCheckedChange={(c) => updateItem(idx, { [campo.id]: Boolean(c) })}
-                            />
-                            <Label htmlFor={`${question.id}-${idx}-${campo.id}`} className="text-sm cursor-pointer">
-                              Sim
-                            </Label>
-                          </div>
-                        )}
-                        {campo.tipo === 'checkbox_multiple' && (() => {
-                          const arr = Array.isArray(fieldVal) ? (fieldVal as string[]) : [];
-                          return (
-                            <div className="flex flex-wrap gap-2">
-                              {campo.opcoes?.map((opt) => {
-                                const checked = arr.includes(opt.value);
-                                return (
-                                  <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => {
-                                      const next = checked ? arr.filter((v) => v !== opt.value) : [...arr, opt.value];
-                                      updateItem(idx, { [campo.id]: next });
-                                    }}
-                                    className={`px-3 py-1.5 rounded-full text-sm border ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-input hover:bg-accent'}`}
-                                  >
-                                    {opt.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
-                        {campo.hint && (
-                          <p className="text-xs text-muted-foreground mt-1">{campo.hint}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                {renderCampos(campos, item, (patch) => updateItem(idx, patch), `${question.id}-${idx}`)}
               </div>
             ))}
             {items.length < maxItens && (
@@ -633,6 +647,88 @@ export function QuestionRenderer({
                 Mínimo {minItens} {minItens === 1 ? 'item' : 'itens'}.
               </p>
             )}
+          </div>
+        );
+      }
+
+      case 'grupo': {
+        // Vários campos numa tela. O valor é um objeto {campoId: valor}; quem salva
+        // (Onboarding.tsx) grava cada campo como resposta própria.
+        const obj: Record<string, unknown> = localValue && typeof localValue === 'object' ? localValue : {};
+        return renderCampos(question.campos ?? [], obj, (patch) => handleChange({ ...obj, ...patch }), question.id);
+      }
+
+      case 'endereco': {
+        const end: Record<string, string> = {
+          cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '',
+          ...(localValue && typeof localValue === 'object' ? localValue : {}),
+        };
+        const setEnd = (patch: Partial<typeof end>) => handleChange({ ...end, ...patch });
+        const maskCep = (v: string) => {
+          const d = v.replace(/\D/g, '').slice(0, 8);
+          return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+        };
+        const buscarCep = async (cepMasked: string) => {
+          const d = cepMasked.replace(/\D/g, '');
+          if (d.length !== 8) return;
+          setUploading(true);
+          try {
+            const r = await fetch(`https://viacep.com.br/ws/${d}/json/`);
+            const j = (await r.json()) as { erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string };
+            if (!j.erro) {
+              handleChange({
+                ...end,
+                cep: cepMasked,
+                logradouro: j.logradouro || end.logradouro,
+                bairro: j.bairro || end.bairro,
+                cidade: j.localidade || end.cidade,
+                uf: j.uf || end.uf,
+              });
+            }
+          } catch {
+            /* sem rede: cliente digita à mão */
+          } finally {
+            setUploading(false);
+          }
+        };
+        const campo = (id: keyof typeof end, label: string, largura: number, extra?: Partial<React.ComponentProps<typeof Input>>) => (
+          <div className={widthClass(largura)}>
+            <Label htmlFor={`${question.id}-${id}`} className="text-sm mb-1 block">{label}</Label>
+            <Input
+              id={`${question.id}-${id}`}
+              value={end[id]}
+              onChange={(e) => setEnd({ [id]: e.target.value })}
+              className="text-base"
+              {...extra}
+            />
+          </div>
+        );
+        return (
+          <div className="grid grid-cols-12 gap-3">
+            <div className={widthClass(4)}>
+              <Label htmlFor={`${question.id}-cep`} className="text-sm mb-1 block">CEP</Label>
+              <div className="relative">
+                <Input
+                  id={`${question.id}-cep`}
+                  inputMode="numeric"
+                  value={end.cep}
+                  onChange={(e) => {
+                    const m = maskCep(e.target.value);
+                    setEnd({ cep: m });
+                    if (m.replace(/\D/g, '').length === 8) void buscarCep(m);
+                  }}
+                  placeholder="00000-000"
+                  className="text-base"
+                />
+                {uploading && <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-3 text-muted-foreground" />}
+              </div>
+            </div>
+            {campo('logradouro', 'Rua / Avenida', 8)}
+            {campo('numero', 'Número', 3)}
+            {campo('complemento', 'Complemento', 3, { placeholder: 'Opcional' })}
+            {campo('bairro', 'Bairro', 6)}
+            {campo('cidade', 'Cidade', 8)}
+            {campo('uf', 'UF', 4, { maxLength: 2, placeholder: 'PR' })}
           </div>
         );
       }
