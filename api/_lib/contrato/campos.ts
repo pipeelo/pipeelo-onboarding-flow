@@ -18,6 +18,8 @@ export type SessaoContrato = {
   erp?: string | null;
   contratou_crm?: boolean | null;
   valor_sessao?: number | string | null;
+  /** Só quando o fechamento negociou outro valor; sem isso, vale valor_sessao × 1,15. */
+  valor_excedente?: number | string | null;
   qtd_sessoes?: number | string | null;
   valor_mensal?: number | string | null;
   dia_vencimento?: number | string | null;
@@ -141,6 +143,22 @@ export function implantacaoIsenta(sessao: { valor_implantacao?: number | string 
  * `primeira_mensalidade_em`, é essa data que o cliente vai receber para pagar — então é
  * ela que precisa estar escrita no contrato, não a regra genérica.
  */
+/**
+ * Valor da sessão excedente. Padrão da casa: valor por sessão × 1,15.
+ * O fechamento pode negociar outro valor (a Trixnet fechou excedente igual ao
+ * valor da sessão) — aí `valor_excedente` da sessão prevalece.
+ *
+ * A conta é feita em centavos inteiros de propósito: `0.50 * 1.15` em ponto
+ * flutuante dá 0,5749999…, que arredondaria para 0,57 em vez de 0,58.
+ */
+export function valorExcedente(sessao: SessaoContrato): number | null {
+  const negociado = numero(sessao.valor_excedente);
+  if (negociado !== null) return negociado;
+  const base = numero(sessao.valor_sessao);
+  if (base === null) return null;
+  return Math.round((Math.round(base * 100) * 115) / 100) / 100;
+}
+
 export function primeiroPagamento(sessao: SessaoContrato): string {
   const dia = sessao.dia_vencimento ? `no dia ${sessao.dia_vencimento}` : 'na data acordada no item 7';
   const combinada = dataCurta(sessao.primeira_mensalidade_em);
@@ -181,11 +199,14 @@ export function montarCampos(
     DATA_ASSINATURA: dataAssinatura(sessao.cadastro_enviado_at),
 
     // Anexo I — cadastro e fechamento comercial prevalecem.
-    ANEXO_PROVEDOR: cadastro.nome_fantasia || cadastro.razao_social || '',
+    // Razão social, não nome fantasia: o corpo do contrato identifica a CONTRATANTE
+    // pela razão social e o Anexo precisa falar da mesma pessoa jurídica.
+    ANEXO_PROVEDOR: cadastro.razao_social || cadastro.nome_fantasia || '',
     ANEXO_CNPJ: formatarCnpj(cadastro.cnpj),
     ANEXO_ERP: sessao.erp || '',
     ANEXO_PACOTE: faixaDe(qtd),
     ANEXO_VALOR_SESSAO: moeda(sessao.valor_sessao),
+    ANEXO_VALOR_EXCEDENTE: moeda(valorExcedente(sessao)),
     ANEXO_SESSOES_INCLUIDAS: qtd === null ? '' : `${inteiro(qtd)} sessões/mês`,
     ANEXO_VALOR_MENSAL: moeda(sessao.valor_mensal),
     ANEXO_TAXA_IMPLANTACAO: implantacaoIsenta(sessao) ? 'Isenta' : moeda(sessao.valor_implantacao),

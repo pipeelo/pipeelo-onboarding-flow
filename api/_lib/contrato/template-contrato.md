@@ -36,25 +36,21 @@ CLÁUSULA SEGUNDA – DO OBJETO
 
 CLÁUSULA TERCEIRA – DOS VALORES E FORMA DE PAGAMENTO
 
-3.1. Os valores do serviço serão calculados com base no volume mensal de sessões realizadas pelo Agente de IA, conforme a tabela abaixo:
+3.1. Os valores do serviço serão calculados com base no volume mensal de sessões realizadas pelo Agente de IA, conforme o pacote contratado, o valor por sessão e o valor da sessão excedente definidos no Anexo I deste Contrato.
 
-[Ver Anexo I]
-
-3.1.1. O pacote contratado será definido no Anexo I deste Contrato, com base na estimativa de volume mensal de conversas do PROVEDOR.
+3.1.1. O pacote contratado será definido no Anexo I deste Contrato, com base na estimativa de volume mensal de conversas do PROVEDOR. As sessões que excederem o pacote contratado serão cobradas pelo valor da sessão excedente indicado no item 1 do Anexo I.
 
 3.2. Taxa de Implantação: Será cobrada uma taxa única de implantação, cujo valor será definido no Anexo I, contemplando: treinamento da equipe de atendimento do CONTRATANTE, treinamento e parametrização da Inteligência Artificial, configuração da plataforma e integração com o sistema de gestão (ERP) do PROVEDOR.
 
 3.2.1. O pagamento da taxa de implantação deverá ser realizado integralmente no ato da assinatura deste Contrato. A implantação somente será iniciada após a confirmação do pagamento integral.
 
-3.3. O vencimento da primeira mensalidade será 3 (três) dias após a entrega da implantação (go-live), e no dia escolhido pelo cliente no Anexo I de cada mês subsequente, mediante emissão de Nota Fiscal pela CONTRATADA.
+3.3. Os serviços são pré-pagos. Os valores serão devidos mesmo que, durante o exercício do período, o CONTRATANTE deixe de utilizar a Plataforma, uma vez que o serviço é adquirido como um direito de uso e independe da efetiva utilização.
 
-3.4. Os serviços são pré-pagos. Os valores serão devidos mesmo que, durante o exercício do período, o CONTRATANTE deixe de utilizar a Plataforma, uma vez que o serviço é adquirido como um direito de uso e independe da efetiva utilização.
+3.4. Não há acumulação de conversas não utilizadas de um ciclo para o outro.
 
-3.5. Não há acumulação de conversas não utilizadas de um ciclo para o outro.
+3.5. Os custos de inteligência artificial (plataformas de IA nas quais as respostas serão geradas) estão inclusos na mensalidade, não havendo cobrança adicional por este item.
 
-3.6. Os custos de inteligência artificial (plataformas de IA nas quais as respostas serão geradas) estão inclusos na mensalidade, não havendo cobrança adicional por este item.
-
-3.7. Os valores poderão ser reajustados anualmente pelo IGPM/FGV ou, na sua falta, pelo IPCA/IBGE, a contar da data de assinatura deste Contrato.
+3.6. Os valores poderão ser reajustados anualmente pelo IGPM/FGV ou, na sua falta, pelo IPCA/IBGE, a contar da data de assinatura deste Contrato.
 
 CLÁUSULA QUARTA – DA INADIMPLÊNCIA E SUSPENSÃO
 
@@ -215,40 +211,48 @@ CLÁUSULA DÉCIMA SEGUNDA – DA CONFIDENCIALIDADE
 
 CLÁUSULA DÉCIMA TERCEIRA – DA VIGÊNCIA E PERÍODO MÍNIMO
 
+13.1. O presente Contrato entrará em vigor a partir do aceite pelo CONTRATANTE. O início da implantação se dará a partir da confirmação do pagamento integral da taxa de implantação.
+
 13.2. PRAZO E RENOVAÇÃO
 
-13.2.1. O presente contrato terá vigência de 12 (doze) meses, contados da data de assinatura, podendo ser rescindido por qualquer das partes mediante aviso prévio de 30 (trinta) dias.
+13.2.1. O presente Contrato terá vigência de 12 (doze) meses, contados da data de assinatura, observado o período mínimo de 90 (noventa) dias previsto na Cláusula 13.3, durante o qual não será admitida rescisão imotivada por qualquer das partes, salvo nas hipóteses de justa causa previstas na Cláusula 14.1.
 
-13.2.2. Ao término do prazo inicial, o contrato NÃO será renovado automaticamente. A continuidade da prestação dos serviços dependerá de manifestação EXPRESSA e ESCRITA do CONTRATANTE, mediante aditivo contratual ou novo instrumento.
+13.2.2. Decorrido o Período de Avaliação de 90 (noventa) dias, qualquer das partes poderá rescindir o Contrato mediante aviso prévio por escrito de 30 (trinta) dias, observadas as condições da Cláusula 14.2, inclusive a multa rescisória aplicável.
 
-13.2.3. A CONTRATADA enviará notificação ao CONTRATANTE com 60 (sessenta) dias de antecedência do término contratual, informando sobre a proximidade do vencimento e disponibilizando proposta de renovação.
+13.2.3. Ao término do prazo inicial de 12 (doze) meses, o Contrato NÃO será renovado automaticamente. A continuidade da prestação dos serviços dependerá de manifestação EXPRESSA e ESCRITA do CONTRATANTE, mediante aditivo contratual ou novo instrumento.
 
-13.2.4. Caso o CONTRATANTE manifeste interesse na renovação, as partes negociarão novo período de vigência e condições comerciais, formalizando mediante aditivo ou novo contrato.
+13.2.4. A CONTRATADA enviará notificação ao CONTRATANTE com 60 (sessenta) dias de antecedência do término contratual, informando sobre a proximidade do vencimento e disponibilizando proposta de renovação.
 
-13.2.5. Na ausência de manifestação expressa do CONTRATANTE até 15 (quinze) dias antes do término, o contrato será automaticamente encerrado na data de vencimento, sem qualquer ônus ou penalidade para ambas as partes.
+13.2.5. Caso o CONTRATANTE manifeste interesse na renovação, as partes negociarão novo período de vigência e condições comerciais, formalizando mediante aditivo ou novo contrato.
+
+13.2.6. Na ausência de manifestação expressa do CONTRATANTE até 15 (quinze) dias antes do término, o Contrato será automaticamente encerrado na data de vencimento, sem qualquer ônus ou penalidade para ambas as partes.
 
 13.3. PERÍODO DE AVALIAÇÃO DE RESULTADOS
 
-13.3.1. Fica estabelecido o período de 90 (noventa) dias corridos, contados a partir da data de ativação do Agente de IA em produção (go-live), como período de avaliação de resultados.
+13.3.1. Fica estabelecido o período de 90 (noventa) dias corridos, contados a partir da data de ativação do Agente de IA em produção (go-live), doravante denominado "Período de Avaliação".
 
-13.3.2. Ao completar o período de avaliação de 90 (noventa) dias, o CONTRATANTE poderá optar livremente por continuar ou encerrar a prestação dos serviços, sem qualquer multa, penalidade ou ônus adicional, mediante comunicação formal à CONTRATADA.
+13.3.2. A partir do 91º (nonagésimo primeiro) dia e até o 105º (centésimo quinto) dia, contados do go-live, o CONTRATANTE poderá optar por encerrar a prestação dos serviços, sem qualquer multa, penalidade ou ônus adicional, mediante comunicação formal e por escrito à CONTRATADA.
 
-13.3.3. Esta cláusula reflete o compromisso da CONTRATADA em demonstrar o impacto positivo da ferramenta na operação do CONTRATANTE, garantindo que a continuidade do contrato seja uma escolha baseada em resultados efetivos e não em obrigações contratuais.
+13.3.3. Esta cláusula reflete o compromisso da CONTRATADA em demonstrar o impacto positivo da ferramenta na operação do CONTRATANTE, garantindo que a continuidade do Contrato seja uma escolha baseada em resultados efetivos.
 
-13.3.4. Caso o CONTRATANTE não se manifeste no prazo de 15 (quinze) dias após o término do período de avaliação, o contrato seguirá vigente conforme as condições estabelecidas na Cláusula anterior.
+13.3.4. Durante o Período de Avaliação de 90 (noventa) dias, não será admitida rescisão imotivada por qualquer das partes, salvo nas hipóteses de justa causa previstas na Cláusula 14.1.
+
+13.3.5. Caso o CONTRATANTE não se manifeste no prazo de 15 (quinze) dias previsto na Cláusula 13.3.2, o Contrato seguirá vigente até o término do prazo inicial de 12 (doze) meses, observado o disposto na Cláusula 13.2.
 
 CLÁUSULA DÉCIMA QUARTA – DA RESCISÃO
 
-14.1. Este Contrato pode ser rescindido por qualquer parte, sem necessidade de aviso prévio, nas seguintes hipóteses:
-a) Violação de qualquer cláusula deste Contrato, não sanada no prazo de 15 (quinze) dias após notificação formal;
+14.1. Este Contrato pode ser rescindido por qualquer parte, sem necessidade de aviso prévio, nas seguintes hipóteses de justa causa:
+a) Violação de qualquer cláusula deste Contrato, devidamente caracterizada e não sanada no prazo de 30 (trinta) dias após notificação formal por escrito, acompanhada de demonstração técnica e/ou documental do inadimplemento;
 b) Se qualquer das partes solicitar recuperação judicial, concordata ou falência;
 c) Se o CONTRATANTE permanecer inadimplente por mais de 40 (quarenta) dias, conforme Cláusula Quarta.
 
-14.1.1. As hipóteses de rescisão do item 14.1 constituem justa causa e poderão ser exercidas inclusive durante o período mínimo de 90 dias previsto na Cláusula 13.3.
+14.1.1. As hipóteses de justa causa do item 14.1 poderão ser exercidas a qualquer tempo, inclusive durante o Período de Avaliação de 90 dias previsto na Cláusula 13.3.
 
-14.2. Caso o CONTRATANTE opte por cancelar o Contrato de forma imotivada (resilição) após o período mínimo de 90 dias, será devido aviso prévio de 30 (trinta) dias. Não haverá reembolso de valores já pagos, incluindo a taxa de implantação.
+14.2. Decorrido o Período de Avaliação de 90 (noventa) dias e até o término do prazo inicial de 12 (doze) meses, caso o CONTRATANTE opte pela resilição imotivada, deverá observar aviso prévio por escrito de 30 (trinta) dias, sendo devida multa rescisória equivalente a 20% (vinte por cento) das mensalidades remanescentes, calculada com base na média das 3 (três) últimas mensalidades pagas.
 
-14.3. Caso a CONTRATADA decida descontinuar o software ou algum serviço, o CONTRATANTE será notificado com antecedência mínima de 90 (noventa) dias para que possa organizar a portabilidade de seus dados.
+14.2.1. Não haverá reembolso de valores já pagos, incluindo a taxa de implantação.
+
+14.3. Caso a CONTRATADA decida descontinuar o software ou algum serviço, o CONTRATANTE será notificado com antecedência mínima de 90 (noventa) dias para que possa organizar a portabilidade de seus dados, sem aplicação de multa rescisória.
 
 14.4. Em caso de rescisão, aplicam-se integralmente as disposições da Cláusula Sexta quanto à portabilidade e eliminação dos dados.
 
@@ -278,15 +282,11 @@ CLÁUSULA DÉCIMA SÉTIMA – DAS DISPOSIÇÕES GERAIS
 
 17.4. Caso a conta não seja reativada no prazo acima, os dados serão eliminados após 60 (sessenta) dias da data do cancelamento.
 
-CLÁUSULA DÉCIMA OITAVA – DA LEGISLAÇÃO APLICÁVEL E FORO
+CLÁUSULA DÉCIMA OITAVA – DA LEGISLAÇÃO E FORO
 
 18.1. Este Contrato será regido e interpretado de acordo com o Código Civil e as leis civis vigentes na República Federativa do Brasil, considerando sua natureza empresarial.
 
-18.2. FORO
-
-Fica eleito o foro do domicílio do AUTOR da ação para dirimir quaisquer controvérsias oriundas deste contrato.
-
-Parágrafo Único: Caso seja aplicável o Código de Defesa do Consumidor, prevalece o disposto no art. 101, inciso I, da Lei nº 8.078/90, assegurando ao consumidor o direito de propor a ação no foro de seu domicílio.
+18.2. Fica eleito o foro da Comarca de Londrina, Estado do Paraná, como competente para dirimir quaisquer controvérsias decorrentes deste Contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja, ressalvada a hipótese do art. 101, inciso I, da Lei nº 8.078/90 (Código de Defesa do Consumidor), quando aplicável.
 
 CLÁUSULA DÉCIMA NONA – DO MÓDULO CRM FUNIL INTELIGENTE
 
@@ -348,6 +348,7 @@ Sistema de gestão (ERP): {{ANEXO_ERP}}
 1. Pacote contratado: {{ANEXO_PACOTE}}
    Valor por sessão: {{ANEXO_VALOR_SESSAO}}
    Sessões incluídas no pacote: {{ANEXO_SESSOES_INCLUIDAS}}
+   Valor da sessão excedente: {{ANEXO_VALOR_EXCEDENTE}}
 
 2. Valor estimado mensal: {{ANEXO_VALOR_MENSAL}}
 
@@ -371,4 +372,5 @@ PIPEELO LTDA
 
 __________________________________________________
 {{CONTRATANTE_REPRESENTANTE}}
+{{CONTRATANTE_RAZAO_SOCIAL}} – CONTRATANTE
 ```

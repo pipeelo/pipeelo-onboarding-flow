@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { dataAssinatura, dataCurta, dataPorExtenso, formatarCnpj, inteiro, moeda, montarCampos, primeiroPagamento, type SessaoContrato } from './campos';
+import { dataAssinatura, dataCurta, dataPorExtenso, formatarCnpj, inteiro, moeda, montarCampos, primeiroPagamento, valorExcedente, type SessaoContrato } from './campos';
 import type { Extracao } from './extracao';
 import type { Cadastro } from '../schemas/cadastro';
 import { placeholdersDoTemplate } from './template';
@@ -137,11 +137,15 @@ describe('montarCampos', () => {
       }).campos.DATA_ASSINATURA,
     ).toBe('15 de setembro de 2026');
 
-    expect(campos.ANEXO_PROVEDOR).toBe('Provedor X');
+    // Razão social, não nome fantasia: o Anexo tem que falar da mesma pessoa
+    // jurídica que a Cláusula Primeira identifica.
+    expect(campos.ANEXO_PROVEDOR).toBe('PROVEDOR X TELECOMUNICAÇÕES LTDA');
     expect(campos.ANEXO_ERP).toBe('IXC');
     expect(campos.ANEXO_PACOTE).toBe('2.001 – 4.999 sessões/mês');
     expect(campos.ANEXO_SESSOES_INCLUIDAS).toBe('2.640 sessões/mês');
     expect(campos.ANEXO_VALOR_SESSAO).toBe('R$ 0,95');
+    // 0,95 × 1,15 = 1,0925 → R$ 1,09
+    expect(campos.ANEXO_VALOR_EXCEDENTE).toBe('R$ 1,09');
     expect(campos.ANEXO_VALOR_MENSAL).toBe('R$ 2.508,00');
     expect(campos.ANEXO_TAXA_IMPLANTACAO).toBe('R$ 4.000,00');
     expect(campos.ANEXO_DATA_VENCIMENTO_IMPL).toBe('15/09/2026');
@@ -189,9 +193,34 @@ describe('montarCampos', () => {
       'ANEXO_PACOTE',
       'ANEXO_SESSOES_INCLUIDAS',
       'ANEXO_TAXA_IMPLANTACAO',
+      'ANEXO_VALOR_EXCEDENTE',
       'ANEXO_VALOR_MENSAL',
       'ANEXO_VALOR_SESSAO',
     ]);
+  });
+});
+
+describe('valorExcedente (item 1 do Anexo)', () => {
+  // A tabela oficial do excedente é valor por sessão × 1,15. Em ponto flutuante,
+  // 0,50 × 1,15 dá 0,5749999… e arredondaria para 0,57 — por isso a conta é feita
+  // em centavos inteiros. Estes casos são os da tabela da skill pipe-contratos.
+  it.each([
+    [0.48, 0.55],
+    [0.5, 0.58],
+    [0.9, 1.04],
+    [1.0, 1.15],
+    [1.25, 1.44],
+  ])('valor por sessão %d vira excedente %d', (sessao, esperado) => {
+    expect(valorExcedente({ id: 's1', valor_sessao: sessao })).toBe(esperado);
+  });
+
+  it('valor negociado no fechamento prevalece sobre a regra de 1,15', () => {
+    // Caso Trixnet: excedente igual ao valor da sessão.
+    expect(valorExcedente({ id: 's1', valor_sessao: 0.5, valor_excedente: 0.5 })).toBe(0.5);
+  });
+
+  it('sem valor por sessão, não inventa excedente', () => {
+    expect(valorExcedente({ id: 's1' })).toBeNull();
   });
 });
 
