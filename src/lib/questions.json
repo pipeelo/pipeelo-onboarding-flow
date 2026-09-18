@@ -10,8 +10,8 @@
     ],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v4.0 - 5 departamentos; identificação = números de WhatsApp + integrações (dados cadastrais vêm do /cadastro)",
-    "versao": "4.3.0",
-    "total_perguntas": 203
+    "versao": "4.4.0",
+    "total_perguntas": 206
   },
   "departamentos": {
     "identificacao": {
@@ -24,9 +24,9 @@
       "bloqueante": true,
       "secoes": {
         "whatsapp": {
-          "titulo": "Números de WhatsApp",
+          "titulo": "Números de WhatsApp e templates",
           "icone": "💬",
-          "descricao": "Os dados cadastrais (CNPJ, razão social, responsável) já vieram do pré-cadastro. Aqui só precisamos dos números que a empresa usa no atendimento.",
+          "descricao": "Os dados cadastrais já vieram do pré-cadastro. Aqui: os números do atendimento e os templates de mensagem que vocês já usam, para subirmos tudo nos números certos antes do início.",
           "perguntas": [
             {
               "id": "whatsapp_numeros",
@@ -36,7 +36,7 @@
               "rotulo_item": "Número",
               "rotulo_adicionar": "Adicionar número",
               "minimo": 1,
-              "hint": "Um item por número. Marque se o número já está na API oficial (Meta / 360dialog) ou se é um WhatsApp comum/Business no celular.",
+              "hint": "Um item por número. Marque se o número já está na API oficial (Meta / 360dialog) ou se é um WhatsApp comum/Business no celular, e se ele faz disparos.",
               "campos": [
                 {
                   "id": "numero",
@@ -91,8 +91,44 @@
                       "label": "Outro"
                     }
                   ]
+                },
+                {
+                  "id": "disparos",
+                  "label": "Faz disparos / campanhas por esse número?",
+                  "tipo": "boolean",
+                  "largura": 12,
+                  "hint": "Marque se esse número envia templates (cobrança, campanhas, avisos). É nele que subimos os templates."
                 }
               ]
+            },
+            {
+              "id": "_templates_intro",
+              "pergunta": "Templates de mensagem: pela planilha",
+              "tipo": "info",
+              "obrigatoria": false,
+              "texto": "Templates são as mensagens aprovadas na Meta que vocês disparam hoje (cobrança, boleto, campanhas, avisos de manutenção, pesquisas). Precisamos de TODOS, com o texto exato e o número que dispara cada um, para subir na conta de vocês antes do início do atendimento — sem surpresa no dia do go-live. Baixe a planilha modelo no próximo passo, preencha uma linha por template e envie de volta."
+            },
+            {
+              "id": "templates_planilha_modelo",
+              "pergunta": "Baixe a planilha modelo de templates",
+              "tipo": "info_link",
+              "obrigatoria": false,
+              "link": "/modelo-templates-whatsapp.xlsx",
+              "texto": "Baixar planilha de templates",
+              "hint": "Colunas: nome do template, número que dispara (com DDD), categoria (Marketing / Utilidade / Autenticação), texto exato com as variáveis {{1}} {{2}}, botões ou links, idioma e observação. Já vem com 3 exemplos."
+            },
+            {
+              "id": "templates_planilha_upload",
+              "pergunta": "Envie a planilha de templates preenchida",
+              "tipo": "file_upload",
+              "obrigatoria": true,
+              "extensoes": [
+                "xlsx",
+                "xls",
+                "csv"
+              ],
+              "max_mb": 5,
+              "hint": "Aceita .xlsx, .xls ou .csv até 5MB. Se vocês ainda não usam templates, envie a planilha só com a linha 'Nenhum' e a gente cria os padrões da Pipeelo."
             }
           ]
         },
