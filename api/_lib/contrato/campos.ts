@@ -123,6 +123,19 @@ function faixaDe(qtd: number | null): string {
   return f ? f.rotulo : `${inteiro(qtd)} sessões/mês`;
 }
 
+/**
+ * Sócio-administrador sem profissão no contrato social é "empresário" — é assim
+ * que se qualifica quem administra a sociedade, e contrato social raramente traz
+ * profissão (CEPAIN). Gênero pelo estado civil quando dá para saber.
+ */
+function profissao(e: Extracao['representante']): string {
+  if (!e) return '';
+  if (e.profissao) return e.profissao;
+  const civil = (e.estado_civil || '').toLowerCase();
+  const feminino = /^(casada|solteira|divorciada|viúva|viuva|separada)(\s|$)/.test(civil);
+  return feminino ? 'empresária' : 'empresário';
+}
+
 function rg(e: Extracao['representante']): string {
   if (!e) return '';
   const orgao = [e.orgao_rg, e.uf_rg].filter(Boolean).join('/');
@@ -188,7 +201,7 @@ export function montarCampos(
     CONTRATANTE_ENDERECO: extracao.endereco_sede || '',
     CONTRATANTE_REPRESENTANTE: rep?.nome || '',
     CONTRATANTE_ESTADO_CIVIL: rep?.estado_civil || '',
-    CONTRATANTE_PROFISSAO: rep?.profissao || '',
+    CONTRATANTE_PROFISSAO: profissao(rep),
     CONTRATANTE_RG: rg(rep),
     CONTRATANTE_CPF: rep?.cpf || '',
     CONTRATANTE_END_REP: rep?.endereco || '',

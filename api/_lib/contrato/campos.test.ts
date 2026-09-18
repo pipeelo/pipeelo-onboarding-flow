@@ -176,6 +176,22 @@ describe('montarCampos', () => {
     ]);
   });
 
+  it('representante sem profissão nos documentos é qualificado como empresário(a)', () => {
+    // CEPAIN 16/09: o contrato social qualifica o sócio sem profissão. Quem é
+    // sócio-administrador é empresário — não trava o contrato por isso (Felipe, 18/09).
+    const masculino: Extracao = { ...extracao, representante: { ...extracao.representante!, profissao: '', estado_civil: 'casado sob regime de Comunhão Parcial de Bens' } };
+    const { campos, faltando } = montarCampos(sessao, cadastro, masculino, { municipio: 'LONDRINA', uf: 'PR' });
+    expect(campos.CONTRATANTE_PROFISSAO).toBe('empresário');
+    expect(faltando).not.toContain('CONTRATANTE_PROFISSAO');
+
+    const feminino: Extracao = { ...extracao, representante: { ...extracao.representante!, profissao: '', estado_civil: 'casada sob regime de comunhão parcial' } };
+    expect(montarCampos(sessao, cadastro, feminino, { municipio: 'LONDRINA', uf: 'PR' }).campos.CONTRATANTE_PROFISSAO).toBe('empresária');
+
+    // Sem estado civil também não trava: masculino genérico, como nos cartórios.
+    const semNada: Extracao = { ...extracao, representante: { ...extracao.representante!, profissao: '', estado_civil: '' } };
+    expect(montarCampos(sessao, cadastro, semNada, { municipio: 'LONDRINA', uf: 'PR' }).campos.CONTRATANTE_PROFISSAO).toBe('empresário');
+  });
+
   it('cai para o cadastro quando o documento não trouxe razão social/CNPJ', () => {
     const vazio: Extracao = { ...extracao, razao_social: '', cnpj: '' };
     const { campos } = montarCampos(sessao, cadastro, vazio, null);
