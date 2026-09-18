@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { groupSubject } from './evolution';
 import { fmtTelefone, type SessaoGrupo } from './cadastro-grupo';
 import { ensureShortLink, onboardingTargetUrl } from './short-links';
-import { notifyStaff } from './staff-notify';
+import { notifyStaff, notifySocios } from './staff-notify';
 import type { Cadastro } from './schemas/cadastro';
 
 /**
@@ -62,18 +62,34 @@ function dataCurta(iso: string | null | undefined): string | null {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : null;
 }
 
-/** Linha "o que vem pela frente": ERP, tamanho do plano, mensalidade, CRM e go-live. */
-export function linhaFechamento(f: FechamentoResumo): string {
+/**
+ * Linha "o que vem pela frente": ERP, tamanho do plano, CRM e go-live. O valor
+ * mensal só entra com `comValor` — vai para os sócios, nunca para o Staff (Felipe, 18/09).
+ */
+export function linhaFechamento(f: FechamentoResumo, opts: { comValor?: boolean } = {}): string {
   const sessoes = numeroOuNull(f.qtd_sessoes);
   const mensal = numeroOuNull(f.valor_mensal);
+  const valor = mensal === null
+    ? 'mensalidade: não informada'
+    : `R$ ${mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês`;
   const partes = [
     `ERP: ${(f.erp ?? '').trim() || 'não informado'}`,
     sessoes === null ? 'sessões/mês: não informado' : `${sessoes.toLocaleString('pt-BR')} sessões/mês`,
-    mensal === null ? null : `R$ ${mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês`,
+    opts.comValor ? valor : null,
     `CRM: ${f.contratou_crm ? 'sim' : 'não'}`,
     dataCurta(f.go_live_em) ? `go-live ${dataCurta(f.go_live_em)}` : null,
   ].filter(Boolean);
   return `📊 ${partes.join(' · ')}`;
+}
+
+/** Aviso aos sócios: mesmo resumo do Staff, com o valor mensal. */
+export function mensagemSociosNovoCliente(cadastro: Cadastro, fechamento: FechamentoResumo = {}): string {
+  return [
+    `🆕 *Novo cliente: ${cadastro.nome_fantasia}*`,
+    linhaFechamento(fechamento, { comValor: true }),
+    `Responsável: ${cadastro.responsavel_nome} — ${fmtTelefone(cadastro.responsavel_whatsapp)} · vencimento dia ${cadastro.dia_vencimento}`,
+    `Painel: ${PAINEL()}/admin`,
+  ].join('\n');
 }
 
 export function mensagemInstrucoesGrupo(cadastro: Cadastro, shortUrl: string, fechamento: FechamentoResumo = {}): string {
@@ -125,6 +141,8 @@ export async function enviarInstrucoesGrupo(
     });
 
     const { sent, reason } = await notifyStaff(mensagemInstrucoesGrupo(cadastro, short_url, sessao));
+    // Sócios recebem o fechamento com valor; falha aqui não afeta o Staff nem o carimbo.
+    await notifySocios(mensagemSociosNovoCliente(cadastro, sessao));
     const agora = new Date().toISOString();
     // `grupo_erro` guarda o motivo de o Staff não ter recebido — é o que o painel mostra.
     const { error } = await supabase

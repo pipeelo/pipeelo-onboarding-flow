@@ -16,12 +16,12 @@ vi.mock('../short-links', () => ({
   ensureShortLink: vi.fn(async () => ({ code: 'abc123', short_url: 'https://onboarding.pipeelo.com/s/abc123' })),
   onboardingTargetUrl: () => 'https://onboarding.pipeelo.com/slug?token=t',
 }));
-vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })) }));
+vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true })), notifySocios: vi.fn(async () => ({ sent: true })) }));
 vi.mock('../email-sender', () => ({ sendTransactionalEmail: vi.fn() }));
 
-import { notifyStaff } from '../staff-notify';
+import { notifyStaff, notifySocios } from '../staff-notify';
 import { ensureShortLink } from '../short-links';
-import { mensagemInstrucoesGrupo, enviarInstrucoesGrupo } from '../grupo-instrucoes';
+import { mensagemInstrucoesGrupo, mensagemSociosNovoCliente, enviarInstrucoesGrupo } from '../grupo-instrucoes';
 import type { Cadastro } from '../schemas/cadastro';
 
 const upload = { path: 'p', nome_original: 'a.pdf', tamanho: 1 };
@@ -66,7 +66,8 @@ describe('mensagemInstrucoesGrupo', () => {
     const m = mensagemInstrucoesGrupo(cadastro, 'x', { erp: 'MK Solution', qtd_sessoes: 5500, valor_mensal: 3300, contratou_crm: true, go_live_em: '2026-10-18' });
     expect(m).toContain('ERP: MK Solution');
     expect(m).toContain('5.500 sessões/mês');
-    expect(m).toContain('R$ 3.300,00/mês');
+    // Valor é assunto dos sócios, não do Staff.
+    expect(m).not.toContain('R$');
     expect(m).toContain('CRM: sim');
     expect(m).toContain('go-live 18/10/2026');
   });
@@ -87,6 +88,22 @@ describe('mensagemInstrucoesGrupo', () => {
   });
 });
 
+describe('mensagemSociosNovoCliente', () => {
+  it('traz o fechamento com o valor mensal', () => {
+    const m = mensagemSociosNovoCliente(cadastro, { erp: 'IXC', qtd_sessoes: 3000, valor_mensal: 1800, contratou_crm: false, go_live_em: null });
+    expect(m).toContain('Novo cliente: Provedor X');
+    expect(m).toContain('ERP: IXC');
+    expect(m).toContain('3.000 sessões/mês');
+    expect(m).toContain('R$ 1.800,00/mês');
+    expect(m).toContain('CRM: não');
+  });
+
+  it('sem valor mensal diz que não foi informado', () => {
+    const m = mensagemSociosNovoCliente(cadastro, { valor_mensal: null });
+    expect(m).toContain('mensalidade: não informada');
+  });
+});
+
 describe('enviarInstrucoesGrupo', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -96,6 +113,8 @@ describe('enviarInstrucoesGrupo', () => {
 
     expect(ensureShortLink).toHaveBeenCalledTimes(1);
     expect(notifyStaff).toHaveBeenCalledTimes(1);
+    expect(notifySocios).toHaveBeenCalledTimes(1);
+    expect(String(notifySocios.mock.calls[0][0])).toContain('Novo cliente: Provedor X');
     expect(r).toEqual({ status: 'enviado', short_url: 'https://onboarding.pipeelo.com/s/abc123' });
     expect(sb.updates).toHaveLength(1);
     expect(sb.updates[0]).toMatchObject({ grupo_erro: null });
