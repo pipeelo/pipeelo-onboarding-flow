@@ -209,7 +209,17 @@ const TODAS_PERGUNTAS: Question[] = Object.values(onboardingData.departamentos).
  */
 export function expandQuestions(perguntas: Question[], respostas: Record<string, any>): Question[] {
   const out: Question[] = [];
-  for (const q of perguntas) {
+  // `{erp}`, `{mapas}`, `{gerenciamento_rede}`, `{gateway_pagamento}` = stack marcada
+  // na sessão pelo admin (pseudo-respostas `_session_*`), usada em textos de info.
+  const sessao = (s?: string) =>
+    s?.replace(/\{(erp|mapas|gerenciamento_rede|gateway_pagamento)\}/g, (_m, k: string) => {
+      const v = respostas[`_session_${k}`];
+      return typeof v === 'string' && v ? v : 'informado na proposta';
+    });
+  for (const q0 of perguntas) {
+    const q: Question = /\{(erp|mapas|gerenciamento_rede|gateway_pagamento)\}/.test(`${q0.pergunta}${q0.texto ?? ''}${q0.hint ?? ''}`)
+      ? { ...q0, pergunta: sessao(q0.pergunta) ?? q0.pergunta, texto: sessao(q0.texto), hint: sessao(q0.hint) }
+      : q0;
     if (q.condicional && !evaluateConditional(q.condicional, respostas)) continue;
     if (q.repetir_por) {
       for (const item of itensMarcados(q.repetir_por, respostas, TODAS_PERGUNTAS)) {

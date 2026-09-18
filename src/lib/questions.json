@@ -10,8 +10,8 @@
     ],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v4.0 - 5 departamentos; identificação = números de WhatsApp + integrações (dados cadastrais vêm do /cadastro)",
-    "versao": "4.1.0",
-    "total_perguntas": 230
+    "versao": "4.2.0",
+    "total_perguntas": 213
   },
   "departamentos": {
     "identificacao": {
@@ -104,9 +104,9 @@
           "perguntas": [
             {
               "id": "_int_erp_header",
-              "pergunta": "ERP / Sistema de gestão",
+              "pergunta": "ERP: {erp}",
               "tipo": "info",
-              "texto": "Agora os acessos do seu ERP. A IA usa isso pra consultar planos, faturas, contratos e dados do cliente em tempo real — sem isso, o atendimento fica limitado.",
+              "texto": "Foi nos informado que o ERP que vocês usam é o {erp}. Informe as credenciais abaixo. A IA usa isso pra consultar planos, faturas, contratos e dados do cliente em tempo real — sem isso, o atendimento fica limitado. Crie um usuário exclusivo para a Pipeelo (ex.: 'pipeelo').",
               "condicional": "_session_erp != ''"
             },
             {
@@ -1598,441 +1598,6 @@
               "placeholder": "Ex: 30.00"
             },
             {
-              "id": "outras_taxas",
-              "pergunta": "Outras taxas que a IA pode informar (opcional)",
-              "tipo": "textarea",
-              "obrigatoria": false,
-              "placeholder": "Ex:\nMudança de endereço: R$ 50,00\nVisita técnica sem defeito: R$ 80,00\nTroca de plano: R$ 0,00\nSegunda via impressa: R$ 5,00\nInstalação de ponto extra: R$ 80,00",
-              "hint": "Um por linha, formato: [Nome da taxa]: R$ valor. Sugestões: mudança de endereço, visita sem defeito, troca de plano, 2ª via impressa, ponto extra."
-            }
-          ]
-        },
-        "padrao": {
-          "titulo": "O que já é padrão",
-          "icone": "✅",
-          "descricao": "Situações que a IA trata do mesmo jeito em todos os provedores. Não precisa configurar nada.",
-          "perguntas": [
-            {
-              "id": "_info_padrao_financeiro",
-              "pergunta": "Como a IA age nesses casos",
-              "tipo": "info",
-              "obrigatoria": false,
-              "texto": "1. Cobrança incorreta: a IA pede os comprovantes e transfere para o Financeiro. 2. Pagamento duplicado: a IA pede os comprovantes e transfere para o Financeiro. 3. Comprovante de pagamento enviado: a IA confere o que consegue (PIX dá para validar; boleto não compensa na hora) e libera em confiança, sempre com a verificação antes."
-            }
-          ]
-        }
-      }
-    },
-    "suporte": {
-      "nome": "Suporte Técnico",
-      "slug": "suporte",
-      "responsavel_sugerido": "CTO, Coordenador NOC ou Gerente Técnico",
-      "tempo_estimado": "20-25 minutos",
-      "descricao": "ERPs, sistemas de gestão, parâmetros de sinal, fluxo de diagnóstico e regras de suporte técnico.",
-      "ordem_execucao": 3,
-      "secoes": {
-        "infraestrutura": {
-          "titulo": "Infraestrutura e Integrações",
-          "icone": "🏗️",
-          "descricao": "Qual ERP, qual sistema gerencia as OLTs, qual o estado da documentação da rede. A IA usa isso pra saber o que pode fazer sozinha.",
-          "perguntas": [
-            {
-              "id": "erp_utilizado",
-              "pergunta": "Qual ERP / sistema de gestão vocês usam?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "ixc",
-                  "label": "IXC Provedor"
-                },
-                {
-                  "value": "mk_solutions",
-                  "label": "MK Solutions"
-                },
-                {
-                  "value": "voalle",
-                  "label": "Voalle / SynSuite"
-                },
-                {
-                  "value": "hubsoft",
-                  "label": "HUBSOFT"
-                },
-                {
-                  "value": "topsapp",
-                  "label": "TopSapp"
-                },
-                {
-                  "value": "sgp",
-                  "label": "SGP (Sistema de Gestão do Provedor)"
-                },
-                {
-                  "value": "integrator",
-                  "label": "Integrator"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outro"
-                }
-              ]
-            },
-            {
-              "id": "erp_outro_nome",
-              "pergunta": "Qual ERP?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "erp_utilizado == 'outro'",
-              "placeholder": "Nome do ERP"
-            },
-            {
-              "id": "erp_credenciais_disponiveis",
-              "pergunta": "Vocês podem fornecer credenciais do ERP pra integração da IA?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "hint": "Sem credenciais, a IA não consulta boletos, contratos ou status do cliente.",
-              "opcoes": [
-                {
-                  "value": "sim_imediato",
-                  "label": "Sim, conseguimos fornecer agora"
-                },
-                {
-                  "value": "sim_depois",
-                  "label": "Sim, em até 7 dias"
-                },
-                {
-                  "value": "nao",
-                  "label": "Não temos como fornecer"
-                }
-              ]
-            },
-            {
-              "id": "olt_sistema",
-              "pergunta": "Qual sistema de gerenciamento de OLTs / rede vocês usam?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "smart_olt",
-                  "label": "Smart OLT"
-                },
-                {
-                  "value": "olt_cloud",
-                  "label": "OLT Cloud"
-                },
-                {
-                  "value": "genieacs",
-                  "label": "GenieACS"
-                },
-                {
-                  "value": "int6",
-                  "label": "INT6"
-                },
-                {
-                  "value": "ixc_acs",
-                  "label": "IXC ACS"
-                },
-                {
-                  "value": "manager_huawei",
-                  "label": "Manager (fabricante OLT — Huawei/ZTE/etc.)"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outro"
-                },
-                {
-                  "value": "nenhum",
-                  "label": "Não usamos sistema de gerenciamento"
-                }
-              ]
-            },
-            {
-              "id": "olt_sistema_outro",
-              "pergunta": "Qual sistema de OLT/ACS?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "olt_sistema == 'outro'",
-              "placeholder": "Nome do sistema"
-            },
-            {
-              "id": "protocolo_tr069",
-              "pergunta": "Vocês têm TR-069 ativo?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "hint": "Sem TR-069 a IA não troca senha/nome WiFi remotamente.",
-              "opcoes": [
-                {
-                  "value": "sim",
-                  "label": "Sim, em toda a base"
-                },
-                {
-                  "value": "parcial",
-                  "label": "Sim, em parte da base"
-                },
-                {
-                  "value": "nao",
-                  "label": "Não"
-                },
-                {
-                  "value": "contratando",
-                  "label": "Estamos contratando / implementando"
-                }
-              ]
-            },
-            {
-              "id": "rede_documentada",
-              "pergunta": "Qual o nível de documentação da rede?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "100",
-                  "label": "100% documentada (toda rede mapeada)"
-                },
-                {
-                  "value": "bem_documentada",
-                  "label": "Bem documentada (>80% mapeado)"
-                },
-                {
-                  "value": "parcialmente",
-                  "label": "Parcialmente documentada (40-80%)"
-                },
-                {
-                  "value": "pouco_documentada",
-                  "label": "Pouco documentada (<40%)"
-                }
-              ]
-            },
-            {
-              "id": "porcentagem_onus_mapeadas",
-              "pergunta": "Porcentagem de ONUs aptas a receber suporte N1 automático?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "todas",
-                  "label": "Todas (100%)"
-                },
-                {
-                  "value": "80_99",
-                  "label": "80-99%"
-                },
-                {
-                  "value": "50_79",
-                  "label": "50-79%"
-                },
-                {
-                  "value": "lt_50",
-                  "label": "Menos de 50%"
-                },
-                {
-                  "value": "nao_sei",
-                  "label": "Não sei ainda"
-                }
-              ]
-            },
-            {
-              "id": "usar_base_conhecimento_ceps",
-              "pergunta": "Podemos colocar a lista de CEPs/ruas atendidas em KB pra IA?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "condicional": "rede_documentada != 'bem_documentada'",
-              "hint": "A IA consulta antes de confirmar cobertura pro cliente.",
-              "opcoes": [
-                {
-                  "value": "sim",
-                  "label": "Sim, forneceremos a lista"
-                },
-                {
-                  "value": "nao",
-                  "label": "Não"
-                }
-              ]
-            }
-          ]
-        },
-        "cliente_bancada": {
-          "titulo": "Cliente de Bancada (Homologação)",
-          "icone": "🧪",
-          "descricao": "Um cliente de testes pra validarmos as ações da IA antes de liberar pra sua base real.",
-          "perguntas": [
-            {
-              "id": "_info_cliente_bancada",
-              "pergunta": "Por que precisamos disso",
-              "tipo": "info",
-              "texto": "Antes de subir em produção, rodamos uma bateria de testes em *um* cliente de bancada — envio de boleto, envio de PIX, desbloqueio em confiança, reset de ONU, troca de senha do WiFi e troca de nome da rede. É assim que validamos cada integração com segurança antes de liberar pra base inteira. Pode ser um CPF real ou fictício/forjado, desde que esteja com *contrato ativo, ONU vinculada e ao menos uma fatura em aberto* no ERP."
-            },
-            {
-              "id": "cliente_teste_disponibilidade",
-              "pergunta": "Vocês conseguem disponibilizar um cliente de bancada pra testes?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "sim",
-                  "label": "Sim, já tenho o CPF de um cliente de testes"
-                },
-                {
-                  "value": "preparar",
-                  "label": "Vou preparar e enviar em até 7 dias"
-                },
-                {
-                  "value": "ajuda",
-                  "label": "Preciso de ajuda pra montar esse cliente"
-                }
-              ]
-            },
-            {
-              "id": "cliente_teste_cpf",
-              "pergunta": "CPF do cliente de bancada",
-              "tipo": "cpf",
-              "obrigatoria": true,
-              "condicional": "cliente_teste_disponibilidade == 'sim'",
-              "placeholder": "000.000.000-00",
-              "hint": "Cliente com contrato ativo, ONU vinculada e fatura em aberto — real ou fictício."
-            },
-            {
-              "id": "cliente_teste_observacoes",
-              "pergunta": "Observações sobre o cliente de testes (opcional)",
-              "tipo": "textarea",
-              "obrigatoria": false,
-              "condicional": "cliente_teste_disponibilidade == 'sim'",
-              "placeholder": "Ex: login/nº do contrato, qual ONU, plano, se já tem fatura vencida...",
-              "hint": "Qualquer detalhe que ajude a localizar e testar o cliente."
-            }
-          ]
-        },
-        "parametros_sinal": {
-          "titulo": "Parâmetros de Sinal ONU",
-          "icone": "📡",
-          "descricao": "A IA classifica automaticamente o sinal do cliente como 'dentro do padrão' ou 'fora do padrão' antes de decidir o próximo passo.",
-          "perguntas": [
-            {
-              "id": "sinal_onu_minimo",
-              "pergunta": "Sinal ONU mínimo aceitável (dBm)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: -24",
-              "hint": "Abaixo disso o sinal é ruim. Valor em dBm (negativo). Padrão comum: -24 dBm."
-            },
-            {
-              "id": "sinal_onu_maximo",
-              "pergunta": "Sinal ONU máximo aceitável (dBm)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: -9",
-              "hint": "Acima disso a ONU pode estar queimada. Padrão comum: -9 dBm."
-            },
-            {
-              "id": "sinal_onu_aceitavel",
-              "pergunta": "Sinal ideal/saudável (dBm)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: -18",
-              "hint": "Valor considerado ótimo. A IA usa isso como referência de qualidade."
-            },
-            {
-              "id": "acao_sinal_fora_padrao",
-              "pergunta": "Quando sinal está fora do padrão, o que a IA faz?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "abre_os",
-                  "label": "Abre OS de visita técnica automaticamente"
-                },
-                {
-                  "value": "transfere_suporte",
-                  "label": "Transfere para suporte humano com a informação"
-                },
-                {
-                  "value": "tenta_reset",
-                  "label": "Tenta reset da ONU antes de transferir"
-                }
-              ]
-            }
-          ]
-        },
-        "fluxo_diagnostico": {
-          "titulo": "Fluxo de Diagnóstico",
-          "icone": "🌐",
-          "descricao": "Sequência que a IA segue quando o cliente reporta problema de conexão.",
-          "perguntas": [
-            {
-              "id": "tipos_problema_comuns",
-              "pergunta": "Quais são os tipos de problema MAIS COMUNS no suporte?",
-              "tipo": "checkbox_multiple",
-              "obrigatoria": true,
-              "hint": "A IA prioriza diagnóstico pros mais frequentes.",
-              "opcoes": [
-                {
-                  "value": "sem_internet",
-                  "label": "Sem conexão total"
-                },
-                {
-                  "value": "lentidao",
-                  "label": "Lentidão / velocidade baixa"
-                },
-                {
-                  "value": "wifi_sinal",
-                  "label": "Sinal WiFi fraco em cômodos distantes"
-                },
-                {
-                  "value": "senha_wifi",
-                  "label": "Trocar senha WiFi"
-                },
-                {
-                  "value": "nome_wifi",
-                  "label": "Trocar nome da rede"
-                },
-                {
-                  "value": "mudar_endereco",
-                  "label": "Mudança de endereço"
-                },
-                {
-                  "value": "ping_alto",
-                  "label": "Ping alto / oscilações em games"
-                },
-                {
-                  "value": "iptv",
-                  "label": "Problemas de IPTV/streaming"
-                }
-              ]
-            },
-            {
-              "id": "fluxo_diagnostico_texto",
-              "pergunta": "Descreva o fluxo de diagnóstico que vocês seguem (pode copiar do padrão)",
-              "tipo": "textarea",
-              "obrigatoria": true,
-              "placeholder": "1) Verificar identidade (nome + CPF)\n2) Consultar sinal ONU via custom_consultar_sinal_onu\n3) Se sinal OK → problema interno → pedir teste com cabo\n4) Se sinal fora → abrir OS de visita técnica\n5) Pedir foto do equipamento se cliente descrever dano",
-              "hint": "Passo a passo. A IA segue na ordem exata."
-            },
-            {
-              "id": "cliente_inadimplente_acao",
-              "pergunta": "Se o cliente reporta problema MAS está inadimplente, o que a IA faz?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "transfere_financeiro",
-                  "label": "Informa situação e transfere pro Financeiro"
-                },
-                {
-                  "value": "atende_depois_financeiro",
-                  "label": "Atende, resolve e ao final lembra da pendência"
-                },
-                {
-                  "value": "atende_normal",
-                  "label": "Atende normalmente, sem menção à pendência"
-                }
-              ]
-            }
-          ]
-        },
-        "visita_tecnica": {
-          "titulo": "Visita Técnica",
-          "icone": "🚗",
-          "perguntas": [
-            {
               "id": "taxa_visita",
               "pergunta": "Existe taxa para visita técnica?",
               "tipo": "select",
@@ -2092,102 +1657,269 @@
                   "label": "NÃO COBRA na primeira visita pós-instalação"
                 }
               ]
+            },
+            {
+              "id": "outras_taxas",
+              "pergunta": "Outras taxas que a IA pode informar (opcional)",
+              "tipo": "textarea",
+              "obrigatoria": false,
+              "placeholder": "Ex:\nMudança de endereço: R$ 50,00\nVisita técnica sem defeito: R$ 80,00\nTroca de plano: R$ 0,00\nSegunda via impressa: R$ 5,00\nInstalação de ponto extra: R$ 80,00",
+              "hint": "Um por linha, formato: [Nome da taxa]: R$ valor. Sugestões: mudança de endereço, visita sem defeito, troca de plano, 2ª via impressa, ponto extra."
             }
           ]
         },
-        "pesquisas_automaticas": {
-          "titulo": "Pesquisas Automáticas (Pós-instalação e Pós-suporte)",
-          "icone": "📊",
-          "descricao": "Agentes da Pipeelo que disparam pesquisa de satisfação depois da instalação e depois de visitas técnicas, gravando o resultado na ordem de serviço.",
+        "follow_up": {
+          "titulo": "Follow-up quando o cliente some",
+          "icone": "🔄",
+          "descricao": "O que a IA faz quando o cliente para de responder no meio do atendimento.",
           "perguntas": [
             {
-              "id": "_info_pos_instalacao",
-              "pergunta": "Agente de pós-instalação",
-              "tipo": "info",
-              "texto": "Quando uma OS de instalação é fechada, a IA envia uma mensagem ao cliente no dia seguinte com pesquisa de satisfação e grava o resultado na OS."
+              "id": "followup_financeiro_padrao",
+              "pergunta": "Nosso follow-up padrão: 10 minutos sem resposta, a IA manda 1 mensagem de reengajamento; 5 minutos depois, se continuar sem resposta, transfere para o Financeiro. Querem seguir dessa forma?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "hint": "É sempre 1 mensagem e depois a transferência. O que muda são só os tempos.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, seguir o padrão"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, queremos outros tempos"
+                }
+              ]
             },
             {
-              "id": "pos_instalacao_ativo",
-              "pergunta": "Querem ativar a pesquisa automática de pós-instalação?",
+              "id": "followup_financeiro_tempos",
+              "pergunta": "Quais tempos vocês querem?",
+              "tipo": "grupo",
+              "obrigatoria": true,
+              "condicional": "followup_financeiro_padrao == 'nao'",
+              "campos": [
+                {
+                  "id": "followup_financeiro_minutos_mensagem",
+                  "label": "Minutos sem resposta até a mensagem de reengajamento",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "10",
+                  "largura": 6
+                },
+                {
+                  "id": "followup_financeiro_minutos_transferir",
+                  "label": "Minutos depois da mensagem até transferir",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "5",
+                  "largura": 6
+                }
+              ]
+            }
+          ]
+        },
+        "padrao": {
+          "titulo": "O que já é padrão",
+          "icone": "✅",
+          "descricao": "Situações que a IA trata do mesmo jeito em todos os provedores. Não precisa configurar nada.",
+          "perguntas": [
+            {
+              "id": "_info_padrao_financeiro",
+              "pergunta": "Como a IA age nesses casos",
+              "tipo": "info",
+              "obrigatoria": false,
+              "texto": "1. Cobrança incorreta: a IA pede os comprovantes e transfere para o Financeiro. 2. Pagamento duplicado: a IA pede os comprovantes e transfere para o Financeiro. 3. Comprovante de pagamento enviado: a IA confere o que consegue (PIX dá para validar; boleto não compensa na hora) e libera em confiança, sempre com a verificação antes."
+            }
+          ]
+        }
+      }
+    },
+    "suporte": {
+      "nome": "Suporte Técnico",
+      "slug": "suporte",
+      "responsavel_sugerido": "CTO, Coordenador NOC ou Gerente Técnico",
+      "tempo_estimado": "20-25 minutos",
+      "descricao": "TR-069, cliente de testes, padrões de sinal e diagnóstico, serviços agregados e follow-up.",
+      "ordem_execucao": 3,
+      "secoes": {
+        "infraestrutura": {
+          "titulo": "Infraestrutura",
+          "icone": "🏗️",
+          "descricao": "O ERP e o gerenciador de rede já vieram da proposta; os acessos você informa na Identificação. Aqui só o que muda o que a IA consegue fazer.",
+          "perguntas": [
+            {
+              "id": "protocolo_tr069",
+              "pergunta": "Vocês têm TR-069 ativo nos roteadores dos clientes?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "hint": "TR-069 é o protocolo que deixa o gerenciador de rede (ACS) falar com o roteador do cliente à distância. Com ele a IA troca a senha do Wi-Fi, troca o nome da rede, vê redes vizinhas e dispositivos conectados e reinicia o equipamento sem técnico. Sem TR-069, nada disso existe no atendimento.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, em toda a base"
+                },
+                {
+                  "value": "parcial",
+                  "label": "Sim, em parte da base"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não"
+                },
+                {
+                  "value": "contratando",
+                  "label": "Estamos contratando / implementando"
+                }
+              ]
+            },
+            {
+              "id": "rede_documentada",
+              "pergunta": "Qual o nível de documentação da rede?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "opcoes": [
+                {
+                  "value": "100",
+                  "label": "100% documentada (toda rede mapeada)"
+                },
+                {
+                  "value": "bem_documentada",
+                  "label": "Bem documentada (>80% mapeado)"
+                },
+                {
+                  "value": "parcialmente",
+                  "label": "Parcialmente documentada (40-80%)"
+                },
+                {
+                  "value": "pouco_documentada",
+                  "label": "Pouco documentada (<40%)"
+                }
+              ]
+            },
+            {
+              "id": "viabilidade_kmz",
+              "pergunta": "Vocês têm localidades de viabilidade que não estão documentadas no gerenciador de rede?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "hint": "Ex.: condomínios, áreas rurais ou bairros novos que não aparecem no OZmap, Geogrid ou Geosite. Podemos inserir esses pontos numa base de conhecimento por polígono KMZ — a IA consulta antes de confirmar cobertura. Se sim, mande os arquivos KMZ no grupo com a Pipeelo.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, vamos enviar os polígonos (KMZ)"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, está tudo no gerenciador"
+                }
+              ]
+            }
+          ]
+        },
+        "cliente_bancada": {
+          "titulo": "Cliente de Testes (Homologação)",
+          "icone": "🧪",
+          "perguntas": [
+            {
+              "id": "_info_cliente_bancada",
+              "pergunta": "Precisamos de um cliente de testes em até 3 dias",
+              "tipo": "info",
+              "texto": "Antes de subir em produção, rodamos uma bateria de testes em um cliente de testes: envio de boleto, envio de PIX, desbloqueio em confiança, reset de ONU, troca de senha e de nome do Wi-Fi. Pode ser um cliente de bancada ou o CPF de um colaborador — desde que esteja com contrato ativo, ONU vinculada e ao menos uma fatura em aberto no ERP. Precisamos dele em até 3 dias. Se já tiver, informe o CPF abaixo; se não, mande no grupo com a Pipeelo assim que estiver pronto."
+            },
+            {
+              "id": "cliente_teste_cpf",
+              "pergunta": "CPF do cliente de testes (se já tiver)",
+              "tipo": "cpf",
+              "obrigatoria": false,
+              "placeholder": "000.000.000-00",
+              "hint": "Cliente com contrato ativo, ONU vinculada e fatura em aberto — real ou fictício."
+            },
+            {
+              "id": "cliente_teste_observacoes",
+              "pergunta": "Observações sobre o cliente de testes (opcional)",
+              "tipo": "textarea",
+              "obrigatoria": false,
+              "placeholder": "Ex: login/nº do contrato, qual ONU, plano, se já tem fatura vencida...",
+              "hint": "Qualquer detalhe que ajude a localizar e testar o cliente."
+            }
+          ]
+        },
+        "sinal_diagnostico": {
+          "titulo": "Sinal e Diagnóstico",
+          "icone": "📡",
+          "descricao": "Os padrões que a IA usa para julgar o sinal da ONU e conduzir o diagnóstico. Se vocês trabalham diferente, é só dizer.",
+          "perguntas": [
+            {
+              "id": "sinal_padrao",
+              "pergunta": "Nosso padrão de sinal da ONU: entre -8 e -27 dBm é aceitável (ideal em torno de -18 dBm); abaixo de -27 dBm ou LOS é crítico. Vocês trabalham com esses valores?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "hint": "A IA nunca fala esses números com o cliente; eles ficam só na nota interna para o atendente.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, seguir o padrão"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, usamos outros valores"
+                }
+              ]
+            },
+            {
+              "id": "sinal_padrao_proprio",
+              "pergunta": "Quais valores vocês usam?",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "sinal_padrao == 'nao'",
+              "placeholder": "Ex.: aceitável entre -9 e -25 dBm; crítico abaixo de -25 dBm"
+            },
+            {
+              "id": "sinal_fora_padrao_padrao",
+              "pergunta": "Quando o sinal está fora do padrão, a IA tenta reiniciar a ONU (se o uptime indicar que vale a pena); se não resolver, transfere para a equipe com um resumo técnico e abre o chamado. De acordo?",
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
                 {
                   "value": "sim",
-                  "label": "Sim, ativar"
+                  "label": "Sim, de acordo"
                 },
                 {
                   "value": "nao",
-                  "label": "Não por enquanto"
+                  "label": "Não, queremos diferente"
                 }
               ]
             },
             {
-              "id": "pos_instalacao_horario",
-              "pergunta": "Qual horário a mensagem de pós-instalação deve ser enviada?",
-              "tipo": "time",
+              "id": "sinal_fora_padrao_fluxo",
+              "pergunta": "Como vocês querem que a IA aja com sinal fora do padrão?",
+              "tipo": "textarea",
               "obrigatoria": true,
-              "condicional": "pos_instalacao_ativo == 'sim'",
-              "hint": "Enviada no dia seguinte à instalação. Ex: 10:00"
+              "condicional": "sinal_fora_padrao_padrao == 'nao'"
             },
             {
-              "id": "_info_pos_suporte",
-              "pergunta": "Agente de pós-suporte",
-              "tipo": "info",
-              "texto": "Depois de uma visita técnica, a IA dispara uma pesquisa de satisfação sobre o atendimento e atualiza a ordem de serviço com o resultado."
-            },
-            {
-              "id": "pos_suporte_ativo",
-              "pergunta": "Querem ativar a pesquisa automática de pós-suporte (após visita técnica)?",
+              "id": "fluxo_diagnostico_padrao",
+              "pergunta": "Nosso fluxo de diagnóstico padrão: 1) confere se a conexão está bloqueada por débito (se estiver, vai para o Financeiro); 2) verifica falha massiva na região — se houver, informa o cliente e não abre chamado; 3) reconhece cliente recorrente (3º contato em 7 dias vai direto para a equipe com prioridade); 4) pergunta se está sem conexão ou lenta — em lentidão, checa consumo anormal; 5) pede que fique perto do roteador e mande foto dos LEDs, confere fibra e cabos; 6) consulta o sinal da ONU — crítico vai para a equipe com nota técnica; 7) sinal OK: perguntas sobre aparelhos e sites, testes simples (outro aparelho, 2.4G/5G), diagnóstico de Wi-Fi e 1 reinício remoto; 8) não resolveu: diagnóstico automático N2, transfere para o suporte com resumo e abre chamado. Vocês seguem assim?",
               "tipo": "select",
               "obrigatoria": true,
+              "hint": "Esse é o fluxo que roda hoje nos nossos provedores. A IA nunca usa termos técnicos com o cliente.",
               "opcoes": [
                 {
                   "value": "sim",
-                  "label": "Sim, ativar"
+                  "label": "Sim, seguir o padrão"
                 },
                 {
                   "value": "nao",
-                  "label": "Não por enquanto"
+                  "label": "Não, nosso fluxo é diferente"
                 }
               ]
             },
             {
-              "id": "pos_suporte_quando",
-              "pergunta": "Quando a pesquisa de pós-suporte deve ser disparada?",
-              "tipo": "select",
+              "id": "fluxo_diagnostico_texto",
+              "pergunta": "Descreva o fluxo de diagnóstico que vocês seguem",
+              "tipo": "textarea",
               "obrigatoria": true,
-              "condicional": "pos_suporte_ativo == 'sim'",
-              "opcoes": [
-                {
-                  "value": "horas_depois",
-                  "label": "Algumas horas depois da visita (mesmo dia)"
-                },
-                {
-                  "value": "dia_seguinte",
-                  "label": "No dia seguinte"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outro momento"
-                }
-              ]
-            },
-            {
-              "id": "pos_suporte_quando_outro",
-              "pergunta": "Descreva quando a pesquisa deve ser disparada:",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "pos_suporte_quando == 'outro'",
-              "placeholder": "Ex: 2 dias depois, sempre às 18h"
-            },
-            {
-              "id": "pos_suporte_horario",
-              "pergunta": "Qual horário a pesquisa de pós-suporte deve ser enviada?",
-              "tipo": "time",
-              "obrigatoria": true,
-              "condicional": "pos_suporte_quando == 'dia_seguinte'",
-              "hint": "Ex: 10:00"
+              "condicional": "fluxo_diagnostico_padrao == 'nao'",
+              "placeholder": "Passo a passo, na ordem em que a IA deve seguir.",
+              "hint": "A IA segue na ordem exata."
             }
           ]
         },
@@ -2196,78 +1928,28 @@
           "icone": "🔧",
           "perguntas": [
             {
-              "id": "troca_senha_wifi",
-              "pergunta": "A IA pode executar troca de senha Wi-Fi remotamente?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "hint": "⚠️ Esta funcionalidade só está disponível se você tiver protocolo TR-069 ativo",
-              "opcoes": [
-                {
-                  "value": "sim",
-                  "label": "Sim, pode trocar via API"
-                },
-                {
-                  "value": "nao",
-                  "label": "Não, precisa transferir para Suporte"
-                }
-              ]
-            },
-            {
-              "id": "validacao_troca_senha",
-              "pergunta": "Quais dados validam a troca de senha Wi-Fi?",
-              "tipo": "checkbox_multiple",
-              "obrigatoria": true,
-              "condicional": "troca_senha_wifi == 'sim'",
-              "opcoes": [
-                {
-                  "value": "localizacao_whatsapp",
-                  "label": "Localização do WhatsApp"
-                },
-                {
-                  "value": "data_nascimento",
-                  "label": "Data de nascimento"
-                },
-                {
-                  "value": "email",
-                  "label": "Email cadastrado"
-                }
-              ]
-            },
-            {
-              "id": "troca_nome_wifi",
-              "pergunta": "A IA pode alterar nome da rede Wi-Fi (SSID)?",
+              "id": "alteracoes_remotas_padrao",
+              "pergunta": "Com TR-069 ativo, nosso padrão é a IA fazer tudo remotamente: trocar a senha do Wi-Fi (validando dados do cadastro antes), trocar o nome da rede, ver quantos dispositivos estão conectados e informar ao cliente, e reiniciar a ONU. Vocês trabalham de forma diferente ou querem que ela NÃO faça algo disso?",
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
                 {
-                  "value": "sim",
-                  "label": "Sim, pode alterar via API"
+                  "value": "padrao",
+                  "label": "Não, o padrão serve"
                 },
                 {
-                  "value": "nao",
-                  "label": "Não, precisa transferir para Suporte"
+                  "value": "diferente",
+                  "label": "Sim, queremos diferente"
                 }
               ]
             },
             {
-              "id": "verificar_dispositivos",
-              "pergunta": "A IA pode verificar quantos dispositivos estão conectados na rede do cliente?",
-              "tipo": "select",
+              "id": "alteracoes_remotas_texto",
+              "pergunta": "O que muda para vocês?",
+              "tipo": "textarea",
               "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "sim_mostrar",
-                  "label": "Sim, e informar ao cliente"
-                },
-                {
-                  "value": "sim_interno",
-                  "label": "Sim, mas apenas para análise interna"
-                },
-                {
-                  "value": "nao",
-                  "label": "Prefiro não informar o cliente sobre isso"
-                }
-              ]
+              "condicional": "alteracoes_remotas_padrao == 'diferente'",
+              "placeholder": "Ex.: não trocar o nome da rede; não informar a quantidade de dispositivos ao cliente; validar a troca de senha só com data de nascimento."
             }
           ]
         },
@@ -2749,43 +2431,65 @@
           ]
         },
         "follow_up": {
-          "titulo": "Follow-up de Atendimentos",
+          "titulo": "Follow-up quando o cliente some",
           "icone": "🔄",
+          "descricao": "O que a IA faz quando o cliente para de responder no meio do atendimento.",
           "perguntas": [
             {
-              "id": "followup_suporte_ativo",
-              "pergunta": "Vocês querem que a IA faça follow-up quando o cliente parar de responder durante o suporte?",
+              "id": "followup_suporte_padrao",
+              "pergunta": "Nosso follow-up padrão: 10 minutos sem resposta, a IA manda 1 mensagem de reengajamento; 5 minutos depois, se continuar sem resposta, transfere para o Suporte. Querem seguir dessa forma?",
               "tipo": "select",
               "obrigatoria": true,
-              "hint": "Ex: Se o cliente foi reiniciar a ONU e não retornou, a IA pode perguntar se resolveu",
+              "hint": "É sempre 1 mensagem e depois a transferência. O que muda são só os tempos.",
               "opcoes": [
                 {
                   "value": "sim",
-                  "label": "Sim, ativar follow-up"
+                  "label": "Sim, seguir o padrão"
                 },
                 {
                   "value": "nao",
-                  "label": "Não, apenas aguardar"
+                  "label": "Não, queremos outros tempos"
                 }
               ]
             },
             {
-              "id": "followup_suporte_minutos",
-              "pergunta": "Após quantos minutos de inatividade a IA deve enviar mensagem de reengajamento?",
-              "tipo": "number",
+              "id": "followup_suporte_tempos",
+              "pergunta": "Quais tempos vocês querem?",
+              "tipo": "grupo",
               "obrigatoria": true,
-              "condicional": "followup_suporte_ativo == 'sim'",
-              "placeholder": "Ex: 5",
-              "hint": "A IA perguntará se o problema foi resolvido ou se precisa de mais ajuda"
-            },
+              "condicional": "followup_suporte_padrao == 'nao'",
+              "campos": [
+                {
+                  "id": "followup_suporte_minutos_mensagem",
+                  "label": "Minutos sem resposta até a mensagem de reengajamento",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "10",
+                  "largura": 6
+                },
+                {
+                  "id": "followup_suporte_minutos_transferir",
+                  "label": "Minutos depois da mensagem até transferir",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "5",
+                  "largura": 6
+                }
+              ]
+            }
+          ]
+        },
+        "padrao": {
+          "titulo": "O que já é padrão",
+          "icone": "✅",
+          "descricao": "Situações que a IA trata do mesmo jeito em todos os provedores. Não precisa configurar nada.",
+          "perguntas": [
             {
-              "id": "followup_suporte_transferir_minutos",
-              "pergunta": "Após quantos minutos sem resposta do cliente a IA deve transferir para atendente humano?",
-              "tipo": "number",
-              "obrigatoria": true,
-              "condicional": "followup_suporte_ativo == 'sim'",
-              "placeholder": "Ex: 30",
-              "hint": "Tempo de espera após o primeiro follow-up antes de transferir para humano"
+              "id": "_info_padrao_suporte",
+              "pergunta": "Como a IA age nesses casos",
+              "tipo": "info",
+              "obrigatoria": false,
+              "texto": "1. Cliente inadimplente com problema técnico: a IA informa a pendência e trata o financeiro primeiro (2ª via, PIX, liberação em confiança). Se o serviço está ativo, atende o suporte normalmente. 2. Problemas mais comuns (sem conexão, lentidão, Wi-Fi fraco, troca de senha e de nome da rede, mudança de endereço, IPTV): já estão no fluxo. 3. Pesquisas de pós-instalação e pós-suporte: não entram no go-live; o time de Sucesso do Cliente ativa com vocês depois."
             }
           ]
         }
@@ -3832,40 +3536,51 @@
           ]
         },
         "follow_up": {
-          "titulo": "Follow-up de Leads Inativos",
+          "titulo": "Follow-up quando o cliente some",
           "icone": "🔄",
+          "descricao": "O que a IA faz quando o cliente para de responder no meio do atendimento.",
           "perguntas": [
             {
-              "id": "followup_vendas_ativo",
-              "pergunta": "A IA deve fazer follow-up quando o lead parar de responder?",
+              "id": "followup_vendas_padrao",
+              "pergunta": "Nosso follow-up padrão: 10 minutos sem resposta, a IA manda 1 mensagem de reengajamento; 5 minutos depois, se continuar sem resposta, transfere para o Vendas. Querem seguir dessa forma?",
               "tipo": "select",
               "obrigatoria": true,
+              "hint": "É sempre 1 mensagem e depois a transferência. O que muda são só os tempos.",
               "opcoes": [
                 {
                   "value": "sim",
-                  "label": "Sim, mensagem de reengajamento"
+                  "label": "Sim, seguir o padrão"
                 },
                 {
                   "value": "nao",
-                  "label": "Não, apenas aguardar"
+                  "label": "Não, queremos outros tempos"
                 }
               ]
             },
             {
-              "id": "followup_vendas_minutos",
-              "pergunta": "Após quantos minutos de inatividade enviar reengajamento?",
-              "tipo": "number",
+              "id": "followup_vendas_tempos",
+              "pergunta": "Quais tempos vocês querem?",
+              "tipo": "grupo",
               "obrigatoria": true,
-              "condicional": "followup_vendas_ativo == 'sim'",
-              "placeholder": "Ex: 5"
-            },
-            {
-              "id": "followup_vendas_transferir_minutos",
-              "pergunta": "Após quantos minutos sem resposta transferir para humano?",
-              "tipo": "number",
-              "obrigatoria": true,
-              "condicional": "followup_vendas_ativo == 'sim'",
-              "placeholder": "Ex: 30"
+              "condicional": "followup_vendas_padrao == 'nao'",
+              "campos": [
+                {
+                  "id": "followup_vendas_minutos_mensagem",
+                  "label": "Minutos sem resposta até a mensagem de reengajamento",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "10",
+                  "largura": 6
+                },
+                {
+                  "id": "followup_vendas_minutos_transferir",
+                  "label": "Minutos depois da mensagem até transferir",
+                  "tipo": "number",
+                  "obrigatoria": true,
+                  "placeholder": "5",
+                  "largura": 6
+                }
+              ]
             }
           ]
         }

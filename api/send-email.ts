@@ -75,22 +75,21 @@ const PROMPT_MAPPING: Record<string, Record<string, Array<{ questionId: string; 
     secao_11_empresa: [
       { questionId: "empresa_cidades", placeholder: "[Cidades]", section: "SEÇÃO 11", fromSacGeral: true },
     ],
-    diagnostico: [
-      { questionId: "sinal_onu_minimo", label: "Sinal ONU mínimo (dBm)" },
-      { questionId: "sinal_onu_maximo", label: "Sinal ONU máximo (dBm)" },
-      { questionId: "sinal_onu_aceitavel", label: "Sinal ONU aceitável (dBm)" },
-      { questionId: "fluxo_diagnostico", label: "Fluxo de diagnóstico" },
-    ],
     integracoes: [
-      { questionId: "erp_utilizado", label: "ERP utilizado" },
-      { questionId: "olt_sistema", label: "OLT/Sistema de gerenciamento" },
-      { questionId: "reset_onu_tipo", label: "Reset ONU" },
       { questionId: "protocolo_tr069", label: "TR-069 ativo" },
+      { questionId: "rede_documentada", label: "Rede documentada" },
+      { questionId: "viabilidade_kmz", label: "Viabilidade por KMZ" },
+      { questionId: "cliente_teste_cpf", label: "CPF do cliente de testes" },
     ],
-    alteracoes_remotas: [
-      { questionId: "troca_senha_wifi", label: "Troca senha WiFi" },
-      { questionId: "troca_nome_wifi", label: "Troca nome WiFi" },
-      { questionId: "verificar_dispositivos", label: "Ver dispositivos" },
+    padroes: [
+      { questionId: "sinal_padrao", label: "Sinal: segue o padrão" },
+      { questionId: "sinal_padrao_proprio", label: "Sinal: valores próprios" },
+      { questionId: "sinal_fora_padrao_padrao", label: "Sinal fora do padrão: segue o padrão" },
+      { questionId: "sinal_fora_padrao_fluxo", label: "Sinal fora do padrão: fluxo próprio" },
+      { questionId: "fluxo_diagnostico_padrao", label: "Diagnóstico: segue o padrão" },
+      { questionId: "alteracoes_remotas_padrao", label: "Alterações remotas: segue o padrão" },
+      { questionId: "alteracoes_remotas_texto", label: "Alterações remotas: o que muda" },
+      { questionId: "followup_suporte_padrao", label: "Follow-up: segue o padrão" },
     ],
   },
   vendas: {
