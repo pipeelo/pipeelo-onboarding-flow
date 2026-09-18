@@ -4,6 +4,7 @@ import {
   PAYLOAD_VERSION,
 } from "../contracts/src/onboarding-payload.js";
 import { requireSupabase } from "./_lib/supabase.js";
+import { aplicarCompatLegado } from "./_lib/compat-legado.js";
 import {
   enqueueOutbox,
   markInFlight,
@@ -68,11 +69,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const r of respostas || []) {
       const bucket = respostasPorDepartamento[r.departamento];
       if (!bucket) continue;
-      let valor = r.valor;
-      if (valor && typeof valor === "object" && (valor.segunda_sexta || valor.sabado || valor.domingo_feriado)) {
-        valor = expandHorarioSemanal(valor);
+      bucket[r.pergunta_id] = r.valor;
+    }
+
+    // questions.json 4.x → ids legado que o admin-pipeelo lê (ver compat-legado.ts).
+    // Roda ANTES da expansão de horário, porque deriva `horario_atendimento` do
+    // horário por departamento e o admin espera o formato expandido em ambos.
+    aplicarCompatLegado(respostasPorDepartamento, {
+      empresa_nome: session.empresa_nome,
+      erp: session.erp ?? null,
+      gerenciamento_rede: session.gerenciamento_rede ?? null,
+      qtd_sessoes: session.qtd_sessoes ?? null,
+      cadastro: session.cadastro ?? null,
+    });
+
+    for (const bucket of Object.values(respostasPorDepartamento)) {
+      for (const [id, valor] of Object.entries(bucket)) {
+        if (valor && typeof valor === "object" && !Array.isArray(valor)) {
+          const h = valor as Record<string, unknown>;
+          if (h.segunda_sexta || h.sabado || h.domingo_feriado) bucket[id] = expandHorarioSemanal(h);
+        }
       }
-      bucket[r.pergunta_id] = valor;
     }
 
     const payload = {
