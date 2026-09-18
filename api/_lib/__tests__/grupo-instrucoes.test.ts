@@ -62,6 +62,23 @@ describe('mensagemInstrucoesGrupo', () => {
     expect(m).toContain('https://onboarding.pipeelo.com/s/abc123');
   });
 
+  it('resume o fechamento comercial para a equipe saber o que vem: ERP, sessões, CRM', () => {
+    const m = mensagemInstrucoesGrupo(cadastro, 'x', { erp: 'MK Solution', qtd_sessoes: 5500, valor_mensal: 3300, contratou_crm: true, go_live_em: '2026-10-18' });
+    expect(m).toContain('ERP: MK Solution');
+    expect(m).toContain('5.500 sessões/mês');
+    expect(m).toContain('R$ 3.300,00/mês');
+    expect(m).toContain('CRM: sim');
+    expect(m).toContain('go-live 18/10/2026');
+  });
+
+  it('fechamento sem dado não inventa: mostra "não informado"', () => {
+    const m = mensagemInstrucoesGrupo(cadastro, 'x', { erp: null, qtd_sessoes: null, valor_mensal: null, contratou_crm: null, go_live_em: null });
+    expect(m).toContain('ERP: não informado');
+    expect(m).toContain('sessões/mês: não informado');
+    expect(m).toContain('CRM: não');
+    expect(m).not.toContain('go-live');
+  });
+
   it('resume documentos, e-mail do contrato e vencimento', () => {
     const m = mensagemInstrucoesGrupo(cadastro, 'x');
     expect(m).toContain('2 documentos');

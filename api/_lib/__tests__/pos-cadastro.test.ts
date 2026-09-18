@@ -10,6 +10,7 @@ vi.mock('../staff-notify', () => ({ notifyStaff: vi.fn(async () => ({ sent: true
 vi.mock('../assinatura', () => ({ enviarParaAssinatura: vi.fn(async () => ({ status: 'enviado', solicitacao_id: 66, link: 'https://x/l', dm: true, grupo: true, reenvio: false })) }));
 
 import { gerarContratoParaSessao } from '../contrato';
+import { enviarParaAssinatura } from '../assinatura';
 import { criarClienteContaAzul } from '../conta-azul';
 import { notifyStaff, notifySocios } from '../staff-notify';
 import { processarPosCadastro, mensagemStaffPosCadastro, mensagemSociosAssinatura, type SessaoPosCadastro } from '../pos-cadastro';
@@ -34,6 +35,7 @@ const sessao: SessaoPosCadastro = {
 const supabase = {} as never;
 const mockContrato = gerarContratoParaSessao as unknown as ReturnType<typeof vi.fn>;
 const mockCobranca = criarClienteContaAzul as unknown as ReturnType<typeof vi.fn>;
+const mockAssinatura = enviarParaAssinatura as unknown as ReturnType<typeof vi.fn>;
 const mockStaff = notifyStaff as unknown as ReturnType<typeof vi.fn>;
 const mockSocios = notifySocios as unknown as ReturnType<typeof vi.fn>;
 
@@ -94,6 +96,21 @@ describe('processarPosCadastro', () => {
     mockCobranca.mockResolvedValue(cobrado);
     await processarPosCadastro(supabase, { ...sessao, contrato_path: 's1/x.docx', contrato_erro: 'falhou antes' }, cadastro);
     expect(mockContrato).toHaveBeenCalledTimes(1);
+  });
+
+  it('assinatura no 1º ciclo usa a extração do contrato recém-gerado, não a sessão velha', async () => {
+    // Bug real (OLV 14/09, CONECTA 15/09, INUV 18/09): a sessão carregada antes de gerar
+    // o contrato tem contrato_extracao = null, e a assinatura respondia "sem representante".
+    const extracao = { representante: { nome: 'Ana Souza', cpf: '12345678900' }, endereco_sede: 'Rua A, 1' };
+    mockContrato.mockResolvedValue({ ...gerado, pdf_path: 's1/Contrato.pdf', extracao });
+    mockCobranca.mockResolvedValue(cobrado);
+
+    await processarPosCadastro(supabase, { ...sessao, contrato_extracao: null }, cadastro);
+
+    expect(mockAssinatura).toHaveBeenCalledTimes(1);
+    const sessaoEnviada = mockAssinatura.mock.calls[0][1] as { contrato_extracao: unknown; contrato_pdf_path: string };
+    expect(sessaoEnviada.contrato_extracao).toEqual(extracao);
+    expect(sessaoEnviada.contrato_pdf_path).toBe('s1/Contrato.pdf');
   });
 
   it('cliente já criado no Conta Azul é pulado', async () => {

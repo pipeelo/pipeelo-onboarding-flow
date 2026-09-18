@@ -113,10 +113,14 @@ export async function processarPosCadastro(
     if (jaEnviada) {
       assinatura = { status: 'enviado', solicitacao_id: sessao.assinapdf_solicitacao_id as number, link: sessao.assinapdf_link as string, dm: true, grupo: true, reenvio: true };
     } else if (pdfPath) {
+      // A sessão em memória foi carregada ANTES de gerar o contrato: no 1º ciclo
+      // contrato_extracao ainda é null e a assinatura respondia "sem representante"
+      // (OLV, CONECTA, INUV). O resultado do contrato traz a extração fresca.
+      const extracao = (contrato.extracao ?? sessao.contrato_extracao ?? null) as SessaoAssinatura['contrato_extracao'];
       try {
         assinatura = await enviarParaAssinatura(
           supabase,
-          { ...sessao, contrato_pdf_path: pdfPath, contrato_extracao: sessao.contrato_extracao ?? null },
+          { ...sessao, contrato_pdf_path: pdfPath, contrato_extracao: extracao },
           cadastro,
         );
       } catch (e) {

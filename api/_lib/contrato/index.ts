@@ -18,7 +18,7 @@ import { renderPdf } from './pdf';
 export const CONTRATO_BUCKET = 'onboarding-contratos';
 
 export type ResultadoContrato =
-  | { status: 'gerado'; path: string; pdf_path: string | null; representante: string; avisos: string[] }
+  | { status: 'gerado'; path: string; pdf_path: string | null; representante: string; avisos: string[]; extracao?: Extracao }
   | { status: 'pendente'; motivo: string; faltando: string[] };
 
 const MIMES: Record<string, string> = {
@@ -226,7 +226,7 @@ export async function gerarContratoParaSessao(
       contrato_assinado_path: null,
     });
 
-    return { status: 'gerado', path: caminho, pdf_path: caminhoPdf, representante: extracao.representante.nome, avisos };
+    return { status: 'gerado', path: caminho, pdf_path: caminhoPdf, representante: extracao.representante.nome, avisos, extracao };
   } catch (e) {
     // Rede de segurança: gerarContratoParaSessao nunca lança.
     const motivo = `Erro inesperado ao gerar o contrato: ${msg(e)}`;

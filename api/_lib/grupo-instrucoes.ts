@@ -42,12 +42,47 @@ function contatosDoCadastro(c: Cadastro): Contato[] {
 /** Número Avisos, que manda as boas-vindas: sem ele no grupo nada sai. */
 const NUMERO_AVISOS = '(44) 3170-1331';
 
-export function mensagemInstrucoesGrupo(cadastro: Cadastro, shortUrl: string): string {
+/** O que a equipe precisa saber do fechamento antes de o cliente chegar. */
+export type FechamentoResumo = {
+  erp?: string | null;
+  qtd_sessoes?: number | string | null;
+  valor_mensal?: number | string | null;
+  contratou_crm?: boolean | null;
+  go_live_em?: string | null;
+};
+
+function numeroOuNull(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+function dataCurta(iso: string | null | undefined): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : null;
+}
+
+/** Linha "o que vem pela frente": ERP, tamanho do plano, mensalidade, CRM e go-live. */
+export function linhaFechamento(f: FechamentoResumo): string {
+  const sessoes = numeroOuNull(f.qtd_sessoes);
+  const mensal = numeroOuNull(f.valor_mensal);
+  const partes = [
+    `ERP: ${(f.erp ?? '').trim() || 'não informado'}`,
+    sessoes === null ? 'sessões/mês: não informado' : `${sessoes.toLocaleString('pt-BR')} sessões/mês`,
+    mensal === null ? null : `R$ ${mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês`,
+    `CRM: ${f.contratou_crm ? 'sim' : 'não'}`,
+    dataCurta(f.go_live_em) ? `go-live ${dataCurta(f.go_live_em)}` : null,
+  ].filter(Boolean);
+  return `📊 ${partes.join(' · ')}`;
+}
+
+export function mensagemInstrucoesGrupo(cadastro: Cadastro, shortUrl: string, fechamento: FechamentoResumo = {}): string {
   const contatos = contatosDoCadastro(cadastro);
   const docs = cadastro.doc_contrato_social.length + cadastro.doc_responsaveis.length;
 
   const linhas = [
     `🆕 *Novo cliente: ${cadastro.nome_fantasia}*`,
+    linhaFechamento(fechamento),
     '',
     '*Lucas*, o grupo deste cliente é criado à mão. Passo a passo:',
     '',
@@ -75,7 +110,7 @@ export function mensagemInstrucoesGrupo(cadastro: Cadastro, shortUrl: string): s
  */
 export async function enviarInstrucoesGrupo(
   supabase: SupabaseClient,
-  sessao: SessaoGrupo,
+  sessao: SessaoGrupo & FechamentoResumo,
   cadastro: Cadastro,
   opts: { host?: string; proto?: string } = {},
 ): Promise<{ status: 'enviado' | 'falhou'; short_url?: string; motivo?: string }> {
@@ -89,7 +124,7 @@ export async function enviarInstrucoesGrupo(
       proto: opts.proto,
     });
 
-    const { sent, reason } = await notifyStaff(mensagemInstrucoesGrupo(cadastro, short_url));
+    const { sent, reason } = await notifyStaff(mensagemInstrucoesGrupo(cadastro, short_url, sessao));
     const agora = new Date().toISOString();
     // `grupo_erro` guarda o motivo de o Staff não ter recebido — é o que o painel mostra.
     const { error } = await supabase
