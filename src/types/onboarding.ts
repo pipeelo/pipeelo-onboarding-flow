@@ -71,6 +71,8 @@ export interface Question {
   padrao?: string;
   /** Para tipo='checkbox_multiple': placeholder do campo "Outro". */
   placeholder_outro?: string;
+  /** Para tipo='checkbox_multiple': valores já marcados quando o cliente ainda não respondeu. */
+  padrao_selecionados?: string[];
   /**
    * Id de uma pergunta checkbox_multiple. A pergunta é repetida uma vez por item
    * marcado lá: id vira `${id}_${valor}` e `{departamento}` no texto vira o rótulo.

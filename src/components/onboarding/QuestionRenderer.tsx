@@ -56,6 +56,11 @@ export function QuestionRenderer({
         setLocalValue({ selected: value, outroTexto: '' });
       } else if (value && typeof value === 'object' && 'selected' in value) {
         setLocalValue(value);
+      } else if (question.padrao_selecionados?.length) {
+        // Já nasce com os itens padrão marcados e salvos (cliente desmarca o que não usa).
+        const inicial = { selected: [...question.padrao_selecionados], outroTexto: '' };
+        setLocalValue(inicial);
+        onChange(inicial);
       } else {
         setLocalValue({ selected: [], outroTexto: '' });
       }

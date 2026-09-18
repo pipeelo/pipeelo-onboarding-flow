@@ -10,8 +10,8 @@
     ],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v4.0 - 5 departamentos; identificação = números de WhatsApp + integrações (dados cadastrais vêm do /cadastro)",
-    "versao": "4.2.0",
-    "total_perguntas": 213
+    "versao": "4.3.0",
+    "total_perguntas": 203
   },
   "departamentos": {
     "identificacao": {
@@ -2500,7 +2500,7 @@
       "slug": "vendas",
       "responsavel_sugerido": "Gerente Comercial ou Coordenador de Vendas",
       "tempo_estimado": "15-20 minutos",
-      "descricao": "Portfólio de planos, método de vendas, recomendação por perfil e instalação. A IA usa TUDO isso direto no atendimento — quanto mais completo, menos humano precisa intervir.",
+      "descricao": "Portfólio completo (alimenta a IA e o CRM), fluxo de venda padrão, políticas, instalação, motivos de perda e follow-up.",
       "ordem_execucao": 4,
       "secoes": {
         "fluxo_pos_pre_cadastro": {
@@ -2532,547 +2532,23 @@
         "portfolio_planos": {
           "titulo": "Portfólio de Planos",
           "icone": "📦",
-          "descricao": "Cadastre os planos por categoria. A IA usa nome, velocidade, preço, benefícios e argumento de venda diretamente no atendimento. Marque os serviços que vocês oferecem — pra cada serviço marcado, é obrigatório cadastrar ao menos 1 plano.",
+          "descricao": "Tudo que a empresa vende, com todas as variações. A IA só oferece o que estiver aqui, e o CRM nasce com esses produtos.",
           "perguntas": [
             {
-              "id": "servicos_oferecidos",
-              "pergunta": "Quais serviços vocês oferecem? (marque todos)",
-              "tipo": "checkbox_multiple",
+              "id": "planos_comercializados",
+              "pergunta": "Quais planos vocês comercializam?",
+              "tipo": "textarea",
               "obrigatoria": true,
-              "hint": "Pra cada serviço marcado abaixo, vai aparecer a lista correspondente — é obrigatório cadastrar pelo menos 1 plano em cada serviço marcado.",
-              "opcoes": [
-                {
-                  "value": "internet_residencial",
-                  "label": "📶 Internet Residencial (Fibra)"
-                },
-                {
-                  "value": "internet_pme",
-                  "label": "🏢 Internet Empresarial / PME"
-                },
-                {
-                  "value": "internet_radio",
-                  "label": "📡 Internet via Rádio"
-                },
-                {
-                  "value": "telefonia_fixa",
-                  "label": "☎️ Telefonia Fixa"
-                },
-                {
-                  "value": "chip_movel",
-                  "label": "📱 Chip / Telefonia Móvel"
-                },
-                {
-                  "value": "tv_streaming",
-                  "label": "📺 TV / Streaming"
-                }
-              ]
+              "placeholder": "Escreva do jeito que a IA vai apresentar. Exemplo:\n\nINTERNET RESIDENCIAL (fibra)\n➡️ *Fibra 500 Mega* — 500 Mbps download / 500 Mbps upload, Wi-Fi 6 em comodato, suporte 24h — R$ 99,90/mês\n➡️ *Fibra 750 Mega* — 750 Mbps simétricos, Wi-Fi 6 em comodato, 1 streaming à escolha (HBO, Disney ou Globoplay) — R$ 119,90/mês\n➡️ *Fibra 1 Giga* — 1 Gbps simétricos, Wi-Fi 6 em comodato, 2 streamings à escolha — R$ 149,90/mês\n\nVARIAÇÕES\n- Sem fidelidade: + R$ 20,00/mês em qualquer plano\n- Somente internet (sem streaming): Fibra 750 por R$ 109,90 / Fibra 1 Giga por R$ 139,90\n- Taxa de instalação: R$ 50,00 (grátis no Fibra 1 Giga)\n\nCOMBOS\n➡️ *Fibra 750 + Telefone Fixo* — 750 Mega + linha fixa com ligações ilimitadas para fixo — R$ 139,90/mês\n➡️ *Fibra 1 Giga + TV* — 1 Giga + 80 canais no app — R$ 189,90/mês\n\nEMPRESARIAL\n➡️ *Empresa 500* — 500 Mega simétricos, IP fixo, SLA 4h — R$ 249,90/mês\n\nTELEFONIA (só em combo com internet)\n➡️ *Fixo Ilimitado* — ligações ilimitadas para fixo e móvel — + R$ 29,90/mês",
+              "hint": "Coloque TODOS os planos e TODAS as variações: combos (com os valores de cada combo), com e sem fidelidade, com e sem taxa de instalação, empresarial, rádio, telefonia, TV. Se a telefonia só existe em combo, escreva o combo. Se um serviço só é vendido avulso, escreva avulso. Isso alimenta a IA e o seu CRM — o que não estiver aqui, a IA não oferece."
             },
             {
-              "id": "planos_internet_residencial",
-              "pergunta": "📶 Planos de Internet Residencial (Fibra)",
-              "tipo": "repeater",
-              "minimo": 1,
-              "condicional": "servicos_oferecidos includes 'internet_residencial'",
-              "rotulo_item": "Plano residencial",
-              "rotulo_adicionar": "Adicionar plano residencial",
-              "hint": "Planos de fibra para residências. Siga o padrão da KB Techy — preencha benefícios e argumento de venda completos pra IA usar literalmente no atendimento.",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do plano",
-                  "tipo": "text",
-                  "placeholder": "Ex: Techy Light 350Mbps",
-                  "largura": 6
-                },
-                {
-                  "id": "id_plano_erp",
-                  "label": "ID do plano no ERP",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: 1024",
-                  "largura": 6,
-                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
-                },
-                {
-                  "id": "preco",
-                  "label": "Preço mensal (R$)",
-                  "tipo": "currency",
-                  "placeholder": "Ex: 114.90",
-                  "largura": 3
-                },
-                {
-                  "id": "taxa_instalacao",
-                  "label": "Taxa de instalação (R$)",
-                  "tipo": "currency",
-                  "placeholder": "0 = grátis",
-                  "largura": 3
-                },
-                {
-                  "id": "velocidade_download",
-                  "label": "Download (Mbps)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 350",
-                  "largura": 3
-                },
-                {
-                  "id": "velocidade_upload",
-                  "label": "Upload (Mbps)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 350",
-                  "largura": 3
-                },
-                {
-                  "id": "simetrico",
-                  "label": "Simétrico (mesma vel. download/upload)?",
-                  "tipo": "boolean",
-                  "largura": 6
-                },
-                {
-                  "id": "publico_alvo",
-                  "label": "Para quem é ideal",
-                  "tipo": "text",
-                  "placeholder": "Ex: 3-4 pessoas, uso intermediário, casa média",
-                  "largura": 12,
-                  "hint": "A IA usa pra recomendar baseado no perfil do lead"
-                },
-                {
-                  "id": "beneficios",
-                  "label": "Benefícios completos",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Liste TUDO que o cliente recebe. Ex: 100% fibra óptica até dentro do ambiente (FTTH), 1x roteador Wi-Fi 6 incluso, velocidade REAL simétrica, dados ilimitados, instalação gratuita em até 72h, suporte humanizado via WhatsApp/telefone/presencial, monitoramento proativo 24h, App incluso, Wi-Fi Mesh integrado, expansão com roteadores adicionais a partir de R$19,90/mês.",
-                  "hint": "Não economize — quanto mais detalhe, mais a IA tem munição pra fechar"
-                },
-                {
-                  "id": "argumento_venda",
-                  "label": "Argumento de venda",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Frase de efeito que a IA usa pra apresentar o plano. Ex: 'Ideal para quem busca estabilidade no dia a dia sem complicação. Com fibra 100% até dentro do ambiente, velocidade real, Wi-Fi 6 incluso e cobertura completa com Mesh, você navega com qualidade — com suporte próximo e disponível sempre que precisar.'"
-                },
-                {
-                  "id": "disponibilidade",
-                  "label": "Disponibilidade geográfica (se restrita)",
-                  "tipo": "text",
-                  "largura": 12,
-                  "placeholder": "Deixe vazio se vale pra toda a área. Ex: APENAS em São Miguel do Oeste e Maravilha"
-                },
-                {
-                  "id": "is_promocional_campanha",
-                  "label": "É plano promocional EXCLUSIVO de campanha?",
-                  "tipo": "boolean",
-                  "largura": 6,
-                  "hint": "Marque se o plano só pode ser ofertado quando o lead vem de anúncio (Meta/Google). A IA NÃO oferta espontaneamente."
-                },
-                {
-                  "id": "regra_uso_promocional",
-                  "label": "Regra de uso (se promocional)",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Como a IA deve tratar esse plano. Ex: NUNCA ofertar espontaneamente. Se cliente perguntar pelo plano de R$89,90, transferir IMEDIATAMENTE para o time comercial via send_to_department, sem argumentar nem oferecer alternativas."
-                }
-              ]
-            },
-            {
-              "id": "planos_internet_pme",
-              "pergunta": "🏢 Planos de Internet Empresarial / PME",
-              "tipo": "repeater",
-              "minimo": 1,
-              "condicional": "servicos_oferecidos includes 'internet_pme'",
-              "rotulo_item": "Plano empresarial",
-              "rotulo_adicionar": "Adicionar plano empresarial",
-              "hint": "Planos voltados pra empresas — geralmente com SLA, IP fixo opcional, suporte prioritário.",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do plano",
-                  "tipo": "text",
-                  "placeholder": "Ex: Techy Business 450Mbps (PME)",
-                  "largura": 6
-                },
-                {
-                  "id": "id_plano_erp",
-                  "label": "ID do plano no ERP",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: 1024",
-                  "largura": 6,
-                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
-                },
-                {
-                  "id": "preco",
-                  "label": "Preço mensal (R$)",
-                  "tipo": "currency",
-                  "placeholder": "Ex: 179.90",
-                  "largura": 3
-                },
-                {
-                  "id": "taxa_instalacao",
-                  "label": "Taxa de instalação (R$)",
-                  "tipo": "currency",
-                  "placeholder": "0 = grátis",
-                  "largura": 3
-                },
-                {
-                  "id": "velocidade_download",
-                  "label": "Download (Mbps)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 450",
-                  "largura": 3
-                },
-                {
-                  "id": "velocidade_upload",
-                  "label": "Upload (Mbps)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 450",
-                  "largura": 3
-                },
-                {
-                  "id": "sla",
-                  "label": "SLA de atendimento",
-                  "tipo": "text",
-                  "placeholder": "Ex: até 4 horas / até 2 horas / 24/7",
-                  "largura": 6
-                },
-                {
-                  "id": "publico_alvo",
-                  "label": "Para quem é ideal",
-                  "tipo": "text",
-                  "placeholder": "Ex: PME com até 20 colaboradores, escritório com VPN",
-                  "largura": 12
-                },
-                {
-                  "id": "beneficios",
-                  "label": "Benefícios completos",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: 100% fibra (FTTH), Wi-Fi 6 + Mikrotik incluso, velocidade simétrica, dados ilimitados, SLA até 4h, segmentação de rede, controle de acessos, VPN opcional, monitoramento proativo, atendimento via WhatsApp/telefone/presencial. Inclua IP fixo, telefonia, gestão dedicada se houver."
-                },
-                {
-                  "id": "argumento_venda",
-                  "label": "Argumento de venda",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Mais controle, segurança e suporte próximo para o ambiente corporativo. Sua empresa ganha estabilidade com atendimento acessível sempre que precisar."
-                },
-                {
-                  "id": "disponibilidade",
-                  "label": "Disponibilidade geográfica (se restrita)",
-                  "tipo": "text",
-                  "largura": 12,
-                  "placeholder": "Deixe vazio se vale pra toda a área de cobertura"
-                }
-              ]
-            },
-            {
-              "id": "planos_internet_radio",
-              "pergunta": "📡 Planos de Internet via Rádio",
-              "tipo": "repeater",
-              "minimo": 1,
-              "condicional": "servicos_oferecidos includes 'internet_radio'",
-              "rotulo_item": "Plano via rádio",
-              "rotulo_adicionar": "Adicionar plano via rádio",
-              "hint": "Para áreas onde a fibra ainda não chegou. Pula essa categoria se vocês só oferecem fibra.",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do plano",
-                  "tipo": "text",
-                  "placeholder": "Ex: Plano Via Rádio 15 Mega",
-                  "largura": 6
-                },
-                {
-                  "id": "id_plano_erp",
-                  "label": "ID do plano no ERP",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: 1024",
-                  "largura": 6,
-                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
-                },
-                {
-                  "id": "preco",
-                  "label": "Preço mensal (R$)",
-                  "tipo": "currency",
-                  "placeholder": "Ex: 109.90",
-                  "largura": 3
-                },
-                {
-                  "id": "taxa_instalacao",
-                  "label": "Taxa de instalação (R$)",
-                  "tipo": "currency",
-                  "placeholder": "0 = grátis",
-                  "largura": 3
-                },
-                {
-                  "id": "velocidade_download",
-                  "label": "Download (Mbps)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 15",
-                  "largura": 6
-                },
-                {
-                  "id": "velocidade_upload",
-                  "label": "Upload (Mbps)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 15",
-                  "largura": 6
-                },
-                {
-                  "id": "publico_alvo",
-                  "label": "Para quem é ideal",
-                  "tipo": "text",
-                  "placeholder": "Ex: zona rural, sítios sem cobertura de fibra, uso básico de internet",
-                  "largura": 12
-                },
-                {
-                  "id": "beneficios",
-                  "label": "Benefícios",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Tecnologia rádio, instalação especializada com torre/antena, suporte humanizado, monitoramento, App incluso. Indique limitações conhecidas (ex: depende de visada)."
-                },
-                {
-                  "id": "argumento_venda",
-                  "label": "Argumento de venda",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Conexão estável onde a fibra ainda não chegou — ideal pra propriedades rurais que precisam de internet de qualidade pra trabalho remoto, vigilância e streaming básico."
-                },
-                {
-                  "id": "disponibilidade",
-                  "label": "Onde atendem",
-                  "tipo": "text",
-                  "largura": 12,
-                  "placeholder": "Ex: Zonas rurais de São Miguel do Oeste e municípios vizinhos"
-                }
-              ]
-            },
-            {
-              "id": "planos_telefonia_fixa",
-              "pergunta": "☎️ Planos de Telefonia Fixa",
-              "tipo": "repeater",
-              "minimo": 1,
-              "condicional": "servicos_oferecidos includes 'telefonia_fixa'",
-              "rotulo_item": "Plano de telefonia fixa",
-              "rotulo_adicionar": "Adicionar plano de telefonia fixa",
-              "hint": "Telefonia fixa avulsa ou combinada. Pula se vocês não oferecem telefonia.",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do plano",
-                  "tipo": "text",
-                  "placeholder": "Ex: Telefonia Fixa Local / Telefonia Fixa Ilimitada",
-                  "largura": 8
-                },
-                {
-                  "id": "id_plano_erp",
-                  "label": "ID do plano no ERP",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: 1024",
-                  "largura": 4,
-                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
-                },
-                {
-                  "id": "preco",
-                  "label": "Preço mensal (R$)",
-                  "tipo": "currency",
-                  "placeholder": "Ex: 89.90",
-                  "largura": 4
-                },
-                {
-                  "id": "minutos_inclusos",
-                  "label": "Minutos inclusos",
-                  "tipo": "text",
-                  "placeholder": "Ex: Ilimitado pra fixos da região / Ilimitado pra fixo e móvel Brasil / 100 min",
-                  "largura": 12
-                },
-                {
-                  "id": "tarifas_extras",
-                  "label": "Tarifas para chamadas fora do plano",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Fixo Brasil R$0,25/min | Móvel R$0,75/min. Use | para separar cada faixa."
-                },
-                {
-                  "id": "beneficios",
-                  "label": "Benefícios",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Telefonia digital, portabilidade do mesmo número, identificador de chamadas, ligações ilimitadas pra fixos da região, suporte humanizado."
-                },
-                {
-                  "id": "argumento_venda",
-                  "label": "Argumento de venda",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Mantenha o número de sempre com qualidade digital — sem perder ligações importantes."
-                }
-              ]
-            },
-            {
-              "id": "planos_chip_movel",
-              "pergunta": "📱 Planos de Chip / Telefonia Móvel",
-              "tipo": "repeater",
-              "minimo": 1,
-              "condicional": "servicos_oferecidos includes 'chip_movel'",
-              "rotulo_item": "Plano de chip móvel",
-              "rotulo_adicionar": "Adicionar plano de chip móvel",
-              "hint": "Planos de chip operadora própria ou MVNO. Pula se vocês não oferecem.",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do plano",
-                  "tipo": "text",
-                  "placeholder": "Ex: Techy Chip Móvel 7GB + 1GB portabilidade",
-                  "largura": 8
-                },
-                {
-                  "id": "id_plano_erp",
-                  "label": "ID do plano no ERP",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: 1024",
-                  "largura": 4,
-                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
-                },
-                {
-                  "id": "preco",
-                  "label": "Preço mensal (R$)",
-                  "tipo": "currency",
-                  "placeholder": "Ex: 59.90",
-                  "largura": 4
-                },
-                {
-                  "id": "franquia_dados_gb",
-                  "label": "Franquia de dados (GB)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 7",
-                  "largura": 3
-                },
-                {
-                  "id": "bonus_portabilidade_gb",
-                  "label": "Bônus portabilidade (GB)",
-                  "tipo": "number",
-                  "placeholder": "Ex: 1",
-                  "largura": 3
-                },
-                {
-                  "id": "minutos_ligacao",
-                  "label": "Minutos de ligação",
-                  "tipo": "text",
-                  "placeholder": "Ex: 100 minutos Brasil / Ilimitado / 50 min",
-                  "largura": 6
-                },
-                {
-                  "id": "apps_ilimitados",
-                  "label": "Apps ilimitados (não consomem franquia)",
-                  "tipo": "text",
-                  "placeholder": "Ex: WhatsApp ilimitado, Instagram ilimitado",
-                  "largura": 12
-                },
-                {
-                  "id": "beneficios",
-                  "label": "Benefícios extras",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: 50 SMS, plataforma de livros digitais Skeelo inclusa, app próprio pra gerenciar consumo, portabilidade do número, sem fidelidade."
-                },
-                {
-                  "id": "argumento_venda",
-                  "label": "Argumento de venda",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Plano completo pra quem usa muito WhatsApp e quer ligar à vontade, sem se preocupar com saldo."
-                }
-              ]
-            },
-            {
-              "id": "planos_tv_streaming",
-              "pergunta": "📺 Planos de TV / Streaming",
-              "tipo": "repeater",
-              "minimo": 1,
-              "condicional": "servicos_oferecidos includes 'tv_streaming'",
-              "rotulo_item": "Plano TV/Streaming",
-              "rotulo_adicionar": "Adicionar plano TV/Streaming",
-              "hint": "TV por assinatura (IPTV/cabo) ou pacotes de streaming combinados. Pula se vocês não oferecem.",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do plano",
-                  "tipo": "text",
-                  "placeholder": "Ex: Techy TV Plus 165 canais / Pacote Streaming Premium",
-                  "largura": 8
-                },
-                {
-                  "id": "id_plano_erp",
-                  "label": "ID do plano no ERP",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: 1024",
-                  "largura": 4,
-                  "hint": "Copie o código/ID deste plano de dentro do seu ERP (IXC, Voalle, MK, Hubsoft, etc.). A IA usa pra casar este plano com o cadastro real e executar contratação/upgrade via API."
-                },
-                {
-                  "id": "preco",
-                  "label": "Preço mensal (R$)",
-                  "tipo": "currency",
-                  "placeholder": "Ex: 49.90",
-                  "largura": 4
-                },
-                {
-                  "id": "tipo_servico",
-                  "label": "Tipo",
-                  "tipo": "select",
-                  "largura": 6,
-                  "opcoes": [
-                    {
-                      "value": "iptv",
-                      "label": "IPTV"
-                    },
-                    {
-                      "value": "cabo",
-                      "label": "TV a cabo"
-                    },
-                    {
-                      "value": "streaming",
-                      "label": "Streaming (HBO, Prime, etc.)"
-                    },
-                    {
-                      "value": "combo",
-                      "label": "Combo TV + Streaming"
-                    }
-                  ]
-                },
-                {
-                  "id": "qtd_canais_apps",
-                  "label": "Qtd canais ou apps inclusos",
-                  "tipo": "text",
-                  "placeholder": "Ex: 165 canais / Watch + HBO Max + Prime Video",
-                  "largura": 6
-                },
-                {
-                  "id": "beneficios",
-                  "label": "Benefícios",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: 165 canais, 30 em HD, 5 dispositivos simultâneos, app pra mobile, gravação na nuvem, controle parental, instalação inclusa."
-                },
-                {
-                  "id": "argumento_venda",
-                  "label": "Argumento de venda",
-                  "tipo": "textarea",
-                  "largura": 12,
-                  "placeholder": "Ex: Toda a família entretida — TV ao vivo, streaming e mobile sem precisar contratar várias assinaturas separadas."
-                },
-                {
-                  "id": "exige_internet_combo",
-                  "label": "Exige contratar internet junto?",
-                  "tipo": "boolean",
-                  "largura": 12
-                }
-              ]
+              "id": "servicos_adicionais",
+              "pergunta": "Quais serviços adicionais vocês comercializam?",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "placeholder": "Ex.:\nWi-Fi Mesh (ponto extra de Wi-Fi): R$ 19,90/mês por ponto\nRoteador adicional / ponto cabeado extra: R$ 80,00 instalação\nIP fixo: R$ 30,00/mês\nStreaming avulso (HBO, Disney, Globoplay): R$ 24,90/mês cada\nTelefone fixo: R$ 29,90/mês\nCâmeras / monitoramento: sob consulta",
+              "hint": "Um por linha, com valor. São os itens que a IA pode oferecer junto do plano e que entram no CRM como produtos."
             },
             {
               "id": "plano_campeao",
@@ -3091,134 +2567,74 @@
               "hint": "Use | para separar. A IA usa como argumentos de venda."
             },
             {
-              "id": "tem_planos_empresariais",
-              "pergunta": "Vocês têm planos empresariais distintos dos residenciais?",
-              "tipo": "select",
+              "id": "concorrentes_principais",
+              "pergunta": "Quem são os principais concorrentes de vocês?",
+              "tipo": "textarea",
               "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "sim",
-                  "label": "Sim, portfólio empresarial separado"
-                },
-                {
-                  "value": "mesmos",
-                  "label": "Usamos os mesmos planos para ambos"
-                },
-                {
-                  "value": "nao",
-                  "label": "Não atendemos empresas"
-                }
-              ]
-            },
-            {
-              "id": "caracteristicas_empresariais",
-              "pergunta": "Quais características diferenciam o empresarial?",
-              "tipo": "checkbox_multiple",
-              "obrigatoria": true,
-              "condicional": "tem_planos_empresariais == 'sim'",
-              "opcoes": [
-                {
-                  "value": "ip_fixo",
-                  "label": "IP fixo incluído"
-                },
-                {
-                  "value": "sla_4h",
-                  "label": "SLA de atendimento até 4h"
-                },
-                {
-                  "value": "upload_simetrico",
-                  "label": "Upload 100% simétrico"
-                },
-                {
-                  "value": "suporte_prioritario",
-                  "label": "Suporte prioritário"
-                },
-                {
-                  "value": "instalacao_gratis",
-                  "label": "Instalação gratuita"
-                },
-                {
-                  "value": "ponto_adicional",
-                  "label": "Ponto cabeado adicional"
-                }
-              ]
+              "placeholder": "Ex.:\nVivo Fibra — forte em Campo Largo, preço agressivo\nProvedor X — atende só o centro\nClaro — TV + internet",
+              "hint": "Um por linha, com onde ele é forte. Vai para o CRM: quando um lead é perdido para a concorrência, o vendedor marca qual."
             }
           ]
         },
         "metodo_vendas": {
           "titulo": "Método de Vendas",
           "icone": "🎯",
-          "descricao": "Como a IA conduz o lead do primeiro 'oi' até o fechamento.",
+          "descricao": "O fluxo e as respostas às objeções já vêm prontos. Se vocês vendem diferente, é só dizer o que muda.",
           "perguntas": [
             {
-              "id": "perguntas_qualificacao_lista",
-              "pergunta": "Quais perguntas a IA deve fazer para qualificar o lead?",
-              "tipo": "checkbox_multiple",
+              "id": "fluxo_vendas_padrao",
+              "pergunta": "Nosso fluxo de venda padrão (o mesmo que roda hoje nos nossos provedores): 1) A IA identifica se a pessoa já é cliente — cliente existente vai para troca de plano ou segundo ponto, sem repetir cadastro. 2) Pede o endereço completo ou a localização do WhatsApp e verifica a cobertura (viabilidade). 3) Se percebe que é empresa, pergunta o tipo de necessidade e se precisa de IP fixo, e apresenta os planos empresariais. 4) Com cobertura confirmada, apresenta as modalidades (ex.: Internet + Streaming, Internet + Telefone, Somente Internet) e pergunta qual atende melhor. 5) Apresenta os planos da modalidade escolhida exatamente como estão na tabela de planos. 6) Quando o cliente escolhe, informa a taxa de instalação, a fidelidade e o comodato do roteador. 7) Faz o pré-cadastro em uma mensagem só: nome completo, CPF, RG, data de nascimento, nome da mãe, e-mail e dia de vencimento preferido; depois confirma o endereço e pergunta o complemento. 8) Valida o CPF e confere se já existe contrato ativo. 9) Registra o lead no CRM e transfere para o time comercial (ou encerra, conforme a etapa Pós pré-cadastro). A IA NÃO faz perguntas de perfil de uso (quantas pessoas, dispositivos, tipo de casa): isso cansa o cliente. Faz sentido para vocês dessa forma?",
+              "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
                 {
-                  "value": "pessoas",
-                  "label": "Quantas pessoas moram no imóvel?"
+                  "value": "sim",
+                  "label": "Sim, faz sentido assim"
                 },
                 {
-                  "value": "dispositivos",
-                  "label": "Quantos dispositivos se conectam simultaneamente?"
-                },
-                {
-                  "value": "tipo_imovel",
-                  "label": "Casa pequena, média, sobrado ou apartamento?"
-                },
-                {
-                  "value": "uso_principal",
-                  "label": "Qual uso principal (streaming, games, home office)?"
-                },
-                {
-                  "value": "provedor_atual",
-                  "label": "Usa qual provedor hoje e por quê quer trocar?"
-                },
-                {
-                  "value": "origem",
-                  "label": "Como conheceu a empresa?"
+                  "value": "nao",
+                  "label": "Quero alterar algo"
                 }
-              ],
-              "hint": "Uma pergunta por vez — nunca várias na mesma mensagem."
+              ]
             },
             {
-              "id": "recomendacao_perfil_1_2",
-              "pergunta": "Plano recomendado para 1-2 pessoas / poucos dispositivos / casa pequena",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Connect 500",
-              "hint": "Use o nome exato do plano listado acima."
-            },
-            {
-              "id": "recomendacao_perfil_3_4",
-              "pergunta": "Plano recomendado para 3-4 pessoas / casa média / streaming",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Super 600"
-            },
-            {
-              "id": "recomendacao_perfil_5mais",
-              "pergunta": "Plano recomendado para 5+ pessoas / sobrado / muitos dispositivos",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: Ultra 800 Mesh"
-            },
-            {
-              "id": "objecoes_comuns",
-              "pergunta": "Quais objeções mais comuns e como a IA deve responder?",
+              "id": "fluxo_vendas_alteracoes",
+              "pergunta": "O que vocês querem alterar no fluxo?",
               "tipo": "textarea",
-              "obrigatoria": false,
-              "placeholder": "Ex:\nEstá caro → reforçar valor agregado e oferecer plano imediatamente abaixo\nPreciso pensar → oferecer reserva sem compromisso por 48h, pedir CPF/email\nJá tenho [concorrente] → perguntar o que funciona/não funciona hoje",
-              "hint": "Uma linha por objeção, formato: [Objeção] → [Resposta]. Fica opcional, mas ajuda muito."
+              "obrigatoria": true,
+              "condicional": "fluxo_vendas_padrao == 'nao'",
+              "placeholder": "Diga qual passo muda e como. Ex.: 'no passo 7 não pedir RG'; 'antes das modalidades, perguntar quantos aparelhos usam'; 'não pedir nome da mãe'."
+            },
+            {
+              "id": "objecoes_padrao",
+              "pergunta": "Quando o cliente traz uma objeção, a IA responde assim (exemplos do nosso padrão): \"Está muito caro\" → \"Entendo sua preocupação com o preço. Como você usa a internet no dia a dia? Assim te mostro como a estabilidade, o suporte local e a velocidade simétrica fazem diferença no custo-benefício.\" | \"Preciso pensar\" → \"Com certeza. Pode me contar o que está gerando dúvida? Assim te ajudo com mais informações.\" | \"Já tenho internet\" → \"Que bom! Me conta o que funciona bem na sua operadora atual e o que poderia melhorar? Assim vejo como podemos te atender.\" | \"Meu contrato ainda não venceu\" → \"Podemos agendar a instalação para quando seu contrato vencer, e te mostro como o custo-benefício compensa a mudança.\" Depois de 2 tentativas sem avanço, ela encaminha ao time de vendas. Podemos seguir dessa forma?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "hint": "O padrão cobre mais de 20 objeções (concorrência com mais megas, medo de ficar sem internet na troca, home office, câmeras…). Aqui vão só 4 exemplos.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, seguir o padrão"
+                },
+                {
+                  "value": "nao",
+                  "label": "Quero mudar ou acrescentar"
+                }
+              ]
+            },
+            {
+              "id": "objecoes_texto",
+              "pergunta": "O que muda nas objeções?",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "objecoes_padrao == 'nao'",
+              "placeholder": "Ex.: 'Quando o cliente diz que está caro, oferecer o plano de entrada com desconto no 1º mês'; 'Nunca prometer instalação no mesmo dia'."
             }
           ]
         },
         "politicas_comerciais": {
           "titulo": "Políticas Comerciais",
           "icone": "📋",
-          "descricao": "Regras não negociáveis: fidelidade, cancelamento, tags de origem.",
           "perguntas": [
             {
               "id": "tem_fidelidade",
@@ -3273,125 +2689,6 @@
               "condicional": "tem_fidelidade == 'sim'",
               "placeholder": "Ex: Multa proporcional aos meses restantes do contrato — mensalidade × meses restantes × 50%",
               "hint": "A IA informa esse cálculo quando o cliente pergunta sobre cancelamento."
-            },
-            {
-              "id": "cancelamento_fluxo",
-              "pergunta": "Quando o cliente pede cancelamento, o que a IA faz?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "retencao",
-                  "label": "Transfere para retenção (comercial) após coletar motivo"
-                },
-                {
-                  "value": "financeiro",
-                  "label": "Transfere para financeiro"
-                },
-                {
-                  "value": "humano_direto",
-                  "label": "Transfere para atendente humano sem triagem"
-                }
-              ]
-            }
-          ]
-        },
-        "combos": {
-          "titulo": "Combos / Pacotes",
-          "icone": "🎁",
-          "descricao": "Pacotes que combinam internet com outros serviços (TV, telefonia, móvel) com desconto. A IA usa pra cross-sell.",
-          "perguntas": [
-            {
-              "id": "tem_combos",
-              "pergunta": "Vocês trabalham com combos/pacotes?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "sim",
-                  "label": "Sim, oferecemos combos com desconto"
-                },
-                {
-                  "value": "nao",
-                  "label": "Não, vendemos cada serviço avulso"
-                }
-              ]
-            },
-            {
-              "id": "combos_disponiveis",
-              "pergunta": "Liste os combos disponíveis",
-              "tipo": "repeater",
-              "obrigatoria": true,
-              "condicional": "tem_combos == 'sim'",
-              "minimo": 1,
-              "rotulo_item": "Combo",
-              "rotulo_adicionar": "Adicionar combo",
-              "campos": [
-                {
-                  "id": "nome",
-                  "label": "Nome do combo",
-                  "tipo": "text",
-                  "obrigatoria": true,
-                  "placeholder": "Ex: Combo Total",
-                  "largura": 6
-                },
-                {
-                  "id": "preco_final",
-                  "label": "Preço final mensal (R$)",
-                  "tipo": "currency",
-                  "obrigatoria": true,
-                  "placeholder": "149.90",
-                  "largura": 6
-                },
-                {
-                  "id": "servicos_inclusos",
-                  "label": "Serviços inclusos",
-                  "tipo": "checkbox_multiple",
-                  "obrigatoria": true,
-                  "largura": 12,
-                  "opcoes": [
-                    {
-                      "value": "internet",
-                      "label": "Internet"
-                    },
-                    {
-                      "value": "tv",
-                      "label": "TV"
-                    },
-                    {
-                      "value": "streaming",
-                      "label": "Streaming"
-                    },
-                    {
-                      "value": "telefonia_fixa",
-                      "label": "Telefonia fixa"
-                    },
-                    {
-                      "value": "telefonia_movel",
-                      "label": "Telefonia móvel"
-                    },
-                    {
-                      "value": "mesh",
-                      "label": "Mesh"
-                    }
-                  ]
-                },
-                {
-                  "id": "desconto_vs_avulso",
-                  "label": "Desconto vs avulso (%)",
-                  "tipo": "number",
-                  "placeholder": "20",
-                  "largura": 6,
-                  "hint": "Quanto economiza vs comprar separado"
-                },
-                {
-                  "id": "publico_alvo",
-                  "label": "Público-alvo",
-                  "tipo": "text",
-                  "placeholder": "Ex: Famílias 4+ pessoas",
-                  "largura": 6
-                }
-              ]
             }
           ]
         },
@@ -3494,42 +2791,82 @@
               ]
             },
             {
-              "id": "agendamento_instalacao",
-              "pergunta": "Quem agenda a instalação?",
+              "id": "agendamento_ia",
+              "pergunta": "Em alguns ERPs (hoje, o Hubsoft) a IA consegue confirmar com o cliente a visita agendada — tanto a instalação quanto a visita técnica — normalmente por período (manhã ou tarde). Vocês gostariam que ela fizesse isso, se for possível no ERP de vocês?",
               "tipo": "select",
               "obrigatoria": true,
+              "hint": "Para funcionar, a agenda do ERP precisa estar sendo usada corretamente pela equipe (técnico, período e status atualizados).",
               "opcoes": [
                 {
-                  "value": "comercial_humano",
-                  "label": "Equipe comercial humana (IA não agenda)"
+                  "value": "sim",
+                  "label": "Sim, queremos"
                 },
                 {
-                  "value": "ia_preenche_os",
-                  "label": "IA coleta dados, abre OS, comercial confirma horário"
-                },
-                {
-                  "value": "tecnico_liga",
-                  "label": "Técnico liga pra combinar direto"
+                  "value": "nao",
+                  "label": "Não, o time agenda e confirma"
                 }
               ]
-            },
+            }
+          ]
+        },
+        "crm": {
+          "titulo": "Para o CRM",
+          "icone": "📊",
+          "descricao": "Cadastros que o CRM já nasce com: motivos de perda. Os produtos e concorrentes vêm do portfólio acima.",
+          "perguntas": [
             {
-              "id": "janela_agendamento",
-              "pergunta": "Vocês trabalham com janelas de horário para instalação?",
-              "tipo": "select",
+              "id": "motivos_perda_leads",
+              "pergunta": "Quais motivos de perda de lead vocês usam?",
+              "tipo": "checkbox_multiple",
               "obrigatoria": true,
+              "hint": "Já deixamos marcados os que usamos nos outros provedores. Desmarque o que não faz sentido e acrescente em \"Outro\" (separe por vírgula). Vai direto para o CRM.",
+              "padrao_selecionados": [
+                "preco_alto",
+                "concorrente",
+                "sem_cobertura",
+                "desistiu",
+                "nao_atende_requisitos",
+                "mudou_endereco",
+                "credito",
+                "sem_retorno"
+              ],
+              "placeholder_outro": "Ex.: Fechou com o concorrente X, Prédio sem autorização",
               "opcoes": [
                 {
-                  "value": "periodo",
-                  "label": "Período (manhã/tarde)"
+                  "value": "preco_alto",
+                  "label": "Preço muito alto"
                 },
                 {
-                  "value": "hora_marcada",
-                  "label": "Hora marcada exata"
+                  "value": "concorrente",
+                  "label": "Escolheu concorrente"
                 },
                 {
-                  "value": "fila",
-                  "label": "Por ordem de chegada, sem compromisso de horário"
+                  "value": "sem_cobertura",
+                  "label": "Não tem cobertura no endereço"
+                },
+                {
+                  "value": "desistiu",
+                  "label": "Desistiu da contratação"
+                },
+                {
+                  "value": "nao_atende_requisitos",
+                  "label": "Não atende aos requisitos"
+                },
+                {
+                  "value": "mudou_endereco",
+                  "label": "Mudou de cidade/endereço"
+                },
+                {
+                  "value": "credito",
+                  "label": "Problema de crédito"
+                },
+                {
+                  "value": "sem_retorno",
+                  "label": "Parou de responder / sem retorno"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro"
                 }
               ]
             }
