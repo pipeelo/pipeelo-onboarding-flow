@@ -82,7 +82,7 @@ beforeEach(() => {
 });
 
 describe('enviarParaAssinatura', () => {
-  it('cria a solicitação, anexa o PDF, obtém o link e manda DM + grupo', async () => {
+  it('cria a solicitação, anexa o PDF, obtém o link e manda DM só ao responsável (nada no grupo)', async () => {
     m.criar.mockResolvedValue({ id: 66, estado: 'pt1' });
     m.anexar.mockResolvedValue({ documento: 'x.pdf', layout: '2' });
     m.link.mockResolvedValue('https://x/verifpt1/abc');
@@ -90,13 +90,12 @@ describe('enviarParaAssinatura', () => {
 
     const r = await enviarParaAssinatura(supabase, sessao, cadastro);
 
-    expect(r).toMatchObject({ status: 'enviado', solicitacao_id: 66, link: 'https://x/verifpt1/abc', dm: true, grupo: true, reenvio: false });
+    expect(r).toMatchObject({ status: 'enviado', solicitacao_id: 66, link: 'https://x/verifpt1/abc', dm: true, grupo: false, reenvio: false });
     expect(m.criar.mock.calls[0][1]).toMatchObject({ cpf: '123.456.789-00', nome: 'Ana Souza', telefone: '43996661541', email: 'j@x.com', plano: 'Provedor X' });
     expect(m.anexar).toHaveBeenCalledWith(expect.anything(), 66, expect.any(Buffer), 'Contrato_Pipeelo_Provedor_X_092026.pdf');
-    expect(m.send).toHaveBeenCalledTimes(2);
+    expect(m.send).toHaveBeenCalledTimes(1);
     expect(m.send.mock.calls[0][0]).toBe('5543996661541@s.whatsapp.net');
     expect(m.send.mock.calls[0][1]).toContain('https://x/verifpt1/abc');
-    expect(m.send.mock.calls[1][0]).toBe('120363@g.us');
     const final = updates.at(-1)?.data;
     expect(final).toMatchObject({ assinapdf_link: 'https://x/verifpt1/abc', assinatura_status: 'enviado', assinatura_erro: null });
   });
@@ -123,7 +122,7 @@ describe('enviarParaAssinatura', () => {
     expect(r).toMatchObject({ status: 'enviado', reenvio: true });
     expect(m.criar).not.toHaveBeenCalled();
     expect(m.anexar).not.toHaveBeenCalled();
-    expect(m.send).toHaveBeenCalledTimes(2);
+    expect(m.send).toHaveBeenCalledTimes(1);
   });
 
   it('falha da API vira pendente com o erro gravado (nunca lança)', async () => {
@@ -138,10 +137,10 @@ describe('enviarParaAssinatura', () => {
     m.criar.mockResolvedValue({ id: 66, estado: 'pt1' });
     m.anexar.mockResolvedValue({});
     m.link.mockResolvedValue('https://x/l');
-    m.send.mockRejectedValueOnce(new Error('numero invalido')).mockResolvedValueOnce({ ok: true });
+    m.send.mockRejectedValueOnce(new Error('numero invalido'));
     const { supabase, updates } = fakeSupabase();
     const r = await enviarParaAssinatura(supabase, sessao, cadastro);
-    expect(r).toMatchObject({ status: 'enviado', dm: false, grupo: true });
+    expect(r).toMatchObject({ status: 'enviado', dm: false, grupo: false });
     expect(updates.at(-1)?.data).toMatchObject({ assinatura_status: 'enviado', assinatura_erro: expect.stringContaining('DM ao responsável') });
   });
 });

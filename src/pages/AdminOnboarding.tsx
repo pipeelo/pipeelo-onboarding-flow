@@ -909,7 +909,7 @@ const AdminOnboarding = () => {
       if (!authToken) { toast.error('Sessão expirada — faça login novamente'); setIsAuthenticated(false); return; }
       const { assinatura } = await adminSessionApi.enviarAssinatura(authToken, session.id, apenasReenviar);
       if (assinatura.status === 'enviado') {
-        const por = [assinatura.dm ? 'WhatsApp do responsável' : null, assinatura.grupo ? 'grupo' : null].filter(Boolean).join(' + ');
+        const por = assinatura.dm ? 'WhatsApp do responsável' : '';
         toast.success(`Link de assinatura enviado${por ? ` (${por})` : ''}`);
       } else {
         toast.error(`Assinatura pendente: ${assinatura.motivo}`);

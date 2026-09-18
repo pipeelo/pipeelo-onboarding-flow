@@ -74,7 +74,7 @@ export function mensagemSociosAssinatura(
   const base = (process.env.PUBLIC_BASE_URL ?? 'https://onboarding.pipeelo.com').replace(/\/+$/, '');
   if (!assinatura) return `✍️ Assinatura de ${nomeFantasia}: não enviada (sem PDF) · enviar pelo painel ${base}/admin`;
   if (assinatura.status === 'enviado') {
-    const por = [assinatura.dm ? 'WhatsApp do responsável' : null, assinatura.grupo ? 'grupo' : null].filter(Boolean).join(' + ');
+    const por = assinatura.dm ? 'WhatsApp do responsável' : '';
     return `✍️ Assinatura de ${nomeFantasia}: link enviado${por ? ` (${por})` : ''} · ${assinatura.link}`;
   }
   return `✍️ Assinatura de ${nomeFantasia}: ⚠️ pendente — ${assinatura.motivo} · ${base}/admin`;
@@ -111,7 +111,7 @@ export async function processarPosCadastro(
     const jaEnviada = Boolean(sessao.assinapdf_solicitacao_id && sessao.assinapdf_link && !sessao.assinatura_erro
       && sessao.assinatura_status && sessao.assinatura_status !== 'pendente' && sessao.assinatura_status !== 'erro');
     if (jaEnviada) {
-      assinatura = { status: 'enviado', solicitacao_id: sessao.assinapdf_solicitacao_id as number, link: sessao.assinapdf_link as string, dm: true, grupo: true, reenvio: true };
+      assinatura = { status: 'enviado', solicitacao_id: sessao.assinapdf_solicitacao_id as number, link: sessao.assinapdf_link as string, dm: true, grupo: false, reenvio: true };
     } else if (pdfPath) {
       // A sessão em memória foi carregada ANTES de gerar o contrato: no 1º ciclo
       // contrato_extracao ainda é null e a assinatura respondia "sem representante"

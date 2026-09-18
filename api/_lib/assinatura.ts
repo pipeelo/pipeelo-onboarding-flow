@@ -63,56 +63,24 @@ export function mensagemLinkResponsavel(cadastro: Cadastro, representante: strin
   ].join('\n');
 }
 
-export function mensagemLinkGrupo(cadastro: Cadastro, representante: string, link: string): string {
-  return [
-    `📄 *Contrato para assinatura*`,
-    '',
-    `O contrato da ${cadastro.nome_fantasia} está pronto. Assina *${representante}*.`,
-    `Link: ${link}`,
-    '',
-    `A plataforma pede selfie + documento de identificação na hora de assinar.`,
-  ].join('\n');
-}
-
-async function grupoJidAtual(supabase: SupabaseClient, sessao: SessaoAssinatura): Promise<string | null> {
-  if (sessao.grupo_jid) return sessao.grupo_jid;
-  // O pós-cadastro recebe a sessão de ANTES do grupo existir; relê.
-  const { data } = await supabase
-    .from('onboarding_sessions')
-    .select('grupo_jid')
-    .eq('id', sessao.id)
-    .maybeSingle<{ grupo_jid: string | null }>();
-  return data?.grupo_jid ?? null;
-}
-
+/**
+ * O link vai SÓ para o responsável do cadastro (quem recebeu o primeiro formulário):
+ * ele é sempre a pessoa do contrato. Não vai mais no grupo do cliente (Felipe, 18/09/2026).
+ */
 async function enviarMensagens(
-  supabase: SupabaseClient,
-  sessao: SessaoAssinatura,
   cadastro: Cadastro,
   representante: string,
   link: string,
 ): Promise<{ dm: boolean; grupo: boolean; erros: string[] }> {
   const erros: string[] = [];
   let dm = false;
-  let grupo = false;
   try {
     await sendText(toJid(cadastro.responsavel_whatsapp), mensagemLinkResponsavel(cadastro, representante, link));
     dm = true;
   } catch (e) {
     erros.push(`DM ao responsável: ${msg(e)}`);
   }
-  const jid = await grupoJidAtual(supabase, sessao);
-  if (jid) {
-    try {
-      await sendText(jid, mensagemLinkGrupo(cadastro, representante, link));
-      grupo = true;
-    } catch (e) {
-      erros.push(`grupo: ${msg(e)}`);
-    }
-  } else {
-    erros.push('grupo: sessão sem grupo_jid');
-  }
-  return { dm, grupo, erros };
+  return { dm, grupo: false, erros };
 }
 
 /**
@@ -171,7 +139,7 @@ export async function enviarParaAssinatura(
       link = await obterLinkInicial(cfg, solicitacaoId, 0);
     }
 
-    const { dm, grupo, erros } = await enviarMensagens(supabase, sessao, cadastro, rep.nome, link);
+    const { dm, grupo, erros } = await enviarMensagens(cadastro, rep.nome, link);
     const agora = new Date().toISOString();
     await patch(supabase, sessao.id, {
       assinapdf_link: link,
