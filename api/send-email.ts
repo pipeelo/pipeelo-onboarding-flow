@@ -69,7 +69,6 @@ const PROMPT_MAPPING: Record<string, Record<string, Array<{ questionId: string; 
       { questionId: "taxa_religacao", label: "Taxa religação" },
       { questionId: "valor_taxa_religacao", label: "Valor religação" },
       { questionId: "outras_taxas", label: "Outras taxas" },
-      { questionId: "multa_juros_atraso", label: "Multa/juros atraso" },
     ],
   },
   suporte: {

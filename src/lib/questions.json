@@ -10,8 +10,8 @@
     ],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v4.0 - 5 departamentos; identificação = números de WhatsApp + integrações (dados cadastrais vêm do /cadastro)",
-    "versao": "4.0.0",
-    "total_perguntas": 233
+    "versao": "4.1.0",
+    "total_perguntas": 230
   },
   "departamentos": {
     "identificacao": {
@@ -1157,86 +1157,9 @@
       "slug": "financeiro",
       "responsavel_sugerido": "Diretor Financeiro ou Gerente Administrativo",
       "tempo_estimado": "15-20 minutos",
-      "descricao": "Gateway, formas de pagamento, políticas de bloqueio, taxas e negociação com inadimplentes.",
+      "descricao": "Régua de cobrança, gateway, formas de pagamento, políticas de bloqueio e taxas.",
       "ordem_execucao": 2,
       "secoes": {
-        "gateway_e_cobranca": {
-          "titulo": "Gateway e Geração de Cobranças",
-          "icone": "💰",
-          "descricao": "Qual plataforma processa os pagamentos. A IA precisa saber pra orientar o cliente corretamente.",
-          "perguntas": [
-            {
-              "id": "gateway_pagamento",
-              "pergunta": "O gateway de pagamento já está configurado no ERP ou é um sistema fora dele?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "hint": "Se o boleto e o PIX já saem pelo ERP, escolha a primeira opção. Se usam um gateway à parte, escolha qual.",
-              "opcoes": [
-                {
-                  "value": "integrado_erp",
-                  "label": "Já está configurado no ERP"
-                },
-                {
-                  "value": "7az",
-                  "label": "Fora do ERP: 7AZ (Bemobi)"
-                },
-                {
-                  "value": "outro",
-                  "label": "Fora do ERP: outro gateway"
-                }
-              ]
-            },
-            {
-              "id": "gateway_outro",
-              "pergunta": "Qual é o gateway?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "gateway_pagamento == 'outro'",
-              "placeholder": "Ex: Asaas, Efí, Iugu, Mercado Pago"
-            },
-            {
-              "id": "vencimentos_disponiveis",
-              "pergunta": "Quais dias de vencimento estão disponíveis para os clientes?",
-              "tipo": "checkbox_multiple",
-              "obrigatoria": true,
-              "hint": "A IA só permite mudar pra um desses dias.",
-              "opcoes": [
-                {
-                  "value": "5",
-                  "label": "Dia 5"
-                },
-                {
-                  "value": "10",
-                  "label": "Dia 10"
-                },
-                {
-                  "value": "15",
-                  "label": "Dia 15"
-                },
-                {
-                  "value": "20",
-                  "label": "Dia 20"
-                },
-                {
-                  "value": "25",
-                  "label": "Dia 25"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outro"
-                }
-              ]
-            },
-            {
-              "id": "vencimentos_outros",
-              "pergunta": "Quais outros dias de vencimento?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "vencimentos_disponiveis includes 'outro'",
-              "placeholder": "Ex: 1, 7, 18 (separe por vírgula)"
-            }
-          ]
-        },
         "regua_cobranca": {
           "titulo": "Régua de Cobrança",
           "icone": "📅",
@@ -1246,86 +1169,85 @@
               "id": "_info_regua",
               "pergunta": "Como funciona",
               "tipo": "info",
-              "texto": "A IA envia o boleto (PIX copia-e-cola + PDF) automaticamente nos dias que você marcar — antes do vencimento como lembrete, e depois como cobrança. Você pode mudar a régua depois com o nosso time."
+              "texto": "A IA envia o boleto (PIX copia-e-cola + PDF) automaticamente nos dias que você definir: antes do vencimento como lembrete, depois como cobrança. Você escolhe os dias e os horários dos disparos. Dá pra ajustar a régua depois com o nosso time."
             },
             {
-              "id": "regua_dias_antes",
-              "pergunta": "Em quais dias ANTES do vencimento a IA deve enviar o boleto/lembrete?",
-              "tipo": "checkbox_multiple",
+              "id": "regua_dias",
+              "pergunta": "Em quais dias a régua deve disparar?",
+              "tipo": "grupo",
               "obrigatoria": true,
-              "opcoes": [
+              "hint": "Conte a partir do vencimento. Separe os dias por vírgula. Se não quiser disparo antes (ou depois), deixe o campo vazio.",
+              "campos": [
                 {
-                  "value": "10_antes",
-                  "label": "10 dias antes"
+                  "id": "regua_dias_antes",
+                  "label": "Dias ANTES do vencimento",
+                  "tipo": "text",
+                  "placeholder": "Ex.: 10, 5, 1",
+                  "largura": 6,
+                  "hint": "Lembrete com o boleto. Ex.: 10, 5, 1 = dez, cinco e um dia antes."
                 },
                 {
-                  "value": "7_antes",
-                  "label": "7 dias antes"
-                },
-                {
-                  "value": "5_antes",
-                  "label": "5 dias antes"
-                },
-                {
-                  "value": "3_antes",
-                  "label": "3 dias antes"
-                },
-                {
-                  "value": "1_antes",
-                  "label": "1 dia antes"
-                },
-                {
-                  "value": "no_dia",
-                  "label": "No dia do vencimento"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outros dias"
+                  "id": "regua_dias_depois",
+                  "label": "Dias DEPOIS do vencimento",
+                  "tipo": "text",
+                  "placeholder": "Ex.: 1, 3, 7, 15",
+                  "largura": 6,
+                  "hint": "Cobrança do boleto vencido. Ex.: 1, 3, 7 = um, três e sete dias depois."
                 }
               ]
             },
             {
-              "id": "regua_dias_depois",
-              "pergunta": "APÓS o vencimento, em quais dias a IA deve enviar a cobrança?",
-              "tipo": "checkbox_multiple",
+              "id": "regua_horarios",
+              "pergunta": "Em quais horários a régua deve disparar?",
+              "tipo": "repeater",
               "obrigatoria": true,
+              "rotulo_item": "Horário",
+              "rotulo_adicionar": "Adicionar outro horário",
+              "minimo": 1,
+              "maximo": 4,
+              "hint": "Um horário já basta. Se quiser dois disparos no dia (ex.: 09:00 e 18:00), adicione outro. Horário comercial costuma ter mais resposta.",
+              "campos": [
+                {
+                  "id": "horario",
+                  "label": "Horário",
+                  "tipo": "time",
+                  "obrigatoria": true,
+                  "largura": 4
+                }
+              ]
+            }
+          ]
+        },
+        "gateway": {
+          "titulo": "Gateway de Pagamento",
+          "icone": "💰",
+          "descricao": "Qual plataforma gera boleto e PIX. A IA precisa saber pra orientar o cliente corretamente.",
+          "perguntas": [
+            {
+              "id": "gateway_pagamento",
+              "pergunta": "O gateway de pagamento já está integrado ao ERP?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "hint": "Se o boleto e o PIX já saem pelo ERP, é a primeira opção.",
               "opcoes": [
                 {
-                  "value": "1_depois",
-                  "label": "1 dia depois"
+                  "value": "integrado_erp",
+                  "label": "Sim, boleto e PIX saem pelo ERP"
                 },
                 {
-                  "value": "3_depois",
-                  "label": "3 dias depois"
-                },
-                {
-                  "value": "5_depois",
-                  "label": "5 dias depois"
-                },
-                {
-                  "value": "7_depois",
-                  "label": "7 dias depois"
-                },
-                {
-                  "value": "10_depois",
-                  "label": "10 dias depois"
-                },
-                {
-                  "value": "15_depois",
-                  "label": "15 dias depois"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outros dias"
+                  "value": "fora_erp",
+                  "label": "Não, usamos um gateway à parte"
                 }
               ]
             },
             {
-              "id": "regua_horario_disparo",
-              "pergunta": "Qual horário os disparos da régua de cobrança devem acontecer?",
-              "tipo": "time",
+              "id": "gateway_outro",
+              "pergunta": "Qual gateway vocês usam?",
+              "tipo": "text",
               "obrigatoria": true,
-              "hint": "Horário comercial costuma ter mais resposta. Ex: 09:00"
+              "condicional": "gateway_pagamento == 'fora_erp'",
+              "placeholder": "Ex: 7AZ (Bemobi), Asaas, Efí, Iugu, Mercado Pago",
+              "hint": "Os dados de acesso do gateway você informa na etapa Identificação (Acessos das Integrações)."
             }
           ]
         },
@@ -1335,7 +1257,7 @@
           "perguntas": [
             {
               "id": "formas_pagamento_disponiveis",
-              "pergunta": "Formas de pagamento aceitas",
+              "pergunta": "Quais formas de pagamento vocês aceitam?",
               "tipo": "checkbox_multiple",
               "obrigatoria": true,
               "opcoes": [
@@ -1362,12 +1284,16 @@
                 {
                   "value": "carne",
                   "label": "Carnê impresso"
-                },
-                {
-                  "value": "dinheiro",
-                  "label": "Dinheiro (presencial)"
                 }
               ]
+            },
+            {
+              "id": "vencimentos_disponiveis",
+              "pergunta": "Quais dias de vencimento vocês oferecem?",
+              "tipo": "text",
+              "obrigatoria": true,
+              "placeholder": "Ex.: 5, 10, 15, 20, 25",
+              "hint": "Separe por vírgula. A IA só oferece troca de vencimento para esses dias."
             },
             {
               "id": "metodo_pagamento_padrao",
@@ -1394,7 +1320,7 @@
               "pergunta": "A IA salva a preferência de pagamento do cliente?",
               "tipo": "select",
               "obrigatoria": true,
-              "hint": "Quando salva, reduz trocas de mensagem em atendimentos futuros.",
+              "hint": "Se salvar, a IA manda direto na forma que o cliente escolheu da última vez. Se não salvar, ela pergunta a forma toda vez.",
               "opcoes": [
                 {
                   "value": "sim",
@@ -1405,22 +1331,6 @@
                   "label": "Não, perguntar sempre"
                 }
               ]
-            },
-            {
-              "id": "multa_juros_atraso",
-              "pergunta": "Multa e juros por atraso (valor / %)",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: 2% de multa + 0,033% de juros ao dia",
-              "hint": "A IA informa ao cliente ao emitir segunda via de boleto em atraso."
-            },
-            {
-              "id": "dias_negativacao",
-              "pergunta": "Após quantos dias de atraso vocês negativam (SPC/Serasa)?",
-              "tipo": "number",
-              "obrigatoria": true,
-              "placeholder": "Ex: 60",
-              "hint": "A IA usa como alerta final antes da transferência pra cobrança."
             }
           ]
         },
@@ -1458,7 +1368,7 @@
             },
             {
               "id": "fluxo_reducao_bloqueio",
-              "pergunta": "Explique como funciona o fluxo de redução e bloqueio:",
+              "pergunta": "Explique o fluxo: com quantos dias de atraso entra a redução e com quantos vira bloqueio total?",
               "tipo": "textarea",
               "obrigatoria": true,
               "condicional": "tipo_bloqueio == 'ambos'",
@@ -1483,21 +1393,64 @@
               ]
             },
             {
-              "id": "dias_liberacao_confianca",
-              "pergunta": "Por quantos dias a IA pode liberar o serviço em confiança?",
-              "tipo": "number",
-              "obrigatoria": true,
-              "condicional": "liberacao_confianca == 'sim'",
-              "placeholder": "Ex: 3",
-              "hint": "Prazo que o cliente tem para confirmar o pagamento antes de bloquear novamente"
-            },
-            {
-              "id": "carencia_liberacao_confianca",
-              "pergunta": "O padrão Pipeelo é liberar em confiança no máximo 1 vez a cada 30 dias por cliente. Esse padrão funciona para vocês?",
+              "id": "liberacao_exige_comprovante",
+              "pergunta": "Para liberar em confiança, a IA precisa de comprovante de pagamento?",
               "tipo": "select",
               "obrigatoria": true,
               "condicional": "liberacao_confianca == 'sim'",
-              "hint": "A carência evita que o mesmo cliente use a liberação em confiança repetidamente sem pagar.",
+              "hint": "Há provedores que liberam só com o cliente pedir, sem comprovante.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, só com comprovante"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, libera só com o pedido do cliente"
+                }
+              ]
+            },
+            {
+              "id": "dias_liberacao_confianca",
+              "pergunta": "Por quanto tempo a IA pode liberar o serviço em confiança?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "condicional": "liberacao_confianca == 'sim'",
+              "hint": "Prazo que o cliente tem para pagar antes de bloquear de novo. Varia de provedor para provedor.",
+              "opcoes": [
+                {
+                  "value": "24h",
+                  "label": "24 horas"
+                },
+                {
+                  "value": "48h",
+                  "label": "48 horas"
+                },
+                {
+                  "value": "72h",
+                  "label": "72 horas"
+                },
+                {
+                  "value": "outro",
+                  "label": "Outro prazo"
+                }
+              ]
+            },
+            {
+              "id": "dias_liberacao_confianca_outro",
+              "pergunta": "Qual prazo?",
+              "tipo": "text",
+              "obrigatoria": true,
+              "condicional": "dias_liberacao_confianca == 'outro'",
+              "placeholder": "Ex.: 5 dias, 1 semana"
+            },
+            {
+              "id": "carencia_liberacao_confianca",
+              "pergunta": "O padrão dos ERPs é liberar em confiança no máximo 1 vez a cada 30 dias por cliente. Esse padrão funciona para vocês?",
+              "tipo": "select",
+              "obrigatoria": true,
+              "condicional": "liberacao_confianca == 'sim'",
+              "hint": "Quando o cliente já usou a liberação dentro do período, a IA não libera de novo: transfere para o Financeiro.",
               "opcoes": [
                 {
                   "value": "padrao_30",
@@ -1515,7 +1468,7 @@
               "tipo": "textarea",
               "obrigatoria": true,
               "condicional": "carencia_liberacao_confianca == 'outro_padrao'",
-              "placeholder": "Ex: 1 vez a cada 60 dias, ou no máximo 2 liberações por ano…"
+              "placeholder": "Ex.: liberamos até 2 vezes a cada 30 dias; fora disso vai para o Financeiro."
             },
             {
               "id": "limite_dias_sem_confianca",
@@ -1524,7 +1477,7 @@
               "obrigatoria": true,
               "condicional": "liberacao_confianca == 'sim'",
               "placeholder": "Ex: 30",
-              "hint": "Acima deste prazo, só desbloqueia com pagamento confirmado no sistema"
+              "hint": "Normalmente 30 dias. Acima disso, só desbloqueia com pagamento confirmado no sistema."
             },
             {
               "id": "liberacao_todos_servicos",
@@ -1548,7 +1501,7 @@
               "pergunta": "Vocês trabalham com promessa de pagamento?",
               "tipo": "select",
               "obrigatoria": true,
-              "hint": "Cliente informa quando vai pagar e a IA mantém o serviço ativo via API até a data prometida",
+              "hint": "Promessa de pagamento: o cliente diz em que dia vai pagar, a IA registra no ERP e a internet fica liberada até essa data. Alguns ERPs têm esse recurso.",
               "opcoes": [
                 {
                   "value": "sim",
@@ -1561,12 +1514,29 @@
               ]
             },
             {
-              "id": "faturas_transfere_cobranca",
-              "pergunta": "A partir de quantas faturas em atraso deve transferir para Cobrança/Financeiro?",
-              "tipo": "number",
+              "id": "faturas_transfere_padrao",
+              "pergunta": "Nosso padrão: com 2 ou mais faturas em atraso a IA não negocia e transfere direto para o Financeiro. Vocês querem seguir dessa forma?",
+              "tipo": "select",
               "obrigatoria": true,
-              "placeholder": "Ex: 2",
-              "hint": "Número de faturas vencidas para escalar para humano"
+              "hint": "Com uma fatura em atraso a IA resolve (2ª via, PIX, liberação em confiança). Com duas ou mais, é negociação: vai para o time.",
+              "opcoes": [
+                {
+                  "value": "sim",
+                  "label": "Sim, seguir o padrão"
+                },
+                {
+                  "value": "nao",
+                  "label": "Não, queremos diferente"
+                }
+              ]
+            },
+            {
+              "id": "faturas_transfere_fluxo",
+              "pergunta": "Como vocês gostariam que fosse?",
+              "tipo": "textarea",
+              "obrigatoria": true,
+              "condicional": "faturas_transfere_padrao == 'nao'",
+              "placeholder": "Ex.: transferir só a partir de 3 faturas; ou negociar até 2 faturas pela IA."
             }
           ]
         },
@@ -1632,67 +1602,22 @@
               "pergunta": "Outras taxas que a IA pode informar (opcional)",
               "tipo": "textarea",
               "obrigatoria": false,
-              "placeholder": "Ex:\nPonto adicional: R$ 80,00\nMudança de endereço: R$ 50,00\nSegunda via física do boleto: R$ 5,00",
-              "hint": "Um por linha, formato: [Nome da taxa]: R$ valor"
+              "placeholder": "Ex:\nMudança de endereço: R$ 50,00\nVisita técnica sem defeito: R$ 80,00\nTroca de plano: R$ 0,00\nSegunda via impressa: R$ 5,00\nInstalação de ponto extra: R$ 80,00",
+              "hint": "Um por linha, formato: [Nome da taxa]: R$ valor. Sugestões: mudança de endereço, visita sem defeito, troca de plano, 2ª via impressa, ponto extra."
             }
           ]
         },
-        "casos_especiais": {
-          "titulo": "Casos Especiais",
-          "icone": "⚠️",
-          "descricao": "Situações que a IA NÃO resolve sozinha — sempre transfere, com ou sem coleta prévia.",
+        "padrao": {
+          "titulo": "O que já é padrão",
+          "icone": "✅",
+          "descricao": "Situações que a IA trata do mesmo jeito em todos os provedores. Não precisa configurar nada.",
           "perguntas": [
             {
-              "id": "cobranca_incorreta",
-              "pergunta": "Cliente relata cobrança incorreta — o que a IA faz?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "coletar_transferir",
-                  "label": "Coleta dados do boleto e transfere pro Financeiro"
-                },
-                {
-                  "value": "transferir_direto",
-                  "label": "Transfere direto sem triagem"
-                }
-              ]
-            },
-            {
-              "id": "pagamento_duplicado",
-              "pergunta": "Cliente relata pagamento duplicado — o que a IA faz?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "coletar_transferir",
-                  "label": "Pede comprovantes e transfere"
-                },
-                {
-                  "value": "transferir_direto",
-                  "label": "Transfere direto sem triagem"
-                }
-              ]
-            },
-            {
-              "id": "comprovante_enviado",
-              "pergunta": "Cliente envia comprovante de pagamento — o que a IA faz?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "verifica_sistema",
-                  "label": "Verifica no sistema e confirma; se não achou, transfere"
-                },
-                {
-                  "value": "transfere_anexo",
-                  "label": "Encaminha direto pro Financeiro com o anexo"
-                },
-                {
-                  "value": "libera_confianca",
-                  "label": "Libera em confiança e o Financeiro confirma depois"
-                }
-              ]
+              "id": "_info_padrao_financeiro",
+              "pergunta": "Como a IA age nesses casos",
+              "tipo": "info",
+              "obrigatoria": false,
+              "texto": "1. Cobrança incorreta: a IA pede os comprovantes e transfere para o Financeiro. 2. Pagamento duplicado: a IA pede os comprovantes e transfere para o Financeiro. 3. Comprovante de pagamento enviado: a IA confere o que consegue (PIX dá para validar; boleto não compensa na hora) e libera em confiança, sempre com a verificação antes."
             }
           ]
         }

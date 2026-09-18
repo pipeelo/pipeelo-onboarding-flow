@@ -135,6 +135,14 @@ export function QuestionRenderer({
                 className="text-base"
               />
             )}
+            {campo.tipo === 'time' && (
+              <Input
+                type="time"
+                value={(fieldVal as string | undefined) ?? ''}
+                onChange={(e) => patch({ [campo.id]: e.target.value })}
+                className="text-base"
+              />
+            )}
             {campo.tipo === 'textarea' && (
               <Textarea
                 value={(fieldVal as string | undefined) ?? ''}
