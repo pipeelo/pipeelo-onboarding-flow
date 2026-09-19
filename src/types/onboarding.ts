@@ -67,6 +67,10 @@ export interface Question {
   extensoes?: string[];
   /** Para tipo='file_upload': tamanho máximo em MB (default 5). */
   max_mb?: number;
+  /** Imagem de exemplo mostrada acima do campo (caminho em /public). */
+  imagem?: string;
+  /** Legenda da imagem de exemplo. */
+  imagem_legenda?: string;
   /** Para tipo='select': valor pré-selecionado quando o cliente ainda não respondeu. */
   padrao?: string;
   /** Para tipo='checkbox_multiple': placeholder do campo "Outro". */

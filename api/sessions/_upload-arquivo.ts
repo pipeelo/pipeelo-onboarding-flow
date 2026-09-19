@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = UploadArquivoSchema.parse(req.body);
     const session = await assertSessionAccess(body.slug, body.token);
 
-    const ctx = resolveUploadContexto(body.departamento);
+    const ctx = resolveUploadContexto(body.departamento, body.pergunta_id);
     const ext = body.nome.split('.').pop()?.toLowerCase() ?? '';
     if (!(ctx.extensoes as readonly string[]).includes(ext))
       throw new HttpError(400, 'extensao_nao_permitida');

@@ -7,6 +7,8 @@ export const UPLOAD_BUCKET = 'onboarding-uploads';
 export const UPLOAD_CONTEXTOS = {
   planilha: { extensoes: ['xlsx', 'xls', 'csv'] as const, maxBytes: 5 * 1024 * 1024 },
   cadastro: { extensoes: ['pdf', 'jpg', 'jpeg', 'png'] as const, maxBytes: 10 * 1024 * 1024 },
+  /** Polígonos de cobertura/viabilidade (Google Earth / My Maps). */
+  mapa: { extensoes: ['kmz', 'kml', 'zip'] as const, maxBytes: 20 * 1024 * 1024 },
 } as const;
 
 // Compat: constantes antigas continuam apontando para o contexto planilha.
@@ -15,8 +17,10 @@ export const UPLOAD_MAX_BYTES = UPLOAD_CONTEXTOS.planilha.maxBytes;
 
 export const UPLOAD_DEPARTAMENTOS = [...DEPARTAMENTOS, 'cadastro'] as const;
 
-export function resolveUploadContexto(departamento: string) {
-  return departamento === 'cadastro' ? UPLOAD_CONTEXTOS.cadastro : UPLOAD_CONTEXTOS.planilha;
+export function resolveUploadContexto(departamento: string, perguntaId = '') {
+  if (departamento === 'cadastro') return UPLOAD_CONTEXTOS.cadastro;
+  if (/kmz/i.test(perguntaId)) return UPLOAD_CONTEXTOS.mapa;
+  return UPLOAD_CONTEXTOS.planilha;
 }
 
 export const UploadArquivoSchema = z.object({

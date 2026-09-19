@@ -119,6 +119,27 @@ describe('POST /api/sessions/upload-arquivo', () => {
     expect((r.body as { path: string }).path).toMatch(/^sess-1\/cadastro\/doc_contrato_social\/\d+-contrato_social\.pdf$/);
   });
 
+  it('200 suporte — pergunta de KMZ aceita .kmz até 20MB', async () => {
+    (assertSessionAccess as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sess-1' });
+    const { client, upload } = makeStorageMock({ data: {}, error: null });
+    (getServiceSupabase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(client);
+    const r = await invokeHandler(handler, {
+      method: 'POST',
+      body: { ...validBody, departamento: 'suporte', pergunta_id: 'viabilidade_kmz_arquivo', nome: 'luz marina.kmz', content_type: 'application/vnd.google-earth.kmz', base64: Buffer.alloc(12 * 1024 * 1024, 1).toString('base64') },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(upload).toHaveBeenCalledTimes(1);
+  });
+
+  it('400 suporte — planilha continua recusando .kmz', async () => {
+    (assertSessionAccess as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sess-1' });
+    const r = await invokeHandler(handler, {
+      method: 'POST',
+      body: { ...validBody, departamento: 'suporte', pergunta_id: 'equipe_planilha_upload', nome: 'x.kmz' },
+    });
+    expect(r.statusCode).toBe(400);
+  });
+
   it('400 cadastro — recusa xlsx', async () => {
     (assertSessionAccess as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sess-1' });
     const r = await invokeHandler(handler as never, {

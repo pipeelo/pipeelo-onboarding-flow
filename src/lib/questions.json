@@ -10,8 +10,8 @@
     ],
     "tempo_total_estimado": "60-80 minutos",
     "descricao": "Sistema de onboarding Pipeelo v4.0 - 5 departamentos; identificação = números de WhatsApp + integrações (dados cadastrais vêm do /cadastro)",
-    "versao": "4.4.0",
-    "total_perguntas": 206
+    "versao": "4.5.0",
+    "total_perguntas": 202
   },
   "departamentos": {
     "identificacao": {
@@ -1087,7 +1087,7 @@
             },
             {
               "id": "cancelamento_padrao",
-              "pergunta": "Nos cancelamentos, nosso padrão é sempre pedir o motivo ao cliente e, na sequência, transferir para o departamento responsável. Vocês querem seguir dessa forma?",
+              "pergunta": "Nos cancelamentos, vocês seguem o nosso padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "O departamento responsável é o que trata cancelamento na descrição de atividades que você preencheu.",
@@ -1100,7 +1100,8 @@
                   "value": "nao",
                   "label": "Não, queremos diferente"
                 }
-              ]
+              ],
+              "texto": "Nosso padrão: a IA pede o motivo ao cliente e, na sequência, transfere para o departamento responsável pelo cancelamento."
             },
             {
               "id": "cancelamento_fluxo_desejado",
@@ -1711,7 +1712,7 @@
           "perguntas": [
             {
               "id": "followup_financeiro_padrao",
-              "pergunta": "Nosso follow-up padrão: 10 minutos sem resposta, a IA manda 1 mensagem de reengajamento; 5 minutos depois, se continuar sem resposta, transfere para o Financeiro. Querem seguir dessa forma?",
+              "pergunta": "Quando o cliente some no meio do atendimento, vocês seguem o nosso follow-up padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "É sempre 1 mensagem e depois a transferência. O que muda são só os tempos.",
@@ -1724,7 +1725,8 @@
                   "value": "nao",
                   "label": "Não, queremos outros tempos"
                 }
-              ]
+              ],
+              "texto": "1. 10 minutos sem resposta: a IA manda 1 mensagem de reengajamento.\n2. 5 minutos depois, se continuar sem resposta: transfere para o Financeiro."
             },
             {
               "id": "followup_financeiro_tempos",
@@ -1836,7 +1838,9 @@
               "pergunta": "Vocês têm localidades de viabilidade que não estão documentadas no gerenciador de rede?",
               "tipo": "select",
               "obrigatoria": true,
-              "hint": "Ex.: condomínios, áreas rurais ou bairros novos que não aparecem no OZmap, Geogrid ou Geosite. Podemos inserir esses pontos numa base de conhecimento por polígono KMZ — a IA consulta antes de confirmar cobertura. Se sim, mande os arquivos KMZ no grupo com a Pipeelo.",
+              "hint": "Ex.: condomínios, áreas rurais ou bairros novos que não aparecem no OZmap, Geogrid ou Geosite. Podemos inserir esses pontos numa base de conhecimento por polígono KMZ — a IA consulta antes de confirmar cobertura. Se sim, o próximo passo pede os arquivos.",
+              "imagem": "/exemplo-poligono-kmz.jpg",
+              "imagem_legenda": "Exemplo: polígono da localidade desenhado no Google Earth (ferramenta \"Adicionar polígono\", indicada pela seta) e exportado em KMZ.",
               "opcoes": [
                 {
                   "value": "sim",
@@ -1847,6 +1851,20 @@
                   "label": "Não, está tudo no gerenciador"
                 }
               ]
+            },
+            {
+              "id": "viabilidade_kmz_arquivo",
+              "pergunta": "Envie os polígonos das localidades (KMZ ou KML)",
+              "tipo": "file_upload",
+              "obrigatoria": true,
+              "condicional": "viabilidade_kmz == 'sim'",
+              "extensoes": [
+                "kmz",
+                "kml",
+                "zip"
+              ],
+              "max_mb": 20,
+              "hint": "No Google Earth, desenhe o polígono de cada localidade e salve o lugar como .kmz. Se forem vários arquivos, junte tudo num .zip. Até 20MB."
             }
           ]
         },
@@ -1885,7 +1903,7 @@
           "perguntas": [
             {
               "id": "sinal_padrao",
-              "pergunta": "Nosso padrão de sinal da ONU: entre -8 e -27 dBm é aceitável (ideal em torno de -18 dBm); abaixo de -27 dBm ou LOS é crítico. Vocês trabalham com esses valores?",
+              "pergunta": "Vocês trabalham com o nosso padrão de sinal da ONU?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "A IA nunca fala esses números com o cliente; eles ficam só na nota interna para o atendente.",
@@ -1898,7 +1916,8 @@
                   "value": "nao",
                   "label": "Não, usamos outros valores"
                 }
-              ]
+              ],
+              "texto": "Aceitável: entre -8 e -27 dBm (ideal em torno de -18 dBm).\nCrítico: abaixo de -27 dBm ou LOS."
             },
             {
               "id": "sinal_padrao_proprio",
@@ -1910,7 +1929,7 @@
             },
             {
               "id": "sinal_fora_padrao_padrao",
-              "pergunta": "Quando o sinal está fora do padrão, a IA tenta reiniciar a ONU (se o uptime indicar que vale a pena); se não resolver, transfere para a equipe com um resumo técnico e abre o chamado. De acordo?",
+              "pergunta": "Com sinal fora do padrão, a IA pode agir assim?",
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
@@ -1922,7 +1941,8 @@
                   "value": "nao",
                   "label": "Não, queremos diferente"
                 }
-              ]
+              ],
+              "texto": "1. Tenta reiniciar a ONU, se o uptime indicar que vale a pena.\n2. Se não resolver, transfere para a equipe com um resumo técnico e abre o chamado."
             },
             {
               "id": "sinal_fora_padrao_fluxo",
@@ -1933,7 +1953,7 @@
             },
             {
               "id": "fluxo_diagnostico_padrao",
-              "pergunta": "Nosso fluxo de diagnóstico padrão: 1) confere se a conexão está bloqueada por débito (se estiver, vai para o Financeiro); 2) verifica falha massiva na região — se houver, informa o cliente e não abre chamado; 3) reconhece cliente recorrente (3º contato em 7 dias vai direto para a equipe com prioridade); 4) pergunta se está sem conexão ou lenta — em lentidão, checa consumo anormal; 5) pede que fique perto do roteador e mande foto dos LEDs, confere fibra e cabos; 6) consulta o sinal da ONU — crítico vai para a equipe com nota técnica; 7) sinal OK: perguntas sobre aparelhos e sites, testes simples (outro aparelho, 2.4G/5G), diagnóstico de Wi-Fi e 1 reinício remoto; 8) não resolveu: diagnóstico automático N2, transfere para o suporte com resumo e abre chamado. Vocês seguem assim?",
+              "pergunta": "Vocês seguem o nosso fluxo de diagnóstico padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "Esse é o fluxo que roda hoje nos nossos provedores. A IA nunca usa termos técnicos com o cliente.",
@@ -1946,7 +1966,8 @@
                   "value": "nao",
                   "label": "Não, nosso fluxo é diferente"
                 }
-              ]
+              ],
+              "texto": "1. Confere se a conexão está bloqueada por débito. Se estiver, vai para o Financeiro.\n2. Verifica falha massiva na região. Se houver, informa o cliente e não abre chamado.\n3. Reconhece cliente recorrente: 3º contato em 7 dias vai direto para a equipe, com prioridade.\n4. Pergunta se está sem conexão ou lenta. Em lentidão, checa consumo anormal.\n5. Pede que fique perto do roteador e mande foto dos LEDs; confere fibra e cabos.\n6. Consulta o sinal da ONU. Crítico vai para a equipe com nota técnica.\n7. Sinal OK: perguntas sobre aparelhos e sites, testes simples (outro aparelho, 2.4G/5G), diagnóstico de Wi-Fi e 1 reinício remoto.\n8. Não resolveu: diagnóstico automático N2, transfere para o suporte com resumo e abre chamado."
             },
             {
               "id": "fluxo_diagnostico_texto",
@@ -1965,7 +1986,7 @@
           "perguntas": [
             {
               "id": "alteracoes_remotas_padrao",
-              "pergunta": "Com TR-069 ativo, nosso padrão é a IA fazer tudo remotamente: trocar a senha do Wi-Fi (validando dados do cadastro antes), trocar o nome da rede, ver quantos dispositivos estão conectados e informar ao cliente, e reiniciar a ONU. Vocês trabalham de forma diferente ou querem que ela NÃO faça algo disso?",
+              "pergunta": "Com TR-069 ativo, a IA pode fazer estas alterações remotas?",
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
@@ -1977,7 +1998,8 @@
                   "value": "diferente",
                   "label": "Sim, queremos diferente"
                 }
-              ]
+              ],
+              "texto": "1. Trocar a senha do Wi-Fi, validando dados do cadastro antes.\n2. Trocar o nome da rede.\n3. Ver quantos dispositivos estão conectados e informar ao cliente.\n4. Reiniciar a ONU."
             },
             {
               "id": "alteracoes_remotas_texto",
@@ -2267,84 +2289,6 @@
           "condicional_secao": "outros_servicos_oferecidos contains 'telefonia_fixa'",
           "perguntas": [
             {
-              "id": "fixa_carrier",
-              "pergunta": "Qual a operadora carrier?",
-              "tipo": "select",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "propria",
-                  "label": "Própria (licença STFC)"
-                },
-                {
-                  "value": "algar",
-                  "label": "Algar"
-                },
-                {
-                  "value": "vivo",
-                  "label": "Vivo"
-                },
-                {
-                  "value": "embratel",
-                  "label": "Embratel"
-                },
-                {
-                  "value": "outro",
-                  "label": "Outra"
-                }
-              ]
-            },
-            {
-              "id": "fixa_carrier_outro",
-              "pergunta": "Qual operadora?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "condicional": "fixa_carrier == 'outro'",
-              "placeholder": "Nome da operadora carrier"
-            },
-            {
-              "id": "fixa_minutos_inclusos",
-              "pergunta": "Quantos minutos inclusos por mês?",
-              "tipo": "text",
-              "obrigatoria": true,
-              "placeholder": "Ex: 200 minutos ou Ilimitado"
-            },
-            {
-              "id": "fixa_destinos_inclusos",
-              "pergunta": "Quais destinos estão inclusos?",
-              "tipo": "checkbox_multiple",
-              "obrigatoria": true,
-              "opcoes": [
-                {
-                  "value": "fixo_local",
-                  "label": "Fixo local"
-                },
-                {
-                  "value": "fixo_nacional",
-                  "label": "Fixo nacional (DDD)"
-                },
-                {
-                  "value": "movel_local",
-                  "label": "Móvel local"
-                },
-                {
-                  "value": "movel_nacional",
-                  "label": "Móvel nacional"
-                },
-                {
-                  "value": "internacional",
-                  "label": "Internacional"
-                }
-              ]
-            },
-            {
-              "id": "fixa_preco_avulso",
-              "pergunta": "Preço avulso da telefonia fixa (R$)",
-              "tipo": "currency",
-              "obrigatoria": true,
-              "placeholder": "29.90"
-            },
-            {
               "id": "fixa_perguntas_triagem",
               "pergunta": "Perguntas de triagem para problemas de telefonia fixa",
               "tipo": "textarea",
@@ -2473,7 +2417,7 @@
           "perguntas": [
             {
               "id": "followup_suporte_padrao",
-              "pergunta": "Nosso follow-up padrão: 10 minutos sem resposta, a IA manda 1 mensagem de reengajamento; 5 minutos depois, se continuar sem resposta, transfere para o Suporte. Querem seguir dessa forma?",
+              "pergunta": "Quando o cliente some no meio do atendimento, vocês seguem o nosso follow-up padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "É sempre 1 mensagem e depois a transferência. O que muda são só os tempos.",
@@ -2486,7 +2430,8 @@
                   "value": "nao",
                   "label": "Não, queremos outros tempos"
                 }
-              ]
+              ],
+              "texto": "1. 10 minutos sem resposta: a IA manda 1 mensagem de reengajamento.\n2. 5 minutos depois, se continuar sem resposta: transfere para o Suporte."
             },
             {
               "id": "followup_suporte_tempos",
@@ -2619,7 +2564,7 @@
           "perguntas": [
             {
               "id": "fluxo_vendas_padrao",
-              "pergunta": "Nosso fluxo de venda padrão (o mesmo que roda hoje nos nossos provedores): 1) A IA identifica se a pessoa já é cliente — cliente existente vai para troca de plano ou segundo ponto, sem repetir cadastro. 2) Pede o endereço completo ou a localização do WhatsApp e verifica a cobertura (viabilidade). 3) Se percebe que é empresa, pergunta o tipo de necessidade e se precisa de IP fixo, e apresenta os planos empresariais. 4) Com cobertura confirmada, apresenta as modalidades (ex.: Internet + Streaming, Internet + Telefone, Somente Internet) e pergunta qual atende melhor. 5) Apresenta os planos da modalidade escolhida exatamente como estão na tabela de planos. 6) Quando o cliente escolhe, informa a taxa de instalação, a fidelidade e o comodato do roteador. 7) Faz o pré-cadastro em uma mensagem só: nome completo, CPF, RG, data de nascimento, nome da mãe, e-mail e dia de vencimento preferido; depois confirma o endereço e pergunta o complemento. 8) Valida o CPF e confere se já existe contrato ativo. 9) Registra o lead no CRM e transfere para o time comercial (ou encerra, conforme a etapa Pós pré-cadastro). A IA NÃO faz perguntas de perfil de uso (quantas pessoas, dispositivos, tipo de casa): isso cansa o cliente. Faz sentido para vocês dessa forma?",
+              "pergunta": "Vocês seguem o nosso fluxo de venda padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "opcoes": [
@@ -2631,7 +2576,8 @@
                   "value": "nao",
                   "label": "Quero alterar algo"
                 }
-              ]
+              ],
+              "texto": "1. A IA identifica se a pessoa já é cliente. Cliente existente vai para troca de plano ou segundo ponto, sem repetir cadastro.\n2. Pede o endereço completo ou a localização do WhatsApp e verifica a cobertura (viabilidade).\n3. Se percebe que é empresa, pergunta o tipo de necessidade e se precisa de IP fixo, e apresenta os planos empresariais.\n4. Com cobertura confirmada, apresenta as modalidades (ex.: Internet + Streaming, Internet + Telefone, Somente Internet) e pergunta qual atende melhor.\n5. Apresenta os planos da modalidade escolhida exatamente como estão na tabela de planos.\n6. Quando o cliente escolhe, informa a taxa de instalação, a fidelidade e o comodato do roteador.\n7. Faz o pré-cadastro em uma mensagem só: nome completo, CPF, RG, data de nascimento, nome da mãe, e-mail e dia de vencimento preferido. Depois confirma o endereço e pergunta o complemento.\n8. Valida o CPF e confere se já existe contrato ativo.\n9. Registra o lead no CRM e transfere para o time comercial (ou encerra, conforme a etapa Pós pré-cadastro).\n10. A IA NÃO faz perguntas de perfil de uso (quantas pessoas, dispositivos, tipo de casa): isso cansa o cliente."
             },
             {
               "id": "fluxo_vendas_alteracoes",
@@ -2643,7 +2589,7 @@
             },
             {
               "id": "objecoes_padrao",
-              "pergunta": "Quando o cliente traz uma objeção, a IA responde assim (exemplos do nosso padrão): \"Está muito caro\" → \"Entendo sua preocupação com o preço. Como você usa a internet no dia a dia? Assim te mostro como a estabilidade, o suporte local e a velocidade simétrica fazem diferença no custo-benefício.\" | \"Preciso pensar\" → \"Com certeza. Pode me contar o que está gerando dúvida? Assim te ajudo com mais informações.\" | \"Já tenho internet\" → \"Que bom! Me conta o que funciona bem na sua operadora atual e o que poderia melhorar? Assim vejo como podemos te atender.\" | \"Meu contrato ainda não venceu\" → \"Podemos agendar a instalação para quando seu contrato vencer, e te mostro como o custo-benefício compensa a mudança.\" Depois de 2 tentativas sem avanço, ela encaminha ao time de vendas. Podemos seguir dessa forma?",
+              "pergunta": "Nas objeções, a IA pode responder com o nosso padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "O padrão cobre mais de 20 objeções (concorrência com mais megas, medo de ficar sem internet na troca, home office, câmeras…). Aqui vão só 4 exemplos.",
@@ -2656,7 +2602,8 @@
                   "value": "nao",
                   "label": "Quero mudar ou acrescentar"
                 }
-              ]
+              ],
+              "texto": "“Está muito caro” → “Entendo sua preocupação com o preço. Como você usa a internet no dia a dia? Assim te mostro como a estabilidade, o suporte local e a velocidade simétrica fazem diferença no custo-benefício.”\n“Preciso pensar” → “Com certeza. Pode me contar o que está gerando dúvida? Assim te ajudo com mais informações.”\n“Já tenho internet” → “Que bom! Me conta o que funciona bem na sua operadora atual e o que poderia melhorar? Assim vejo como podemos te atender.”\n“Meu contrato ainda não venceu” → “Podemos agendar a instalação para quando seu contrato vencer, e te mostro como o custo-benefício compensa a mudança.”\nDepois de 2 tentativas sem avanço, ela encaminha ao time de vendas."
             },
             {
               "id": "objecoes_texto",
@@ -2828,7 +2775,7 @@
             },
             {
               "id": "agendamento_ia",
-              "pergunta": "Em alguns ERPs (hoje, o Hubsoft) a IA consegue confirmar com o cliente a visita agendada — tanto a instalação quanto a visita técnica — normalmente por período (manhã ou tarde). Vocês gostariam que ela fizesse isso, se for possível no ERP de vocês?",
+              "pergunta": "Querem que a IA confirme a visita agendada com o cliente?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "Para funcionar, a agenda do ERP precisa estar sendo usada corretamente pela equipe (técnico, período e status atualizados).",
@@ -2841,7 +2788,8 @@
                   "value": "nao",
                   "label": "Não, o time agenda e confirma"
                 }
-              ]
+              ],
+              "texto": "Em alguns ERPs (hoje, o Hubsoft) a IA consegue confirmar com o cliente a visita agendada, tanto a instalação quanto a visita técnica, normalmente por período (manhã ou tarde). Vale só se for possível no ERP de vocês."
             }
           ]
         },
@@ -2915,7 +2863,7 @@
           "perguntas": [
             {
               "id": "followup_vendas_padrao",
-              "pergunta": "Nosso follow-up padrão: 10 minutos sem resposta, a IA manda 1 mensagem de reengajamento; 5 minutos depois, se continuar sem resposta, transfere para o Vendas. Querem seguir dessa forma?",
+              "pergunta": "Quando o lead some no meio da conversa, vocês seguem o nosso follow-up padrão?",
               "tipo": "select",
               "obrigatoria": true,
               "hint": "É sempre 1 mensagem e depois a transferência. O que muda são só os tempos.",
@@ -2928,7 +2876,8 @@
                   "value": "nao",
                   "label": "Não, queremos outros tempos"
                 }
-              ]
+              ],
+              "texto": "1. 10 minutos sem resposta: a IA manda 1 mensagem de reengajamento.\n2. 5 minutos depois, se continuar sem resposta: transfere para o Vendas."
             },
             {
               "id": "followup_vendas_tempos",

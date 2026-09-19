@@ -910,8 +910,47 @@ export function QuestionRenderer({
     }
   };
 
+  // Descrição do padrão (perguntas "segue o padrão? sim/não"): linhas numeradas
+  // viram lista ordenada; as outras, parágrafos. Antes ia tudo no título.
+  const renderTexto = () => {
+    if (!question.texto || question.tipo === 'info' || question.tipo === 'info_link') return null;
+    const linhas = question.texto.split('\n').map((l) => l.trim()).filter(Boolean);
+    const numeradas = linhas.length > 1 && linhas.every((l) => /^\d+\.\s/.test(l));
+    return (
+      <div className="rounded-xl border border-border bg-muted/50 p-5">
+        {numeradas ? (
+          <ol className="space-y-3">
+            {linhas.map((l, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pipeelo-blue/10 text-sm font-medium text-pipeelo-blue">
+                  {l.match(/^\d+/)?.[0]}
+                </span>
+                <span className="pt-0.5 leading-relaxed text-muted-foreground">{l.replace(/^\d+\.\s*/, '')}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="space-y-2">
+            {linhas.map((l, i) => (
+              <p key={i} className="leading-relaxed text-muted-foreground">{l}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
+      {renderTexto()}
+      {question.imagem && (
+        <figure className="overflow-hidden rounded-xl border border-border bg-muted/50">
+          <img src={question.imagem} alt={question.imagem_legenda ?? 'Exemplo'} className="w-full" loading="lazy" />
+          {question.imagem_legenda && (
+            <figcaption className="px-4 py-2 text-sm text-muted-foreground">{question.imagem_legenda}</figcaption>
+          )}
+        </figure>
+      )}
       {renderInput()}
       
       {question.hint && question.tipo !== 'info' && question.tipo !== 'info_link' && (
